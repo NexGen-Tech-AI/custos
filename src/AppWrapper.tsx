@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Dashboard } from './components/Dashboard';
-import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { DashboardSection } from './components/sections/DashboardSection';
+import { MonitoringSection } from './components/sections/MonitoringSection';
+import { PlaceholderSection } from './components/sections/PlaceholderSection';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeToggle } from './components/ThemeToggle';
 import { SystemInfo, SystemMetrics } from './types';
+import { Shield, Network, Search, Sparkles, FileText, Settings } from 'lucide-react';
 
 import './App.css';
 
@@ -15,6 +19,8 @@ export default function AppWrapper() {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
     console.log('AppWrapper useEffect running');
@@ -114,6 +120,29 @@ export default function AppWrapper() {
   console.log('Metrics:', metrics ? 'LOADED' : 'NULL');
   console.log('Error:', error);
 
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'dashboard':
+        return <DashboardSection />;
+      case 'monitoring':
+        return <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
+      case 'threats':
+        return <PlaceholderSection title="Threat Detection" description="Real-time threat detection and analysis powered by AI" icon={Shield} />;
+      case 'network':
+        return <PlaceholderSection title="Network Security" description="Monitor and secure your network connections" icon={Network} />;
+      case 'vulnerabilities':
+        return <PlaceholderSection title="Vulnerability Scanner" description="Identify and assess system vulnerabilities" icon={Search} />;
+      case 'ai-analysis':
+        return <PlaceholderSection title="AI Analysis" description="Advanced AI-powered security analysis and insights" icon={Sparkles} />;
+      case 'reports':
+        return <PlaceholderSection title="Security Reports" description="Generate comprehensive security reports" icon={FileText} />;
+      case 'settings':
+        return <PlaceholderSection title="Settings" description="Configure your security preferences" icon={Settings} comingSoon={false} />;
+      default:
+        return <DashboardSection />;
+    }
+  };
+
   // Always show something, even if loading
   return (
     <ThemeProvider>
@@ -122,36 +151,64 @@ export default function AppWrapper() {
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading System Monitor...</p>
+              <p className="text-gray-600 dark:text-gray-400">Loading Custos...</p>
               <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
                 System Info: {systemInfo ? '✓' : '⏳'} | Metrics: {metrics ? '✓' : '⏳'}
               </p>
             </div>
           </div>
         ) : (
-          <>
-            <Header
-              systemInfo={systemInfo}
-              isMonitoring={isMonitoring}
-              onToggleMonitoring={toggleMonitoring}
+          <div className="flex h-screen">
+            <Sidebar
+              isCollapsed={sidebarCollapsed}
+              onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
             />
 
-            {error && (
-              <div className="mx-4 mt-4 p-4 bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 rounded-lg">
-                <p className="text-red-700 dark:text-red-200">{error}</p>
-              </div>
-            )}
-
-            <main className="container mx-auto px-4 py-8">
-              {systemInfo || metrics ? (
-                <Dashboard systemInfo={systemInfo} metrics={metrics} />
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-600 dark:text-gray-400 text-lg">Waiting for system data...</p>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Top bar */}
+              <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    {systemInfo && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {systemInfo.hostname} • {systemInfo.os_name} {systemInfo.os_version}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {activeSection === 'monitoring' && (
+                      <button
+                        onClick={toggleMonitoring}
+                        className={`
+                          flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm
+                          ${isMonitoring
+                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }
+                        `}
+                      >
+                        <span>{isMonitoring ? 'Pause Monitoring' : 'Start Monitoring'}</span>
+                      </button>
+                    )}
+                    <ThemeToggle />
+                  </div>
                 </div>
-              )}
-            </main>
-          </>
+              </header>
+
+              {/* Main content */}
+              <main className="flex-1 overflow-y-auto p-6">
+                {error && (
+                  <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 rounded-lg">
+                    <p className="text-red-700 dark:text-red-200">{error}</p>
+                  </div>
+                )}
+
+                {renderSection()}
+              </main>
+            </div>
+          </div>
         )}
       </div>
     </ThemeProvider>
