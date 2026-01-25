@@ -392,12 +392,214 @@ impl NetworkSensor {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
+    // ===== Windows-specific implementations =====
+
+    #[cfg(target_os = "windows")]
+    /// Get TCP and UDP connections using GetExtendedTcpTable and GetExtendedUdpTable
+    fn get_connections() -> Vec<Connection> {
+        let mut connections = Vec::new();
+
+        // Get TCP connections
+        connections.extend(Self::get_windows_tcp_connections());
+
+        // Get UDP connections
+        connections.extend(Self::get_windows_udp_connections());
+
+        connections
+    }
+
+    #[cfg(target_os = "windows")]
+    /// Get TCP connections using GetExtendedTcpTable
+    fn get_windows_tcp_connections() -> Vec<Connection> {
+        use windows::Win32::NetworkManagement::IpHelper::*;
+        use windows::Win32::Networking::WinSock::*;
+        use std::mem;
+
+        let mut connections = Vec::new();
+
+        unsafe {
+            // First call to get buffer size (IPv4)
+            let mut size: u32 = 0;
+            let _ = GetExtendedTcpTable(
+                None,
+                &mut size,
+                false,
+                AF_INET.0 as u32,
+                TCP_TABLE_OWNER_PID_ALL,
+                0,
+            );
+
+            if size > 0 {
+                let mut buffer = vec![0u8; size as usize];
+                let result = GetExtendedTcpTable(
+                    Some(buffer.as_mut_ptr() as *mut _),
+                    &mut size,
+                    false,
+                    AF_INET.0 as u32,
+                    TCP_TABLE_OWNER_PID_ALL,
+                    0,
+                );
+
+                if result.is_ok() {
+                    let table = buffer.as_ptr() as *const MIB_TCPTABLE_OWNER_PID;
+                    let num_entries = (*table).dwNumEntries as usize;
+
+                    for i in 0..num_entries {
+                        let entry_ptr = (table as usize + mem::size_of::<u32>() + i * mem::size_of::<MIB_TCPROW_OWNER_PID>()) as *const MIB_TCPROW_OWNER_PID;
+                        let entry = &*entry_ptr;
+
+                        let local_ip = Ipv4Addr::from(u32::from_be(entry.dwLocalAddr));
+                        let local_port = u16::from_be((entry.dwLocalPort & 0xFFFF) as u16);
+                        let remote_ip = Ipv4Addr::from(u32::from_be(entry.dwRemoteAddr));
+                        let remote_port = u16::from_be((entry.dwRemotePort & 0xFFFF) as u16);
+
+                        let state = match entry.dwState {
+                            1 => "CLOSED",
+                            2 => "LISTEN",
+                            3 => "SYN_SENT",
+                            4 => "SYN_RCVD",
+                            5 => "ESTABLISHED",
+                            6 => "FIN_WAIT1",
+                            7 => "FIN_WAIT2",
+                            8 => "CLOSE_WAIT",
+                            9 => "CLOSING",
+                            10 => "LAST_ACK",
+                            11 => "TIME_WAIT",
+                            12 => "DELETE_TCB",
+                            _ => "UNKNOWN",
+                        };
+
+                        connections.push(Connection {
+                            local_ip: local_ip.to_string(),
+                            local_port,
+                            remote_ip: remote_ip.to_string(),
+                            remote_port,
+                            protocol: "tcp".to_string(),
+                            state: state.to_string(),
+                            inode: 0, // Windows doesn't use inodes
+                            pid: Some(entry.dwOwningPid),
+                        });
+                    }
+                }
+            }
+        }
+
+        connections
+    }
+
+    #[cfg(target_os = "windows")]
+    /// Get UDP connections using GetExtendedUdpTable
+    fn get_windows_udp_connections() -> Vec<Connection> {
+        use windows::Win32::NetworkManagement::IpHelper::*;
+        use windows::Win32::Networking::WinSock::*;
+        use std::mem;
+
+        let mut connections = Vec::new();
+
+        unsafe {
+            // First call to get buffer size (IPv4)
+            let mut size: u32 = 0;
+            let _ = GetExtendedUdpTable(
+                None,
+                &mut size,
+                false,
+                AF_INET.0 as u32,
+                UDP_TABLE_OWNER_PID,
+                0,
+            );
+
+            if size > 0 {
+                let mut buffer = vec![0u8; size as usize];
+                let result = GetExtendedUdpTable(
+                    Some(buffer.as_mut_ptr() as *mut _),
+                    &mut size,
+                    false,
+                    AF_INET.0 as u32,
+                    UDP_TABLE_OWNER_PID,
+                    0,
+                );
+
+                if result.is_ok() {
+                    let table = buffer.as_ptr() as *const MIB_UDPTABLE_OWNER_PID;
+                    let num_entries = (*table).dwNumEntries as usize;
+
+                    for i in 0..num_entries {
+                        let entry_ptr = (table as usize + mem::size_of::<u32>() + i * mem::size_of::<MIB_UDPROW_OWNER_PID>()) as *const MIB_UDPROW_OWNER_PID;
+                        let entry = &*entry_ptr;
+
+                        let local_ip = Ipv4Addr::from(u32::from_be(entry.dwLocalAddr));
+                        let local_port = u16::from_be((entry.dwLocalPort & 0xFFFF) as u16);
+
+                        connections.push(Connection {
+                            local_ip: local_ip.to_string(),
+                            local_port,
+                            remote_ip: "0.0.0.0".to_string(),
+                            remote_port: 0,
+                            protocol: "udp".to_string(),
+                            state: "LISTENING".to_string(),
+                            inode: 0, // Windows doesn't use inodes
+                            pid: Some(entry.dwOwningPid),
+                        });
+                    }
+                }
+            }
+        }
+
+        connections
+    }
+
+    #[cfg(target_os = "windows")]
+    /// Create network connection event (Windows version)
+    fn create_connection_event(&self, conn: &Connection) -> SecurityEvent {
+        let mut event = SecurityEvent::new(EventType::NetworkConnection);
+        event.severity = EventSeverity::Info;
+
+        event.add_tag("network");
+        event.add_tag(&conn.protocol);
+
+        // Add network context
+        event.network = Some(NetworkContext {
+            source_ip: Some(conn.local_ip.clone()),
+            source_port: Some(conn.local_port),
+            destination_ip: conn.remote_ip.clone(),
+            destination_port: conn.remote_port,
+            protocol: conn.protocol.clone(),
+            direction: NetworkDirection::Outbound,
+            dns_query: None,
+            dns_response: None,
+            ja3_hash: None,
+            sni: None,
+            bytes_sent: None,
+            bytes_received: None,
+        });
+
+        // Check for suspicious patterns
+        if Self::is_suspicious_connection(conn) {
+            event.add_tag("suspicious");
+            event.severity = EventSeverity::Medium;
+        }
+
+        // Check for known bad ports
+        if Self::is_suspicious_port(conn.remote_port) {
+            event.add_tag("suspicious_port");
+            event.severity = EventSeverity::High;
+            event.set_mitre(
+                vec!["Command and Control".to_string()],
+                vec!["T1071".to_string()], // Application Layer Protocol
+            );
+        }
+
+        event
+    }
+
+    // ===== Stub implementations for non-Linux, non-Windows platforms =====
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     fn get_connections() -> Vec<Connection> {
         Vec::new()
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     fn create_connection_event(&self, _conn: &Connection) -> SecurityEvent {
         SecurityEvent::new(EventType::NetworkConnection)
     }
@@ -438,6 +640,61 @@ impl EventCollector for NetworkSensor {
                     for conn in connections {
                         // Only track ESTABLISHED connections and UDP with remote port
                         if (conn.state == "ESTABLISHED" || (conn.protocol.contains("UDP") && conn.remote_port != 0))
+                            && conn.remote_ip != "0.0.0.0"
+                            && conn.remote_ip != "::"
+                        {
+                            let conn_id = format!(
+                                "{}:{}->{}:{}",
+                                conn.local_ip, conn.local_port, conn.remote_ip, conn.remote_port
+                            );
+
+                            if !known.contains(&conn_id) {
+                                // New connection detected
+                                let sensor = NetworkSensor {
+                                    running: true,
+                                    events: Arc::new(Mutex::new(Vec::new())),
+                                    known_connections: Arc::new(Mutex::new(HashSet::new())),
+                                };
+                                let event = sensor.create_connection_event(&conn);
+                                events.lock().push(event);
+                                known.insert(conn_id);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // Initialize known connections
+            let connections = Self::get_connections();
+            let mut known = self.known_connections.lock();
+            for conn in connections {
+                let conn_id = format!(
+                    "{}:{}->{}:{}",
+                    conn.local_ip, conn.local_port, conn.remote_ip, conn.remote_port
+                );
+                known.insert(conn_id);
+            }
+            drop(known);
+
+            // Start background monitoring
+            let known_connections = Arc::clone(&self.known_connections);
+            let events = Arc::clone(&self.events);
+
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
+
+                loop {
+                    interval.tick().await;
+
+                    let connections = NetworkSensor::get_connections();
+                    let mut known = known_connections.lock();
+
+                    for conn in connections {
+                        // Only track ESTABLISHED connections and UDP with remote port
+                        if (conn.state == "ESTABLISHED" || (conn.protocol.contains("udp") && conn.remote_port != 0))
                             && conn.remote_ip != "0.0.0.0"
                             && conn.remote_ip != "::"
                         {

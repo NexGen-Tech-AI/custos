@@ -255,17 +255,106 @@ impl PackageSensor {
         event
     }
 
-    #[cfg(not(target_os = "linux"))]
+    // ===== Windows-specific implementations =====
+
+    #[cfg(target_os = "windows")]
+    /// Get installed Windows updates (KBs) via WMI
+    fn get_windows_kbs() -> Vec<Package> {
+        use wmi::{COMLibrary, WMIConnection};
+        use std::collections::HashMap;
+
+        let mut packages = Vec::new();
+
+        if let Ok(com_con) = COMLibrary::new() {
+            if let Ok(wmi_con) = WMIConnection::new(com_con) {
+                let results: Result<Vec<HashMap<String, wmi::Variant>>, _> = wmi_con.raw_query(
+                    "SELECT HotFixID, Description, InstalledOn FROM Win32_QuickFixEngineering"
+                );
+
+                if let Ok(results) = results {
+                    for result in results {
+                        let kb_id = result.get("HotFixID")
+                            .and_then(|v| match v {
+                                wmi::Variant::String(s) => Some(s.clone()),
+                                _ => None,
+                            })
+                            .unwrap_or_default();
+
+                        let description = result.get("Description")
+                            .and_then(|v| match v {
+                                wmi::Variant::String(s) => Some(s.clone()),
+                                _ => None,
+                            })
+                            .unwrap_or_else(|| "Update".to_string());
+
+                        let installed_on = result.get("InstalledOn")
+                            .and_then(|v| match v {
+                                wmi::Variant::String(s) => Some(s.clone()),
+                                _ => None,
+                            })
+                            .unwrap_or_else(|| "Unknown".to_string());
+
+                        if !kb_id.is_empty() {
+                            packages.push(Package {
+                                name: kb_id.clone(),
+                                version: installed_on,
+                                architecture: Some(description),
+                                source: "windows_update".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        packages
+    }
+
+    #[cfg(target_os = "windows")]
+    fn detect_package_manager() -> PackageManager {
+        PackageManager::None // Windows uses WMI directly
+    }
+
+    #[cfg(target_os = "windows")]
+    fn get_packages(&self) -> Vec<Package> {
+        Self::get_windows_kbs()
+    }
+
+    #[cfg(target_os = "windows")]
+    fn create_package_event(package: &Package) -> SecurityEvent {
+        let mut event = SecurityEvent::new(EventType::ServiceInstalled);
+        event.severity = EventSeverity::Info;
+
+        event.add_tag("package");
+        event.add_tag("inventory");
+        event.add_tag("windows_update");
+        event.add_tag("kb");
+
+        // Check for critical/important security updates
+        if let Some(desc) = &package.architecture {
+            let desc_lower = desc.to_lowercase();
+            if desc_lower.contains("security") || desc_lower.contains("critical") {
+                event.add_tag("security_update");
+                event.severity = EventSeverity::Medium;
+            }
+        }
+
+        event
+    }
+
+    // ===== Stub implementations for non-Linux, non-Windows platforms =====
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     fn detect_package_manager() -> PackageManager {
         PackageManager::None
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     fn get_packages(&self) -> Vec<Package> {
         Vec::new()
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     fn create_package_event(_package: &Package) -> SecurityEvent {
         SecurityEvent::new(EventType::ServiceInstalled)
     }
@@ -337,6 +426,50 @@ impl EventCollector for PackageSensor {
                                     known.insert(key.clone(), package.clone());
                                 }
                             }
+                        }
+                    }
+                }
+            });
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            println!("Initializing Windows KB inventory sensor");
+
+            // Initialize known KBs
+            let packages = self.get_packages();
+            println!("Found {} installed Windows updates", packages.len());
+
+            let mut known = self.known_packages.lock();
+            for package in packages {
+                let key = format!("{}:{}", package.source, package.name);
+                known.insert(key, package);
+            }
+            drop(known);
+
+            // Start background monitoring for new Windows updates
+            let known_packages = Arc::clone(&self.known_packages);
+            let events = Arc::clone(&self.events);
+
+            tokio::spawn(async move {
+                // Check for new Windows updates every 5 minutes
+                let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(300));
+
+                loop {
+                    interval.tick().await;
+
+                    let packages = PackageSensor::get_windows_kbs();
+                    let mut known = known_packages.lock();
+
+                    for package in packages {
+                        let key = format!("{}:{}", package.source, package.name);
+
+                        if !known.contains_key(&key) {
+                            // New KB detected
+                            println!("New Windows update installed: {} ({})", package.name, package.version);
+                            let event = PackageSensor::create_package_event(&package);
+                            events.lock().push(event);
+                            known.insert(key, package);
                         }
                     }
                 }
