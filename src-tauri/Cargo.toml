@@ -1,8 +1,9 @@
 [package]
-name = "system-monitor"
+name = "custos"
 version = "0.1.0"
-description = "Advanced System Monitor"
-authors = ["System Monitor Team"]
+description = "Custos - Advanced Cybersecurity Platform"
+authors = ["NexGen Tech AI"]
+license = "UNLICENSED"
 edition = "2021"
 
 [build-dependencies]
