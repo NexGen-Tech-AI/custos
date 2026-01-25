@@ -7,6 +7,7 @@ pub mod file_sensor;
 pub mod network_sensor;
 pub mod identity_sensor;
 pub mod persistence_sensor;
+pub mod package_sensor;
 
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
@@ -18,6 +19,7 @@ pub use file_sensor::FileSensor;
 pub use network_sensor::NetworkSensor;
 pub use identity_sensor::IdentitySensor;
 pub use persistence_sensor::PersistenceSensor;
+pub use package_sensor::PackageSensor;
 
 /// Unified Security Event - Sigma-like schema
 #[derive(Debug, Clone, Serialize, Deserialize)]
