@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ systemInfo, isMonitoring, onTogg
           <div className="flex items-center space-x-4">
             <Activity className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <div>
-              <h1 className="text-2xl font-bold">System Monitor</h1>
+              <h1 className="text-2xl font-bold">Custos</h1>
               {systemInfo && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {systemInfo.hostname} • {systemInfo.os_name} {systemInfo.os_version} • {systemInfo.cpu_brand}
