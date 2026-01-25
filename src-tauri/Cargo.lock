@@ -535,6 +535,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "custos"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "cfg-if",
+ "chrono",
+ "crossbeam",
+ "dashmap",
+ "hostname",
+ "libc",
+ "memmap2",
+ "nix",
+ "num_cpus",
+ "nvml-wrapper",
+ "os_info",
+ "parking_lot",
+ "rayon",
+ "ringbuf",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tauri",
+ "tauri-build",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "windows 0.52.0",
+]
+
+[[package]]
 name = "darling"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3315,37 +3346,6 @@ dependencies = [
  "pkg-config",
  "toml",
  "version-compare",
-]
-
-[[package]]
-name = "system-monitor"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "cfg-if",
- "chrono",
- "crossbeam",
- "dashmap",
- "hostname",
- "libc",
- "memmap2",
- "nix",
- "num_cpus",
- "nvml-wrapper",
- "os_info",
- "parking_lot",
- "rayon",
- "ringbuf",
- "serde",
- "serde_json",
- "sysinfo",
- "tauri",
- "tauri-build",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "windows 0.52.0",
 ]
 
 [[package]]
