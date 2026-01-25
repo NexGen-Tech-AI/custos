@@ -6,6 +6,12 @@ use serde::{Serialize, Deserialize};
 use thiserror::Error;
 use tracing::{info, warn, error};
 
+#[cfg(target_os = "linux")]
+use crate::monitoring::linux_ebpf::LinuxHardwareCounters;
+
+#[cfg(target_os = "windows")]
+use crate::monitoring::windows_etw::WindowsEtwMonitor;
+
 #[derive(Error, Debug)]
 pub enum KernelMonitorError {
     #[error("Platform not supported: {0}")]
@@ -185,42 +191,283 @@ impl KernelMonitor {
 
     #[cfg(target_os = "linux")]
     fn collect_linux_kernel_metrics() -> Result<KernelMetrics, KernelMonitorError> {
-        // TODO: Implement Linux eBPF-based collection
-        // This will use perf_event_open for hardware counters
-        // and eBPF programs for kernel-level data
-        
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
 
+        // Collect hardware performance counters via perf_event
+        let hw_counters = match LinuxHardwareCounters::new() {
+            Ok(mut counters) => {
+                // Start the counters
+                let _ = counters.start();
+
+                // Give it a moment to collect data
+                std::thread::sleep(Duration::from_millis(10));
+
+                // Read the values
+                match counters.read_values() {
+                    Ok(values) => Some(values),
+                    Err(e) => {
+                        warn!("Failed to read hardware counters: {}", e);
+                        None
+                    }
+                }
+            },
+            Err(e) => {
+                warn!("Failed to create hardware counters (may need CAP_PERFMON): {}", e);
+                None
+            }
+        };
+
+        // Extract hardware counter values or use defaults
+        let (cycles, instructions, cache_misses, branch_misses, page_faults_hw, _context_switches) =
+            if let Some(counters) = hw_counters {
+                (counters.cpu_cycles, counters.instructions, counters.cache_misses,
+                 counters.branch_misses, counters.page_faults, counters.context_switches)
+            } else {
+                (0, 0, 0, 0, 0, 0)
+            };
+
+        // Read CPU frequency from /proc/cpuinfo
+        let frequency_mhz = Self::read_cpu_frequency();
+
+        // Read CPU temperature from /sys/class/thermal
+        let temperature_celsius = Self::read_cpu_temperature();
+
+        // Read memory metrics from /proc/vmstat
+        let (page_ins, page_outs, swap_ins, swap_outs) = Self::read_vmstat();
+
+        // Read disk I/O metrics from /proc/diskstats
+        let (disk_read_bytes, disk_write_bytes, disk_read_ops, disk_write_ops) = Self::read_diskstats();
+
+        // Read network metrics from /proc/net/dev
+        let (net_bytes_in, net_bytes_out, net_packets_in, net_packets_out, net_errors_in, net_errors_out) =
+            Self::read_net_dev();
+
+        // Calculate CPU usage percentage (simplified)
+        let cpu_usage_percent = if instructions > 0 {
+            ((cycles as f64 / instructions as f64) * 100.0).min(100.0)
+        } else {
+            0.0
+        };
+
         Ok(KernelMetrics {
             timestamp,
             cpu: KernelCpuMetrics {
-                cycles: 0,
+                cycles,
+                instructions,
+                cache_misses,
+                branch_misses,
+                cpu_usage_percent,
+                frequency_mhz,
+                temperature_celsius,
+                power_watts: None, // TODO: Read from /sys/class/powercap
+            },
+            memory: KernelMemoryMetrics {
+                page_faults: page_faults_hw,
+                page_ins,
+                page_outs,
+                swap_ins,
+                swap_outs,
+                memory_pressure: 0.0, // TODO: Calculate from PSI
+                numa_hits: 0,         // TODO: Read from /sys/devices/system/node
+                numa_misses: 0,       // TODO: Read from /sys/devices/system/node
+            },
+            disk: KernelDiskMetrics {
+                read_bytes: disk_read_bytes,
+                write_bytes: disk_write_bytes,
+                read_ops: disk_read_ops,
+                write_ops: disk_write_ops,
+                io_wait_time: 0,      // TODO: Read from /proc/stat
+                queue_depth: 0,       // TODO: Read from /sys/block/*/queue/nr_requests
+                latency_ns: 0,        // TODO: Calculate from timestamps
+            },
+            network: KernelNetworkMetrics {
+                packets_in: net_packets_in,
+                packets_out: net_packets_out,
+                bytes_in: net_bytes_in,
+                bytes_out: net_bytes_out,
+                errors_in: net_errors_in,
+                errors_out: net_errors_out,
+                drops_in: 0,          // TODO: Parse from /proc/net/dev
+                drops_out: 0,         // TODO: Parse from /proc/net/dev
+                latency_ns: 0,        // TODO: Measure via RTT
+            },
+            latency: KernelLatencyMetrics {
+                collection_latency_ns: 0,
+                processing_latency_ns: 0,
+                total_latency_ns: 0,
+            },
+        })
+    }
+
+    // Helper function to read CPU frequency from /proc/cpuinfo
+    #[cfg(target_os = "linux")]
+    fn read_cpu_frequency() -> u64 {
+        if let Ok(content) = std::fs::read_to_string("/proc/cpuinfo") {
+            for line in content.lines() {
+                if line.starts_with("cpu MHz") {
+                    if let Some(freq_str) = line.split(':').nth(1) {
+                        if let Ok(freq) = freq_str.trim().parse::<f64>() {
+                            return freq as u64;
+                        }
+                    }
+                }
+            }
+        }
+        0
+    }
+
+    // Helper function to read CPU temperature from thermal zones
+    #[cfg(target_os = "linux")]
+    fn read_cpu_temperature() -> Option<f64> {
+        // Try to read from thermal zone 0 (usually CPU)
+        if let Ok(temp_str) = std::fs::read_to_string("/sys/class/thermal/thermal_zone0/temp") {
+            if let Ok(temp_millidegrees) = temp_str.trim().parse::<i64>() {
+                return Some(temp_millidegrees as f64 / 1000.0);
+            }
+        }
+        None
+    }
+
+    // Helper function to read memory stats from /proc/vmstat
+    #[cfg(target_os = "linux")]
+    fn read_vmstat() -> (u64, u64, u64, u64) {
+        let mut page_ins = 0u64;
+        let mut page_outs = 0u64;
+        let mut swap_ins = 0u64;
+        let mut swap_outs = 0u64;
+
+        if let Ok(content) = std::fs::read_to_string("/proc/vmstat") {
+            for line in content.lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    match parts[0] {
+                        "pgpgin" => page_ins = parts[1].parse().unwrap_or(0),
+                        "pgpgout" => page_outs = parts[1].parse().unwrap_or(0),
+                        "pswpin" => swap_ins = parts[1].parse().unwrap_or(0),
+                        "pswpout" => swap_outs = parts[1].parse().unwrap_or(0),
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        (page_ins, page_outs, swap_ins, swap_outs)
+    }
+
+    // Helper function to read disk stats from /proc/diskstats
+    #[cfg(target_os = "linux")]
+    fn read_diskstats() -> (u64, u64, u64, u64) {
+        let mut read_bytes = 0u64;
+        let mut write_bytes = 0u64;
+        let mut read_ops = 0u64;
+        let mut write_ops = 0u64;
+
+        if let Ok(content) = std::fs::read_to_string("/proc/diskstats") {
+            for line in content.lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                // Format: major minor name reads ... sectors_read ... writes ... sectors_written
+                if parts.len() >= 14 {
+                    // Skip loop and ram devices
+                    if !parts[2].starts_with("loop") && !parts[2].starts_with("ram") {
+                        read_ops += parts[3].parse::<u64>().unwrap_or(0);
+                        read_bytes += parts[5].parse::<u64>().unwrap_or(0) * 512; // sectors to bytes
+                        write_ops += parts[7].parse::<u64>().unwrap_or(0);
+                        write_bytes += parts[9].parse::<u64>().unwrap_or(0) * 512;
+                    }
+                }
+            }
+        }
+
+        (read_bytes, write_bytes, read_ops, write_ops)
+    }
+
+    // Helper function to read network stats from /proc/net/dev
+    #[cfg(target_os = "linux")]
+    fn read_net_dev() -> (u64, u64, u64, u64, u64, u64) {
+        let mut bytes_in = 0u64;
+        let mut bytes_out = 0u64;
+        let mut packets_in = 0u64;
+        let mut packets_out = 0u64;
+        let mut errors_in = 0u64;
+        let mut errors_out = 0u64;
+
+        if let Ok(content) = std::fs::read_to_string("/proc/net/dev") {
+            for line in content.lines().skip(2) { // Skip header lines
+                if let Some(colon_pos) = line.find(':') {
+                    let interface = line[..colon_pos].trim();
+
+                    // Skip loopback
+                    if interface == "lo" {
+                        continue;
+                    }
+
+                    let stats = &line[colon_pos + 1..];
+                    let parts: Vec<&str> = stats.split_whitespace().collect();
+
+                    if parts.len() >= 16 {
+                        bytes_in += parts[0].parse::<u64>().unwrap_or(0);
+                        packets_in += parts[1].parse::<u64>().unwrap_or(0);
+                        errors_in += parts[2].parse::<u64>().unwrap_or(0);
+                        bytes_out += parts[8].parse::<u64>().unwrap_or(0);
+                        packets_out += parts[9].parse::<u64>().unwrap_or(0);
+                        errors_out += parts[10].parse::<u64>().unwrap_or(0);
+                    }
+                }
+            }
+        }
+
+        (bytes_in, bytes_out, packets_in, packets_out, errors_in, errors_out)
+    }
+
+    #[cfg(target_os = "windows")]
+    fn collect_windows_kernel_metrics() -> Result<KernelMetrics, KernelMonitorError> {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+
+        // Collect Windows Performance Counters
+        let monitor = WindowsEtwMonitor::new()
+            .map_err(|e| KernelMonitorError::SystemCallFailed(e.to_string()))?;
+
+        let metrics = monitor.collect_metrics()
+            .map_err(|e| KernelMonitorError::SystemCallFailed(e.to_string()))?;
+
+        // Read additional system information
+        let (frequency_mhz, temperature_celsius) = Self::read_windows_cpu_info();
+        let (page_ins, page_outs) = Self::read_windows_page_metrics();
+        let (disk_read_ops, disk_write_ops) = Self::read_windows_disk_ops();
+
+        Ok(KernelMetrics {
+            timestamp,
+            cpu: KernelCpuMetrics {
+                cycles: 0, // TODO: Requires PMU access via driver
                 instructions: 0,
                 cache_misses: 0,
                 branch_misses: 0,
-                cpu_usage_percent: 0.0,
-                frequency_mhz: 0,
-                temperature_celsius: None,
-                power_watts: None,
+                cpu_usage_percent: metrics.cpu_usage,
+                frequency_mhz,
+                temperature_celsius,
+                power_watts: None, // TODO: Read from WMI Win32_Processor
             },
             memory: KernelMemoryMetrics {
-                page_faults: 0,
-                page_ins: 0,
-                page_outs: 0,
-                swap_ins: 0,
+                page_faults: metrics.page_faults,
+                page_ins,
+                page_outs,
+                swap_ins: 0, // TODO: Read from Performance Counters
                 swap_outs: 0,
-                memory_pressure: 0.0,
+                memory_pressure: 0.0, // TODO: Calculate from available memory
                 numa_hits: 0,
                 numa_misses: 0,
             },
             disk: KernelDiskMetrics {
-                read_bytes: 0,
-                write_bytes: 0,
-                read_ops: 0,
-                write_ops: 0,
+                read_bytes: metrics.disk_io / 2, // Rough approximation
+                write_bytes: metrics.disk_io / 2,
+                read_ops: disk_read_ops,
+                write_ops: disk_write_ops,
                 io_wait_time: 0,
                 queue_depth: 0,
                 latency_ns: 0,
@@ -228,8 +475,8 @@ impl KernelMonitor {
             network: KernelNetworkMetrics {
                 packets_in: 0,
                 packets_out: 0,
-                bytes_in: 0,
-                bytes_out: 0,
+                bytes_in: metrics.network_io / 2,
+                bytes_out: metrics.network_io / 2,
                 errors_in: 0,
                 errors_out: 0,
                 drops_in: 0,
@@ -245,63 +492,99 @@ impl KernelMonitor {
     }
 
     #[cfg(target_os = "windows")]
-    fn collect_windows_kernel_metrics() -> Result<KernelMetrics, KernelMonitorError> {
-        // TODO: Implement Windows ETW-based collection
-        // This will use Event Tracing for Windows for kernel-level data
-        
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as u64;
+    fn read_windows_cpu_info() -> (u64, Option<f64>) {
+        use std::process::Command;
 
-        Ok(KernelMetrics {
-            timestamp,
-            cpu: KernelCpuMetrics {
-                cycles: 0,
-                instructions: 0,
-                cache_misses: 0,
-                branch_misses: 0,
-                cpu_usage_percent: 0.0,
-                frequency_mhz: 0,
-                temperature_celsius: None,
-                power_watts: None,
-            },
-            memory: KernelMemoryMetrics {
-                page_faults: 0,
-                page_ins: 0,
-                page_outs: 0,
-                swap_ins: 0,
-                swap_outs: 0,
-                memory_pressure: 0.0,
-                numa_hits: 0,
-                numa_misses: 0,
-            },
-            disk: KernelDiskMetrics {
-                read_bytes: 0,
-                write_bytes: 0,
-                read_ops: 0,
-                write_ops: 0,
-                io_wait_time: 0,
-                queue_depth: 0,
-                latency_ns: 0,
-            },
-            network: KernelNetworkMetrics {
-                packets_in: 0,
-                packets_out: 0,
-                bytes_in: 0,
-                bytes_out: 0,
-                errors_in: 0,
-                errors_out: 0,
-                drops_in: 0,
-                drops_out: 0,
-                latency_ns: 0,
-            },
-            latency: KernelLatencyMetrics {
-                collection_latency_ns: 0,
-                processing_latency_ns: 0,
-                total_latency_ns: 0,
-            },
-        })
+        // Read CPU frequency
+        let frequency = if let Ok(output) = Command::new("wmic")
+            .args(&["cpu", "get", "CurrentClockSpeed", "/value"])
+            .output()
+        {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            output_str
+                .lines()
+                .find(|line| line.starts_with("CurrentClockSpeed="))
+                .and_then(|line| line.split('=').nth(1))
+                .and_then(|val| val.trim().parse::<u64>().ok())
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
+        // Read CPU temperature (may not be available without WMI extensions)
+        let temperature = None; // Windows doesn't expose CPU temp easily
+
+        (frequency, temperature)
+    }
+
+    #[cfg(target_os = "windows")]
+    fn read_windows_page_metrics() -> (u64, u64) {
+        use std::process::Command;
+
+        let page_ins = if let Ok(output) = Command::new("powershell")
+            .args(&[
+                "-NoProfile",
+                "-Command",
+                r"Get-Counter '\Memory\Pages Input/sec' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"
+            ])
+            .output()
+        {
+            let value_str = String::from_utf8_lossy(&output.stdout);
+            value_str.trim().parse::<f64>().unwrap_or(0.0) as u64
+        } else {
+            0
+        };
+
+        let page_outs = if let Ok(output) = Command::new("powershell")
+            .args(&[
+                "-NoProfile",
+                "-Command",
+                r"Get-Counter '\Memory\Pages Output/sec' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"
+            ])
+            .output()
+        {
+            let value_str = String::from_utf8_lossy(&output.stdout);
+            value_str.trim().parse::<f64>().unwrap_or(0.0) as u64
+        } else {
+            0
+        };
+
+        (page_ins, page_outs)
+    }
+
+    #[cfg(target_os = "windows")]
+    fn read_windows_disk_ops() -> (u64, u64) {
+        use std::process::Command;
+
+        let read_ops = if let Ok(output) = Command::new("powershell")
+            .args(&[
+                "-NoProfile",
+                "-Command",
+                r"Get-Counter '\PhysicalDisk(_Total)\Disk Reads/sec' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"
+            ])
+            .output()
+        {
+            let value_str = String::from_utf8_lossy(&output.stdout);
+            value_str.trim().parse::<f64>().unwrap_or(0.0) as u64
+        } else {
+            0
+        };
+
+        let write_ops = if let Ok(output) = Command::new("powershell")
+            .args(&[
+                "-NoProfile",
+                "-Command",
+                r"Get-Counter '\PhysicalDisk(_Total)\Disk Writes/sec' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue"
+            ])
+            .output()
+        {
+            let value_str = String::from_utf8_lossy(&output.stdout);
+            value_str.trim().parse::<f64>().unwrap_or(0.0) as u64
+        } else {
+            0
+        };
+
+        (read_ops, write_ops)
     }
 }
 

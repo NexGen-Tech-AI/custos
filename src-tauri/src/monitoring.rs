@@ -19,8 +19,15 @@ use ultra_perf_monitor::{UltraPerfMonitoringService, UltraPerfMetrics};
 pub mod kernel_monitor;
 pub mod linux_ebpf;
 pub mod windows_etw;
+pub mod pci_devices;
+pub mod platform_security;
 
 use kernel_monitor::{KernelMonitor, KernelMetrics};
+pub use pci_devices::{PciDevice, PciEnumerator, PciError};
+pub use platform_security::{
+    PlatformSecurityStatus, PlatformSecurityMonitor, TpmStatus,
+    SecureBootStatus, FirmwareInfo, BootIntegrityStatus, SecurityError
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemInfo {

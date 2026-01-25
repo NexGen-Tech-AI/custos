@@ -42,11 +42,21 @@ export const DraggableDashboard: React.FC<DraggableDashboardProps> = ({ systemIn
   const [editMode, setEditMode] = useState(false);
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     // Load saved layout from localStorage
-    const savedLayout = localStorage.getItem('dashboardLayout');
-    if (savedLayout) {
-      return JSON.parse(savedLayout);
+    try {
+      const savedLayout = localStorage.getItem('dashboardLayout');
+      if (savedLayout) {
+        const parsed = JSON.parse(savedLayout);
+        // Validate that it's an array
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard layout:', error);
+      // Clear invalid data
+      localStorage.removeItem('dashboardLayout');
     }
-    
+
     // Default layout
     return [
       {
@@ -233,12 +243,15 @@ export const DraggableDashboard: React.FC<DraggableDashboardProps> = ({ systemIn
 
   const visibleWidgets = updatedWidgets.filter((widget) => widget.visible);
 
-  if (!systemInfo || !metrics) {
+  if (!systemInfo && !metrics) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Initializing system monitoring...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+            System Info: {systemInfo ? '✓' : '⏳'} | Metrics: {metrics ? '✓' : '⏳'}
+          </p>
         </div>
       </div>
     );

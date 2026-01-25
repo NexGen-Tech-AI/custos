@@ -1,16 +1,72 @@
 #[cfg(target_os = "linux")]
 use {
-    std::fs::File,
-    std::os::unix::io::{AsRawFd, RawFd},
-    std::ptr,
-    nix::libc::{self, c_void, size_t, ssize_t},
+    std::num::NonZeroUsize,
+    std::os::fd::{BorrowedFd, FromRawFd},
+    std::os::unix::io::RawFd,
+    nix::libc::{self, c_void, size_t},
     nix::sys::mman::{mmap, munmap, MapFlags, ProtFlags},
     nix::unistd::close,
-    std::sync::atomic::{AtomicU64, Ordering},
-    std::sync::Arc,
-    parking_lot::Mutex,
-    tracing::{info, warn, error},
 };
+
+// Manual FFI bindings for perf_event - not available in standard libc crate
+#[cfg(target_os = "linux")]
+mod perf_event_bindings {
+    use super::*;
+
+    #[repr(C)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct perf_event_attr {
+        pub type_: u32,
+        pub size: u32,
+        pub config: u64,
+        pub sample_period: u64,
+        pub sample_type: u64,
+        pub read_format: u64,
+        pub flags: u64,
+        pub wakeup_events: u32,
+        pub bp_type: u32,
+        pub config1: u64,
+        pub config2: u64,
+        pub branch_sample_type: u64,
+        pub sample_regs_user: u64,
+        pub sample_stack_user: u32,
+        pub clockid: i32,
+        pub sample_regs_intr: u64,
+        pub aux_watermark: u32,
+        pub sample_max_stack: u16,
+        pub __reserved_2: u16,
+    }
+
+    // Perf event types
+    pub const PERF_TYPE_HARDWARE: u32 = 0;
+    pub const PERF_TYPE_SOFTWARE: u32 = 1;
+
+    // Hardware event types
+    pub const PERF_COUNT_HW_CPU_CYCLES: u32 = 0;
+    pub const PERF_COUNT_HW_INSTRUCTIONS: u32 = 1;
+    pub const PERF_COUNT_HW_CACHE_MISSES: u32 = 3;
+    pub const PERF_COUNT_HW_BRANCH_MISSES: u32 = 5;
+
+    // Software event types
+    pub const PERF_COUNT_SW_PAGE_FAULTS: u32 = 2;
+    pub const PERF_COUNT_SW_CONTEXT_SWITCHES: u32 = 3;
+
+    // Syscall number for perf_event_open (x86_64)
+    #[cfg(target_arch = "x86_64")]
+    pub const SYS_perf_event_open: libc::c_long = 298;
+
+    // Syscall number for perf_event_open (aarch64)
+    #[cfg(target_arch = "aarch64")]
+    pub const SYS_perf_event_open: libc::c_long = 241;
+
+    // ioctl commands
+    pub const PERF_EVENT_IOC_ENABLE: libc::c_ulong = 0x2400 + 0;
+    pub const PERF_EVENT_IOC_DISABLE: libc::c_ulong = 0x2400 + 1;
+    pub const PERF_EVENT_IOC_ID: libc::c_ulong = 0x80082407;
+}
+
+#[cfg(target_os = "linux")]
+use perf_event_bindings::*;
 
 #[cfg(target_os = "linux")]
 #[derive(Debug)]
@@ -32,13 +88,12 @@ impl PerfEvent {
     ) -> Result<Self, nix::Error> {
         let fd = unsafe {
             libc::syscall(
-                libc::SYS_perf_event_open,
-                &libc::perf_event_attr {
+                SYS_perf_event_open,
+                &perf_event_attr {
                     type_: event_type,
-                    size: std::mem::size_of::<libc::perf_event_attr>() as u32,
+                    size: std::mem::size_of::<perf_event_attr>() as u32,
                     config: event_config,
                     sample_period: 0,
-                    sample_freq: 0,
                     sample_type: 0,
                     read_format: 0,
                     flags: 0,
@@ -69,7 +124,7 @@ impl PerfEvent {
         // Get the size of the mmap area
         let mmap_size = unsafe {
             let mut size = 0u64;
-            if libc::ioctl(fd, libc::PERF_EVENT_IOC_ID, &mut size) == -1 {
+            if libc::ioctl(fd, PERF_EVENT_IOC_ID, &mut size) == -1 {
                 close(fd)?;
                 return Err(nix::Error::last());
             }
@@ -79,11 +134,11 @@ impl PerfEvent {
         // Map the perf event buffer
         let mmap_addr = unsafe {
             mmap(
-                ptr::null_mut(),
-                mmap_size,
+                None,
+                NonZeroUsize::new(mmap_size).ok_or(nix::errno::Errno::EINVAL)?,
                 ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
                 MapFlags::MAP_SHARED,
-                fd,
+                Some(BorrowedFd::borrow_raw(fd)),
                 0,
             )?
         };
@@ -96,14 +151,14 @@ impl PerfEvent {
     }
 
     pub fn enable(&self) -> Result<(), nix::Error> {
-        if unsafe { libc::ioctl(self.fd, libc::PERF_EVENT_IOC_ENABLE, 0) } == -1 {
+        if unsafe { libc::ioctl(self.fd, PERF_EVENT_IOC_ENABLE, 0) } == -1 {
             return Err(nix::Error::last());
         }
         Ok(())
     }
 
     pub fn disable(&self) -> Result<(), nix::Error> {
-        if unsafe { libc::ioctl(self.fd, libc::PERF_EVENT_IOC_DISABLE, 0) } == -1 {
+        if unsafe { libc::ioctl(self.fd, PERF_EVENT_IOC_DISABLE, 0) } == -1 {
             return Err(nix::Error::last());
         }
         Ok(())
@@ -153,8 +208,8 @@ pub struct LinuxHardwareCounters {
 impl LinuxHardwareCounters {
     pub fn new() -> Result<Self, nix::Error> {
         let cpu_cycles = PerfEvent::new(
-            libc::PERF_TYPE_HARDWARE,
-            libc::PERF_COUNT_HW_CPU_CYCLES as u64,
+            PERF_TYPE_HARDWARE,
+            PERF_COUNT_HW_CPU_CYCLES as u64,
             -1, // All processes
             0,  // CPU 0
             -1, // No group
@@ -162,8 +217,8 @@ impl LinuxHardwareCounters {
         ).ok();
 
         let instructions = PerfEvent::new(
-            libc::PERF_TYPE_HARDWARE,
-            libc::PERF_COUNT_HW_INSTRUCTIONS as u64,
+            PERF_TYPE_HARDWARE,
+            PERF_COUNT_HW_INSTRUCTIONS as u64,
             -1,
             0,
             -1,
@@ -171,8 +226,8 @@ impl LinuxHardwareCounters {
         ).ok();
 
         let cache_misses = PerfEvent::new(
-            libc::PERF_TYPE_HARDWARE,
-            libc::PERF_COUNT_HW_CACHE_MISSES as u64,
+            PERF_TYPE_HARDWARE,
+            PERF_COUNT_HW_CACHE_MISSES as u64,
             -1,
             0,
             -1,
@@ -180,8 +235,8 @@ impl LinuxHardwareCounters {
         ).ok();
 
         let branch_misses = PerfEvent::new(
-            libc::PERF_TYPE_HARDWARE,
-            libc::PERF_COUNT_HW_BRANCH_MISSES as u64,
+            PERF_TYPE_HARDWARE,
+            PERF_COUNT_HW_BRANCH_MISSES as u64,
             -1,
             0,
             -1,
@@ -189,8 +244,8 @@ impl LinuxHardwareCounters {
         ).ok();
 
         let page_faults = PerfEvent::new(
-            libc::PERF_TYPE_SOFTWARE,
-            libc::PERF_COUNT_SW_PAGE_FAULTS as u64,
+            PERF_TYPE_SOFTWARE,
+            PERF_COUNT_SW_PAGE_FAULTS as u64,
             -1,
             0,
             -1,
@@ -198,8 +253,8 @@ impl LinuxHardwareCounters {
         ).ok();
 
         let context_switches = PerfEvent::new(
-            libc::PERF_TYPE_SOFTWARE,
-            libc::PERF_COUNT_SW_CONTEXT_SWITCHES as u64,
+            PERF_TYPE_SOFTWARE,
+            PERF_COUNT_SW_CONTEXT_SWITCHES as u64,
             -1,
             0,
             -1,

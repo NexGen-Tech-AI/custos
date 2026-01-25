@@ -8,6 +8,8 @@ use tokio::sync::RwLock;
 use monitoring::{MonitoringService, SystemInfo, SystemMetrics};
 use monitoring::high_perf_monitor::HighPerfMetrics;
 use monitoring::kernel_monitor::KernelMetrics;
+use monitoring::{PciDevice, PciEnumerator};
+use monitoring::{PlatformSecurityStatus, PlatformSecurityMonitor};
 
 type ServiceState = Arc<RwLock<MonitoringService>>;
 
@@ -183,6 +185,39 @@ async fn get_kernel_metrics(state: State<'_, ServiceState>) -> Result<Option<Ker
     Ok(metrics)
 }
 
+#[tauri::command]
+async fn get_pci_devices() -> Result<Vec<PciDevice>, String> {
+    println!("=== get_pci_devices called ===");
+    match PciEnumerator::enumerate_devices() {
+        Ok(devices) => {
+            println!("Found {} PCI devices", devices.len());
+            Ok(devices)
+        }
+        Err(e) => {
+            println!("Failed to enumerate PCI devices: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+async fn get_platform_security() -> Result<PlatformSecurityStatus, String> {
+    println!("=== get_platform_security called ===");
+    match PlatformSecurityMonitor::get_security_status() {
+        Ok(status) => {
+            println!("Platform security status retrieved");
+            println!("  TPM Present: {}", status.tpm.present);
+            println!("  Secure Boot: {}", status.secure_boot.enabled);
+            println!("  Firmware: {}", status.firmware.firmware_type);
+            Ok(status)
+        }
+        Err(e) => {
+            println!("Failed to get platform security status: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
 fn main() {
     println!("=== Starting System Monitor Tauri Application ===");
     
@@ -227,7 +262,9 @@ fn main() {
             get_high_perf_metrics,
             start_kernel_monitoring,
             stop_kernel_monitoring,
-            get_kernel_metrics
+            get_kernel_metrics,
+            get_pci_devices,
+            get_platform_security
         ])
         .on_window_event(|window, event| {
             match event {

@@ -30,23 +30,19 @@ cfg-if = "1.0"     # Conditional compilation
 # High-Performance Monitoring Dependencies
 memmap2 = "0.9"  # Memory mapping for zero-copy
 ringbuf = "0.3"  # Lock-free ring buffer
-cpu-affinity = { version = "0.4", optional = true }  # CPU affinity management
-nix = { version = "0.27", optional = true }  # Unix system calls
 thiserror = "1.0"  # Error handling
 tracing = "0.1"  # Structured logging
 tracing-subscriber = "0.3"  # Logging subscriber
 
-# Platform-specific dependencies
-perf-event = { version = "0.4", optional = true }  # Linux performance counters
-perf-event-open = { version = "0.1", optional = true }  # Raw perf_event_open syscalls
-windows = { version = "0.52", optional = true, features = ["Win32_System_Diagnostics_Etw", "Win32_Foundation", "Win32_System_Threading"] }  # Windows ETW
-
 [features]
-default = ["nvidia"]
+default = []
 nvidia = ["nvml-wrapper"]
-# Platform-specific features
-linux = ["dep:perf-event", "dep:perf-event-open", "dep:nix", "dep:cpu-affinity"]
-windows = ["dep:windows"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nix = { version = "0.27", features = ["mman"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.52", features = ["Win32_System_Diagnostics_Etw", "Win32_Foundation", "Win32_System_Threading"] }
 
 [profile.release]
 panic = "abort"
