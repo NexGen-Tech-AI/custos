@@ -1,6 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod monitoring;
+mod threat_detection;
+mod sensors;
+mod storage;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
@@ -11,7 +14,14 @@ use monitoring::kernel_monitor::KernelMetrics;
 use monitoring::{PciDevice, PciEnumerator};
 use monitoring::{PlatformSecurityStatus, PlatformSecurityMonitor};
 
+use threat_detection::engine::ThreatDetectionEngine;
+use threat_detection::{ThreatDetectionConfig, ThreatEvent};
+use threat_detection::threat_intel::ThreatIntelApiKeys;
+use threat_detection::alerts::Alert;
+use threat_detection::engine::ThreatStats;
+
 type ServiceState = Arc<RwLock<MonitoringService>>;
+type ThreatDetectionState = Arc<ThreatDetectionEngine>;
 
 #[tauri::command]
 async fn get_system_info(state: State<'_, ServiceState>) -> Result<SystemInfo, String> {
@@ -218,16 +228,125 @@ async fn get_platform_security() -> Result<PlatformSecurityStatus, String> {
     }
 }
 
+// Threat Detection Commands
+
+#[tauri::command]
+async fn get_threat_statistics(state: State<'_, ThreatDetectionState>) -> Result<ThreatStats, String> {
+    println!("=== get_threat_statistics called ===");
+    Ok(state.get_statistics())
+}
+
+#[tauri::command]
+async fn get_recent_threats(state: State<'_, ThreatDetectionState>, limit: usize) -> Result<Vec<ThreatEvent>, String> {
+    println!("=== get_recent_threats called with limit {} ===", limit);
+    Ok(state.get_recent_threats(limit))
+}
+
+#[tauri::command]
+async fn get_all_alerts(state: State<'_, ThreatDetectionState>) -> Result<Vec<Alert>, String> {
+    println!("=== get_all_alerts called ===");
+    let alert_manager = state.get_alert_manager();
+    Ok(alert_manager.get_alerts())
+}
+
+#[tauri::command]
+async fn get_unacknowledged_alerts(state: State<'_, ThreatDetectionState>) -> Result<Vec<Alert>, String> {
+    println!("=== get_unacknowledged_alerts called ===");
+    let alert_manager = state.get_alert_manager();
+    Ok(alert_manager.get_unacknowledged_alerts())
+}
+
+#[tauri::command]
+async fn acknowledge_alert(
+    state: State<'_, ThreatDetectionState>,
+    alert_id: String,
+    user: String,
+) -> Result<bool, String> {
+    println!("=== acknowledge_alert called for {} ===", alert_id);
+    let alert_manager = state.get_alert_manager();
+    Ok(alert_manager.acknowledge_alert(&alert_id, &user))
+}
+
+#[tauri::command]
+async fn add_alert_note(
+    state: State<'_, ThreatDetectionState>,
+    alert_id: String,
+    note: String,
+    author: String,
+) -> Result<(), String> {
+    println!("=== add_alert_note called for {} ===", alert_id);
+    let alert_manager = state.get_alert_manager();
+    alert_manager.add_note(&alert_id, note, &author);
+    Ok(())
+}
+
+#[tauri::command]
+async fn scan_process_for_threats(
+    state: State<'_, ThreatDetectionState>,
+    process_name: String,
+    process_path: String,
+    process_id: u32,
+    parent_process: Option<String>,
+    command_line: Option<String>,
+    cpu_usage: f64,
+    memory_usage: u64,
+    network_connections: usize,
+    file_operations: u64,
+) -> Result<Vec<ThreatEvent>, String> {
+    println!("=== scan_process_for_threats called for {} ===", process_name);
+    Ok(state.scan_process(
+        &process_name,
+        &process_path,
+        process_id,
+        parent_process.as_deref(),
+        command_line.as_deref(),
+        cpu_usage,
+        memory_usage,
+        network_connections,
+        file_operations,
+    ).await)
+}
+
 fn main() {
-    println!("=== Starting System Monitor Tauri Application ===");
-    
+    println!("=== Starting Custos Security Application ===");
+
     // Initialize the monitoring service with high-performance capabilities
     println!("Initializing high-performance monitoring service...");
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
     println!("High-performance monitoring service initialized successfully");
-    
+
+    // Initialize threat detection engine
+    println!("Initializing threat detection engine...");
+    let threat_config = ThreatDetectionConfig {
+        enabled: true,
+        behavioral_detection: true,
+        signature_detection: true,
+        ai_analysis: false, // Disabled by default, can be enabled with API key
+        threat_intel: false, // Disabled by default, can be enabled with API keys
+        min_severity_to_alert: threat_detection::ThreatSeverity::Medium,
+        auto_remediate: false, // Disabled by default for safety
+        learning_mode: true,
+        scan_interval_ms: 5000,
+    };
+
+    // API keys can be loaded from environment or config file
+    let claude_api_key = std::env::var("CLAUDE_API_KEY").ok();
+    let threat_intel_keys = ThreatIntelApiKeys {
+        virustotal_api_key: std::env::var("VIRUSTOTAL_API_KEY").ok(),
+        abuseipdb_api_key: std::env::var("ABUSEIPDB_API_KEY").ok(),
+        alienvault_api_key: std::env::var("ALIENVAULT_API_KEY").ok(),
+    };
+
+    let threat_engine = Arc::new(ThreatDetectionEngine::new(
+        threat_config,
+        claude_api_key,
+        threat_intel_keys,
+    ));
+    println!("Threat detection engine initialized successfully");
+
     tauri::Builder::default()
         .manage(service)
+        .manage(threat_engine)
         .setup(|app| {
             println!("=== Tauri App Setup ===");
             println!("App is initializing...");
@@ -264,7 +383,15 @@ fn main() {
             stop_kernel_monitoring,
             get_kernel_metrics,
             get_pci_devices,
-            get_platform_security
+            get_platform_security,
+            // Threat Detection
+            get_threat_statistics,
+            get_recent_threats,
+            get_all_alerts,
+            get_unacknowledged_alerts,
+            acknowledge_alert,
+            add_alert_note,
+            scan_process_for_threats
         ])
         .on_window_event(|window, event| {
             match event {
