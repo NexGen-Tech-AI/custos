@@ -25,6 +25,7 @@ regex = "1.10"
 async-trait = "0.1"
 sha2 = "0.10"
 rusqlite = { version = "0.30", features = ["bundled"] }
+keyring = "2.3"  # Secure credential storage
 nvml-wrapper = { version = "0.11", optional = true }
 crossbeam = "0.8"  # Lock-free data structures
 dashmap = "5.5"    # Concurrent HashMap

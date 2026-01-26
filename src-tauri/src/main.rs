@@ -4,6 +4,7 @@ mod monitoring;
 mod threat_detection;
 mod sensors;
 mod storage;
+mod keychain;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
@@ -214,6 +215,93 @@ async fn scan_process_for_threats(
     ).await)
 }
 
+// API Key Management Commands
+
+#[tauri::command]
+async fn set_api_key(
+    key_type: String,
+    api_key: String,
+) -> Result<(), String> {
+    use keychain::{KeychainManager, ApiKeyType};
+
+    let key_type_enum = match key_type.as_str() {
+        "claude" => ApiKeyType::Claude,
+        "virustotal" => ApiKeyType::VirusTotal,
+        "abuseipdb" => ApiKeyType::AbuseIPDB,
+        "alienvault" => ApiKeyType::AlienVault,
+        _ => return Err(format!("Unknown API key type: {}", key_type)),
+    };
+
+    KeychainManager::set_api_key(key_type_enum, &api_key)
+        .map_err(|e| format!("Failed to store API key: {}", e))
+}
+
+#[tauri::command]
+async fn get_api_key(
+    key_type: String,
+) -> Result<Option<String>, String> {
+    use keychain::{KeychainManager, ApiKeyType};
+
+    let key_type_enum = match key_type.as_str() {
+        "claude" => ApiKeyType::Claude,
+        "virustotal" => ApiKeyType::VirusTotal,
+        "abuseipdb" => ApiKeyType::AbuseIPDB,
+        "alienvault" => ApiKeyType::AlienVault,
+        _ => return Err(format!("Unknown API key type: {}", key_type)),
+    };
+
+    KeychainManager::get_api_key(key_type_enum)
+        .map_err(|e| format!("Failed to retrieve API key: {}", e))
+}
+
+#[tauri::command]
+async fn delete_api_key(
+    key_type: String,
+) -> Result<(), String> {
+    use keychain::{KeychainManager, ApiKeyType};
+
+    let key_type_enum = match key_type.as_str() {
+        "claude" => ApiKeyType::Claude,
+        "virustotal" => ApiKeyType::VirusTotal,
+        "abuseipdb" => ApiKeyType::AbuseIPDB,
+        "alienvault" => ApiKeyType::AlienVault,
+        _ => return Err(format!("Unknown API key type: {}", key_type)),
+    };
+
+    KeychainManager::delete_api_key(key_type_enum)
+        .map_err(|e| format!("Failed to delete API key: {}", e))
+}
+
+#[tauri::command]
+async fn has_api_key(
+    key_type: String,
+) -> Result<bool, String> {
+    use keychain::{KeychainManager, ApiKeyType};
+
+    let key_type_enum = match key_type.as_str() {
+        "claude" => ApiKeyType::Claude,
+        "virustotal" => ApiKeyType::VirusTotal,
+        "abuseipdb" => ApiKeyType::AbuseIPDB,
+        "alienvault" => ApiKeyType::AlienVault,
+        _ => return Err(format!("Unknown API key type: {}", key_type)),
+    };
+
+    Ok(KeychainManager::has_api_key(key_type_enum))
+}
+
+#[tauri::command]
+async fn get_configured_api_keys() -> Result<Vec<String>, String> {
+    use keychain::KeychainManager;
+
+    let configured = KeychainManager::get_configured_keys();
+    let key_names: Vec<String> = configured
+        .iter()
+        .map(|k| format!("{:?}", k).to_lowercase())
+        .collect();
+
+    Ok(key_names)
+}
+
 fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
@@ -231,12 +319,26 @@ fn main() {
         scan_interval_ms: 5000,
     };
 
-    // API keys can be loaded from environment or config file
-    let claude_api_key = std::env::var("CLAUDE_API_KEY").ok();
+    // API keys loaded from OS keychain with environment variable fallback
+    use keychain::{KeychainManager, ApiKeyType};
+
+    let claude_api_key = KeychainManager::load_api_key_with_fallback(
+        ApiKeyType::Claude,
+        "CLAUDE_API_KEY"
+    );
     let threat_intel_keys = ThreatIntelApiKeys {
-        virustotal_api_key: std::env::var("VIRUSTOTAL_API_KEY").ok(),
-        abuseipdb_api_key: std::env::var("ABUSEIPDB_API_KEY").ok(),
-        alienvault_api_key: std::env::var("ALIENVAULT_API_KEY").ok(),
+        virustotal_api_key: KeychainManager::load_api_key_with_fallback(
+            ApiKeyType::VirusTotal,
+            "VIRUSTOTAL_API_KEY"
+        ),
+        abuseipdb_api_key: KeychainManager::load_api_key_with_fallback(
+            ApiKeyType::AbuseIPDB,
+            "ABUSEIPDB_API_KEY"
+        ),
+        alienvault_api_key: KeychainManager::load_api_key_with_fallback(
+            ApiKeyType::AlienVault,
+            "ALIENVAULT_API_KEY"
+        ),
     };
 
     let threat_engine = Arc::new(ThreatDetectionEngine::new(
@@ -276,7 +378,13 @@ fn main() {
             get_unacknowledged_alerts,
             acknowledge_alert,
             add_alert_note,
-            scan_process_for_threats
+            scan_process_for_threats,
+            // API Key Management
+            set_api_key,
+            get_api_key,
+            delete_api_key,
+            has_api_key,
+            get_configured_api_keys
         ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())
