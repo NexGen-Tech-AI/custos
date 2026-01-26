@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardSection } from './components/sections/DashboardSection';
 import { MonitoringSection } from './components/sections/MonitoringSection';
 import { PlaceholderSection } from './components/sections/PlaceholderSection';
+import ThreatDetectionSection from './components/sections/ThreatDetectionSection';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SystemInfo, SystemMetrics } from './types';
@@ -108,7 +109,7 @@ export default function AppWrapper() {
       case 'monitoring':
         return <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
       case 'threats':
-        return <PlaceholderSection title="Threat Detection" description="Real-time threat detection and analysis powered by AI" icon={Shield} />;
+        return <ThreatDetectionSection />;
       case 'network':
         return <PlaceholderSection title="Network Security" description="Monitor and secure your network connections" icon={Network} />;
       case 'vulnerabilities':
