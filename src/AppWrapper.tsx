@@ -5,6 +5,9 @@ import { DashboardSection } from './components/sections/DashboardSection';
 import { MonitoringSection } from './components/sections/MonitoringSection';
 import { PlaceholderSection } from './components/sections/PlaceholderSection';
 import ThreatDetectionSection from './components/sections/ThreatDetectionSection';
+import NetworkSecuritySection from './components/sections/network-security/NetworkSecuritySection';
+import VulnerabilitiesSection from './components/sections/vulnerabilities/VulnerabilitiesSection';
+import AIAnalysisSection from './components/AIAnalysisSection';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SystemInfo, SystemMetrics } from './types';
@@ -111,11 +114,11 @@ export default function AppWrapper() {
       case 'threats':
         return <ThreatDetectionSection />;
       case 'network':
-        return <PlaceholderSection title="Network Security" description="Monitor and secure your network connections" icon={Network} />;
+        return <NetworkSecuritySection />;
       case 'vulnerabilities':
-        return <PlaceholderSection title="Vulnerability Scanner" description="Identify and assess system vulnerabilities" icon={Search} />;
+        return <VulnerabilitiesSection />;
       case 'ai-analysis':
-        return <PlaceholderSection title="AI Analysis" description="Advanced AI-powered security analysis and insights" icon={Sparkles} />;
+        return <AIAnalysisSection />;
       case 'reports':
         return <PlaceholderSection title="Security Reports" description="Generate comprehensive security reports" icon={FileText} />;
       case 'settings':

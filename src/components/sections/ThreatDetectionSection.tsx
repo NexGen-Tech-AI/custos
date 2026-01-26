@@ -341,17 +341,9 @@ export default function ThreatDetectionSection() {
           transition={{ duration: 0.35 }}
           className="flex items-center justify-between mb-6"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-monitor-600/20">
-              <Shield className="h-5 w-5 text-monitor-400" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white">CUSTOS</div>
-              <div className="text-xs text-gray-400">Threat Detection Portal • Real-time Security Intelligence</div>
-            </div>
-          </div>
+          <div className="text-xl font-semibold text-white">Threat Detection</div>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center gap-2">
             <Badge className="rounded-full bg-monitor-600/20 text-monitor-200 border-monitor-500/30">
               <Shield className="mr-1 h-3 w-3" />
               Active Monitoring

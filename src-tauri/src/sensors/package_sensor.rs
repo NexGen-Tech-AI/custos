@@ -7,7 +7,7 @@ use std::process::Command;
 use std::sync::Arc;
 use parking_lot::Mutex;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Package {
     pub name: String,
     pub version: String,
@@ -36,12 +36,33 @@ impl PackageSensor {
     pub fn new_linux() -> Result<Self, Box<dyn std::error::Error>> {
         let package_manager = Self::detect_package_manager();
 
-        Ok(Self {
+        let sensor = Self {
             running: false,
             events: Arc::new(Mutex::new(Vec::new())),
             known_packages: Arc::new(Mutex::new(HashMap::new())),
             package_manager,
-        })
+        };
+
+        // Perform initial scan to populate known_packages
+        let packages = match package_manager {
+            PackageManager::Dpkg => Self::get_dpkg_packages(),
+            PackageManager::Rpm => Self::get_rpm_packages(),
+            PackageManager::Pacman => Self::get_pacman_packages(),
+            PackageManager::Apk => Self::get_apk_packages(),
+            PackageManager::None => Vec::new(),
+        };
+
+        // Populate known_packages with initial scan
+        {
+            let mut known = sensor.known_packages.lock();
+            for pkg in packages {
+                known.insert(format!("{}:{}", pkg.name, pkg.version), pkg);
+            }
+        }
+
+        println!("PackageSensor initialized with {} packages", sensor.get_package_count());
+
+        Ok(sensor)
     }
 
     #[cfg(target_os = "windows")]

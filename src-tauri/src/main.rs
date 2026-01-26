@@ -5,10 +5,14 @@ mod threat_detection;
 mod sensors;
 mod storage;
 mod keychain;
+mod network;
+mod vulnerability;
+mod ai_analysis;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
 use tokio::sync::RwLock;
+use parking_lot::Mutex;
 use monitoring::{MonitoringService, SystemInfo, SystemMetrics};
 use monitoring::high_perf_monitor::HighPerfMetrics;
 use monitoring::kernel_monitor::KernelMetrics;
@@ -23,6 +27,60 @@ use threat_detection::engine::ThreatStats;
 
 type ServiceState = Arc<RwLock<MonitoringService>>;
 type ThreatDetectionState = Arc<ThreatDetectionEngine>;
+
+// ========================================
+// Scan Progress State
+// ========================================
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScanProgress {
+    pub status: ScanStatus,
+    pub scan_type: ScanType,
+    pub packages_scanned: usize,
+    pub total_packages: usize,
+    pub vulnerabilities_found: usize,
+    pub critical_threats: usize,
+    pub elapsed_seconds: u64,
+    pub current_package: Option<String>,
+    pub eta_seconds: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ScanStatus {
+    Idle,
+    Scanning,
+    Complete,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScanType {
+    Quick,
+    Full,
+}
+
+impl Default for ScanProgress {
+    fn default() -> Self {
+        Self {
+            status: ScanStatus::Idle,
+            scan_type: ScanType::Quick,
+            packages_scanned: 0,
+            total_packages: 0,
+            vulnerabilities_found: 0,
+            critical_threats: 0,
+            elapsed_seconds: 0,
+            current_package: None,
+            eta_seconds: None,
+        }
+    }
+}
+
+type ScanProgressState = Arc<Mutex<ScanProgress>>;
+type ComprehensiveScannerState = Arc<Mutex<Option<ComprehensiveScanner>>>;
 
 #[tauri::command]
 async fn get_system_info(state: State<'_, ServiceState>) -> Result<SystemInfo, String> {
@@ -302,6 +360,771 @@ async fn get_configured_api_keys() -> Result<Vec<String>, String> {
     Ok(key_names)
 }
 
+// ========================================
+// Network Security Commands
+// ========================================
+
+use network::{
+    NetworkConnectionRecord, ConnectionHistoryManager, TopTalker, ConnectionStats,
+    DNSAnalyzer, DNSQuery,
+    NetworkSegmentationEngine, NetworkSegment, SegmentPolicy, SegmentConfig,
+    GeoIPLookup, GeoIPInfo,
+    IsolationManager, IsolationAction, ActionPreview, ActionResult, IsolationRecord,
+};
+
+#[tauri::command]
+async fn get_network_connections(
+    hours: u64,
+    limit: usize,
+) -> Result<Vec<NetworkConnectionRecord>, String> {
+    let db_path = "data/events.db";
+    let db = storage::EventDatabase::new(db_path).map_err(|e| e.to_string())?;
+    let manager = ConnectionHistoryManager::new(db);
+    manager.get_recent_connections(hours, limit)
+}
+
+#[tauri::command]
+async fn get_top_talkers(limit: usize, hours: u64) -> Result<Vec<TopTalker>, String> {
+    let db_path = "data/events.db";
+    let db = storage::EventDatabase::new(db_path).map_err(|e| e.to_string())?;
+    let manager = ConnectionHistoryManager::new(db);
+    manager.get_top_talkers(limit, hours)
+}
+
+#[tauri::command]
+async fn get_connection_stats(hours: u64) -> Result<ConnectionStats, String> {
+    let db_path = "data/events.db";
+    let db = storage::EventDatabase::new(db_path).map_err(|e| e.to_string())?;
+    let manager = ConnectionHistoryManager::new(db);
+    manager.get_stats(hours)
+}
+
+#[tauri::command]
+async fn analyze_dns_query(query: String, process_name: String) -> Result<(bool, Vec<String>), String> {
+    let analyzer = DNSAnalyzer::new();
+    Ok(analyzer.analyze(&query, &process_name))
+}
+
+#[tauri::command]
+async fn classify_ip(ip: String) -> Result<NetworkSegment, String> {
+    let engine = NetworkSegmentationEngine::new();
+    Ok(engine.classify_ip(&ip))
+}
+
+#[tauri::command]
+async fn get_segment_policies() -> Result<Vec<SegmentPolicy>, String> {
+    let engine = NetworkSegmentationEngine::new();
+    Ok(engine.get_policies().to_vec())
+}
+
+#[tauri::command]
+async fn update_segment_policy(policy: SegmentPolicy) -> Result<(), String> {
+    // In production, persist this to config file/database
+    println!("Updating segment policy: {:?}", policy.segment);
+    Ok(())
+}
+
+#[tauri::command]
+async fn lookup_ip_info(ip: String) -> Result<GeoIPInfo, String> {
+    let geoip = GeoIPLookup::new();
+    geoip.lookup(&ip)
+}
+
+#[tauri::command]
+async fn preview_isolation_action(action: IsolationAction) -> Result<ActionPreview, String> {
+    let manager = IsolationManager::new();
+    Ok(manager.preview_action(&action))
+}
+
+#[tauri::command]
+async fn execute_isolation_action(
+    action: IsolationAction,
+    user: String,
+) -> Result<ActionResult, String> {
+    let mut manager = IsolationManager::new();
+    manager.execute_action(action, user)
+}
+
+#[tauri::command]
+async fn rollback_isolation(action_id: String) -> Result<(), String> {
+    let mut manager = IsolationManager::new();
+    manager.rollback_action(&action_id)
+}
+
+#[tauri::command]
+async fn get_isolation_history() -> Result<Vec<IsolationRecord>, String> {
+    let manager = IsolationManager::new();
+    Ok(manager.get_history())
+}
+
+// ========================================
+// Vulnerability Scanning Commands
+// ========================================
+
+use vulnerability::{
+    VulnerabilityScanner, VulnerabilityFinding, ScanStatistics,
+    CVE, CVESeverity,
+    VulnerabilityPrioritizer, PrioritizedFinding, PackageVulnerabilityGroup,
+    MisconfigurationScanner, Misconfiguration, MisconfigSeverity,
+    FindingStatus,
+    ComprehensiveScanner, ComprehensiveScanProgress, ThreatFinding,
+    ThreatType, ThreatSeverity, ScanPhase,
+};
+use sensors::PackageSensor;
+
+/// Get current scan progress (polled by UI)
+#[tauri::command]
+async fn get_scan_progress(scan_state: State<'_, ScanProgressState>) -> Result<ScanProgress, String> {
+    let progress = scan_state.lock().clone();
+    Ok(progress)
+}
+
+/// Start a quick scan (critical packages only)
+#[tauri::command]
+async fn start_quick_scan(
+    scan_state: State<'_, ScanProgressState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    println!("=== QUICK SCAN STARTED ===");
+
+    // Initialize scan progress
+    {
+        let mut progress = scan_state.lock();
+        *progress = ScanProgress {
+            status: ScanStatus::Scanning,
+            scan_type: ScanType::Quick,
+            packages_scanned: 0,
+            total_packages: 0,
+            vulnerabilities_found: 0,
+            critical_threats: 0,
+            elapsed_seconds: 0,
+            current_package: None,
+            eta_seconds: None,
+        };
+    }
+
+    // Clone state for background task
+    let scan_state_clone = Arc::clone(&scan_state.inner());
+
+    // Run scan in background
+    tokio::spawn(async move {
+        let start_time = std::time::Instant::now();
+
+        // Get package sensor
+        #[cfg(target_os = "linux")]
+        let sensor = match PackageSensor::new_linux() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        #[cfg(target_os = "windows")]
+        let sensor = match PackageSensor::new_windows() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        #[cfg(target_os = "macos")]
+        let sensor = match PackageSensor::new_macos() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        println!("Getting installed packages inventory...");
+        let all_packages = sensor.get_inventory();
+
+        // Quick scan - filter to critical packages only
+        let critical_package_names = vec![
+            "openssl", "libssl", "openssl-libs",
+            "sudo", "linux-kernel", "linux", "kernel",
+            "curl", "libcurl", "wget",
+            "bash", "zsh", "ssh", "openssh", "openssh-server", "openssh-client",
+            "systemd", "glibc", "libc6",
+            "apache2", "nginx", "httpd",
+            "docker", "containerd", "runc",
+            "python3", "nodejs", "java",
+        ];
+
+        let packages: Vec<_> = all_packages.into_iter()
+            .filter(|pkg| {
+                critical_package_names.iter().any(|&name|
+                    pkg.name.to_lowercase().contains(name)
+                )
+            })
+            .collect();
+
+        let total = packages.len();
+        println!("Quick scan: filtering to {} critical packages out of system total", total);
+
+        {
+            let mut progress = scan_state_clone.lock();
+            progress.total_packages = total;
+        }
+
+        if packages.is_empty() {
+            println!("WARNING: No critical packages found to scan!");
+            let mut progress = scan_state_clone.lock();
+            progress.status = ScanStatus::Complete;
+            return;
+        }
+
+        let scanner = VulnerabilityScanner::new();
+        let mut all_findings = Vec::new();
+
+        // Scan each package with progress updates
+        for (idx, package) in packages.iter().enumerate() {
+            let scanned = idx + 1;
+            let elapsed = start_time.elapsed().as_secs();
+            let avg_time_per_pkg = if idx > 0 { elapsed / idx as u64 } else { 1 };
+            let remaining_pkgs = total - scanned;
+            let eta = avg_time_per_pkg * remaining_pkgs as u64;
+
+            // Update progress
+            {
+                let mut progress = scan_state_clone.lock();
+                progress.packages_scanned = scanned;
+                progress.current_package = Some(format!("{} v{}", package.name, package.version));
+                progress.elapsed_seconds = elapsed;
+                progress.eta_seconds = Some(eta);
+            }
+
+            // Query CVE database
+            let ecosystem = match package.source.as_str() {
+                "dpkg" => "debian",
+                "rpm" => "rhel",
+                "pacman" => "arch",
+                "apk" => "alpine",
+                "windows_update" => "windows",
+                _ => "unknown",
+            };
+
+            let findings = scanner.scan_packages(&[package.clone()]);
+
+            if !findings.is_empty() {
+                println!("  Quick Scan: Found {} CVEs in {} v{}", findings.len(), package.name, package.version);
+
+                let critical_count = findings.iter()
+                    .filter(|f| f.cve.severity == CVESeverity::Critical || f.cve.severity == CVESeverity::High)
+                    .count();
+
+                // Update vulnerability counts
+                {
+                    let mut progress = scan_state_clone.lock();
+                    progress.vulnerabilities_found += findings.len();
+                    progress.critical_threats += critical_count;
+                }
+
+                all_findings.extend(findings);
+            }
+
+            // Small delay to make progress visible
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        // Mark scan complete
+        {
+            let mut progress = scan_state_clone.lock();
+            progress.status = ScanStatus::Complete;
+            progress.elapsed_seconds = start_time.elapsed().as_secs();
+            progress.current_package = None;
+            progress.eta_seconds = None;
+        }
+
+        println!("=== QUICK SCAN COMPLETE ===");
+        println!("Scanned {} critical packages", total);
+        println!("Found {} total vulnerabilities", all_findings.len());
+        println!("========================");
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn scan_vulnerabilities(
+    state: State<'_, ThreatDetectionState>,
+    scan_state: State<'_, ScanProgressState>,
+) -> Result<(), String> {
+    println!("=== FULL VULNERABILITY SCAN STARTED ===");
+
+    // Initialize scan progress
+    {
+        let mut progress = scan_state.lock();
+        *progress = ScanProgress {
+            status: ScanStatus::Scanning,
+            scan_type: ScanType::Full,
+            packages_scanned: 0,
+            total_packages: 0,
+            vulnerabilities_found: 0,
+            critical_threats: 0,
+            elapsed_seconds: 0,
+            current_package: None,
+            eta_seconds: None,
+        };
+    }
+
+    // Clone state for background task
+    let scan_state_clone = Arc::clone(&scan_state.inner());
+
+    // Run scan in background
+    tokio::spawn(async move {
+        let start_time = std::time::Instant::now();
+
+        #[cfg(target_os = "linux")]
+        let sensor = match PackageSensor::new_linux() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        #[cfg(target_os = "windows")]
+        let sensor = match PackageSensor::new_windows() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        #[cfg(target_os = "macos")]
+        let sensor = match PackageSensor::new_macos() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("ERROR: Failed to create package sensor: {}", e);
+                let mut progress = scan_state_clone.lock();
+                progress.status = ScanStatus::Error;
+                return;
+            }
+        };
+
+        println!("Getting installed packages inventory...");
+        let packages = sensor.get_inventory();
+        let total = packages.len();
+        println!("Found {} installed packages for full scan", total);
+
+        {
+            let mut progress = scan_state_clone.lock();
+            progress.total_packages = total;
+        }
+
+        if packages.is_empty() {
+            println!("WARNING: No packages found to scan!");
+            let mut progress = scan_state_clone.lock();
+            progress.status = ScanStatus::Complete;
+            return;
+        }
+
+        let scanner = VulnerabilityScanner::new();
+        let mut all_findings = Vec::new();
+
+        // Scan each package with progress updates
+        for (idx, package) in packages.iter().enumerate() {
+            let scanned = idx + 1;
+            let elapsed = start_time.elapsed().as_secs();
+            let avg_time_per_pkg = if idx > 0 { elapsed / idx as u64 } else { 1 };
+            let remaining_pkgs = total - scanned;
+            let eta = avg_time_per_pkg * remaining_pkgs as u64;
+
+            // Update progress
+            {
+                let mut progress = scan_state_clone.lock();
+                progress.packages_scanned = scanned;
+                progress.current_package = Some(format!("{} v{}", package.name, package.version));
+                progress.elapsed_seconds = elapsed;
+                progress.eta_seconds = Some(eta);
+            }
+
+            // Progress logging every 50 packages or for first/last
+            if scanned == 1 || scanned == total || scanned % 50 == 0 {
+                println!("Full Scan Progress: {}/{} packages scanned ({:.1}%)",
+                    scanned, total, (scanned as f64 / total as f64) * 100.0);
+            }
+
+            // Query CVE database
+            let ecosystem = match package.source.as_str() {
+                "dpkg" => "debian",
+                "rpm" => "rhel",
+                "pacman" => "arch",
+                "apk" => "alpine",
+                "windows_update" => "windows",
+                _ => "unknown",
+            };
+
+            let findings = scanner.scan_packages(&[package.clone()]);
+
+            if !findings.is_empty() {
+                println!("  Full Scan: Found {} CVEs in {} v{}", findings.len(), package.name, package.version);
+
+                let critical_count = findings.iter()
+                    .filter(|f| f.cve.severity == CVESeverity::Critical || f.cve.severity == CVESeverity::High)
+                    .count();
+
+                // Update vulnerability counts
+                {
+                    let mut progress = scan_state_clone.lock();
+                    progress.vulnerabilities_found += findings.len();
+                    progress.critical_threats += critical_count;
+                }
+
+                all_findings.extend(findings);
+            }
+
+            // Small delay to make progress visible
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        }
+
+        // Mark scan complete
+        {
+            let mut progress = scan_state_clone.lock();
+            progress.status = ScanStatus::Complete;
+            progress.elapsed_seconds = start_time.elapsed().as_secs();
+            progress.current_package = None;
+            progress.eta_seconds = None;
+        }
+
+        println!("=== FULL SCAN COMPLETE ===");
+        println!("Scanned {} packages", total);
+        println!("Found {} total vulnerabilities", all_findings.len());
+        println!("=========================");
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_vulnerability_statistics() -> Result<ScanStatistics, String> {
+    // For now, run a scan to get statistics
+    // In production, cache scan results
+
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+
+    let scanner = VulnerabilityScanner::new();
+    scanner.scan_packages(&packages);
+
+    Ok(scanner.get_scan_stats())
+}
+
+#[tauri::command]
+async fn get_prioritized_vulnerabilities() -> Result<Vec<PrioritizedFinding>, String> {
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+
+    let scanner = VulnerabilityScanner::new();
+    let findings = scanner.scan_packages(&packages);
+
+    let prioritized = VulnerabilityPrioritizer::prioritize(&findings);
+
+    Ok(prioritized)
+}
+
+#[tauri::command]
+async fn get_fix_now_list() -> Result<Vec<PrioritizedFinding>, String> {
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+
+    let scanner = VulnerabilityScanner::new();
+    let findings = scanner.scan_packages(&packages);
+
+    let prioritized = VulnerabilityPrioritizer::prioritize(&findings);
+    let fix_now = VulnerabilityPrioritizer::get_fix_now_list(&prioritized);
+
+    Ok(fix_now)
+}
+
+#[tauri::command]
+async fn get_vulnerabilities_by_package() -> Result<Vec<PackageVulnerabilityGroup>, String> {
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+
+    let scanner = VulnerabilityScanner::new();
+    let findings = scanner.scan_packages(&packages);
+
+    let prioritized = VulnerabilityPrioritizer::prioritize(&findings);
+    let grouped = VulnerabilityPrioritizer::group_by_package(&prioritized);
+
+    Ok(grouped)
+}
+
+#[tauri::command]
+async fn scan_misconfigurations() -> Result<Vec<Misconfiguration>, String> {
+    let scanner = MisconfigurationScanner::new();
+    let findings = scanner.scan();
+
+    Ok(findings)
+}
+
+#[tauri::command]
+async fn get_exploitable_exposed() -> Result<Vec<VulnerabilityFinding>, String> {
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+
+    let scanner = VulnerabilityScanner::new();
+    let findings = scanner.scan_packages(&packages);
+
+    let exploitable = scanner.get_critical_exploitable();
+
+    Ok(exploitable)
+}
+
+// ========================================
+// Comprehensive System Scanner Commands
+// ========================================
+
+#[tauri::command]
+async fn start_comprehensive_scan(
+    scanner_state: State<'_, ComprehensiveScannerState>,
+) -> Result<(), String> {
+    println!("=== COMPREHENSIVE SYSTEM SCAN STARTED ===");
+
+    // Create new scanner
+    let scanner = ComprehensiveScanner::new();
+
+    // Store scanner in state
+    {
+        let mut state = scanner_state.lock();
+        *state = Some(scanner.clone());
+    }
+
+    // Clone for background task
+    let scanner_clone = scanner.clone();
+
+    // Run scan in background
+    tokio::spawn(async move {
+        let findings = scanner_clone.scan_system().await;
+        println!("=== COMPREHENSIVE SCAN COMPLETE ===");
+        println!("Found {} threats", findings.len());
+        println!("=========================");
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_comprehensive_progress(
+    scanner_state: State<'_, ComprehensiveScannerState>,
+) -> Result<ComprehensiveScanProgress, String> {
+    let state = scanner_state.lock();
+
+    if let Some(scanner) = state.as_ref() {
+        Ok(scanner.get_progress())
+    } else {
+        // Return default progress if no scan is running
+        Ok(ComprehensiveScanProgress {
+            scan_phase: ScanPhase::Initializing,
+            total_items: 0,
+            items_scanned: 0,
+            threats_found: 0,
+            critical_threats: 0,
+            current_item: String::new(),
+            elapsed_seconds: 0,
+            eta_seconds: None,
+        })
+    }
+}
+
+// ========================================
+// AI Analysis Commands
+// ========================================
+
+use ai_analysis::{SecurityAnalyzer, AnalysisResponse, SystemSecurityPosture, ReportConfiguration, ComprehensiveReport, ReportGenerator, ReportExporter};
+use keychain::{KeychainManager, ApiKeyType};
+
+#[tauri::command]
+async fn analyze_vulnerabilities_with_ai() -> Result<AnalysisResponse, String> {
+    println!("Starting AI vulnerability analysis...");
+
+    // Get Claude API key
+    let api_key = KeychainManager::load_api_key_with_fallback(
+        ApiKeyType::Claude,
+        "CLAUDE_API_KEY"
+    );
+
+    // Get vulnerabilities
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+    let scanner = VulnerabilityScanner::new();
+    let vulnerabilities = scanner.scan_packages(&packages);
+
+    if vulnerabilities.is_empty() {
+        return Err("No vulnerabilities found to analyze".to_string());
+    }
+
+    // Analyze with AI
+    let analyzer = SecurityAnalyzer::new(api_key);
+    analyzer.analyze_vulnerabilities(&vulnerabilities).await
+}
+
+#[tauri::command]
+async fn analyze_security_posture() -> Result<SystemSecurityPosture, String> {
+    println!("Starting AI security posture analysis...");
+
+    // Get Claude API key
+    let api_key = KeychainManager::load_api_key_with_fallback(
+        ApiKeyType::Claude,
+        "CLAUDE_API_KEY"
+    );
+
+    // Get all security data
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+    let vuln_scanner = VulnerabilityScanner::new();
+    let vulnerabilities = vuln_scanner.scan_packages(&packages);
+
+    let misconfig_scanner = MisconfigurationScanner::new();
+    let misconfigurations = misconfig_scanner.scan();
+
+    // Analyze with AI
+    let analyzer = SecurityAnalyzer::new(api_key);
+    analyzer.analyze_system_posture(&vulnerabilities, &[], &misconfigurations).await
+}
+
+#[tauri::command]
+async fn generate_remediation_plan() -> Result<AnalysisResponse, String> {
+    println!("Generating AI remediation plan...");
+
+    // Get Claude API key
+    let api_key = KeychainManager::load_api_key_with_fallback(
+        ApiKeyType::Claude,
+        "CLAUDE_API_KEY"
+    );
+
+    // Get vulnerabilities and misconfigurations
+    #[cfg(target_os = "linux")]
+    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
+    let packages = sensor.get_inventory();
+    let scanner = VulnerabilityScanner::new();
+    let vulnerabilities = scanner.scan_packages(&packages);
+
+    let misconfig_scanner = MisconfigurationScanner::new();
+    let misconfigurations = misconfig_scanner.scan();
+
+    // Generate plan with AI
+    let analyzer = SecurityAnalyzer::new(api_key);
+    analyzer.generate_remediation_plan(&vulnerabilities, &misconfigurations).await
+}
+
+// Report Generation Commands
+
+#[tauri::command]
+async fn generate_security_report(config: ReportConfiguration) -> Result<ComprehensiveReport, String> {
+    println!("Generating comprehensive security report...");
+
+    // Get Claude API key if AI analysis is requested
+    let api_key = if config.include_ai_analysis {
+        KeychainManager::load_api_key_with_fallback(
+            ApiKeyType::Claude,
+            "CLAUDE_API_KEY"
+        )
+    } else {
+        None
+    };
+
+    let generator = ReportGenerator::new(api_key);
+    generator.generate_report(config).await
+}
+
+#[tauri::command]
+async fn export_report_html(report: ComprehensiveReport) -> Result<String, String> {
+    println!("Exporting report as HTML...");
+    Ok(ReportExporter::to_html(&report))
+}
+
+#[tauri::command]
+async fn export_report_markdown(report: ComprehensiveReport) -> Result<String, String> {
+    println!("Exporting report as Markdown...");
+    Ok(ReportExporter::to_markdown(&report))
+}
+
+#[tauri::command]
+async fn export_report_json(report: ComprehensiveReport) -> Result<String, String> {
+    println!("Exporting report as JSON...");
+    serde_json::to_string_pretty(&report)
+        .map_err(|e| format!("Failed to serialize report: {}", e))
+}
+
 fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
@@ -347,9 +1170,17 @@ fn main() {
         threat_intel_keys,
     ));
 
+    // Initialize scan progress state
+    let scan_progress = Arc::new(Mutex::new(ScanProgress::default()));
+
+    // Initialize comprehensive scanner state
+    let comprehensive_scanner = Arc::new(Mutex::new(None::<ComprehensiveScanner>));
+
     tauri::Builder::default()
         .manage(service)
         .manage(threat_engine)
+        .manage(scan_progress)
+        .manage(comprehensive_scanner)
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -384,7 +1215,42 @@ fn main() {
             get_api_key,
             delete_api_key,
             has_api_key,
-            get_configured_api_keys
+            get_configured_api_keys,
+            // Network Security
+            get_network_connections,
+            get_top_talkers,
+            get_connection_stats,
+            analyze_dns_query,
+            classify_ip,
+            get_segment_policies,
+            update_segment_policy,
+            lookup_ip_info,
+            preview_isolation_action,
+            execute_isolation_action,
+            rollback_isolation,
+            get_isolation_history,
+            // Vulnerability Scanning
+            get_scan_progress,
+            start_quick_scan,
+            scan_vulnerabilities,
+            get_vulnerability_statistics,
+            get_prioritized_vulnerabilities,
+            get_fix_now_list,
+            get_vulnerabilities_by_package,
+            scan_misconfigurations,
+            get_exploitable_exposed,
+            // Comprehensive System Scanner
+            start_comprehensive_scan,
+            get_comprehensive_progress,
+            // AI Analysis
+            analyze_vulnerabilities_with_ai,
+            analyze_security_posture,
+            generate_remediation_plan,
+            // Security Reports
+            generate_security_report,
+            export_report_html,
+            export_report_markdown,
+            export_report_json
         ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())

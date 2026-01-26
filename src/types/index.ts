@@ -282,3 +282,310 @@ export interface HighPerfMetrics {
   asics: AsicMetrics[];
   quantum_processors: QuantumProcessorMetrics[];
 }
+
+// Threat Detection Types
+export type ThreatSeverity = 'Critical' | 'High' | 'Medium' | 'Low';
+export type ThreatCategory = 'Malware' | 'SuspiciousActivity' | 'PolicyViolation' | 'NetworkThreat' | 'Vulnerability' | 'Other';
+
+export interface ThreatEvent {
+  id: string;
+  timestamp: string;
+  severity: ThreatSeverity;
+  category: ThreatCategory;
+  title: string;
+  description: string;
+  confidence: number;
+  process_name?: string;
+  process_path?: string;
+  process_id?: number;
+  user?: string;
+  file_path?: string;
+  file_hash?: string;
+  network_source?: string;
+  network_destination?: string;
+  network_port?: number;
+  mitre_tactics: string[];
+  mitre_techniques: string[];
+  recommended_actions: string[];
+  ai_analysis?: string;
+  threat_intel?: ThreatIntelligence;
+}
+
+export interface ThreatIntelligence {
+  virustotal_score?: number;
+  virustotal_link?: string;
+  abuseipdb_score?: number;
+  alienvault_pulses?: number;
+}
+
+export interface Alert {
+  id: string;
+  threat_event: ThreatEvent;
+  acknowledged: boolean;
+  acknowledged_by?: string;
+  acknowledged_at?: string;
+  notes: AlertNote[];
+  created_at: string;
+}
+
+export interface AlertNote {
+  id: string;
+  user: string;
+  content: string;
+  created_at: string;
+}
+
+export interface ThreatStats {
+  total_threats: number;
+  by_severity: {
+    Critical: number;
+    High: number;
+    Medium: number;
+    Low: number;
+  };
+  by_category: {
+    Malware: number;
+    SuspiciousActivity: number;
+    PolicyViolation: number;
+    NetworkThreat: number;
+    Vulnerability: number;
+    Other: number;
+  };
+  last_updated: string;
+}
+
+// ========================================
+// Network Security Types
+// ========================================
+
+export interface NetworkConnectionRecord {
+  id: string;
+  timestamp: string;
+  process_id?: number;
+  process_name?: string;
+  local_ip?: string;
+  local_port?: number;
+  remote_ip: string;
+  remote_port: number;
+  protocol: string;
+  direction: string;
+  bytes_sent?: number;
+  bytes_received?: number;
+  duration_seconds?: number;
+  state?: string;
+}
+
+export interface TopTalker {
+  process_name: string;
+  process_id?: number;
+  connection_count: number;
+  total_bytes_sent: number;
+  total_bytes_received: number;
+  unique_destinations: number;
+  suspicious_connections: number;
+}
+
+export interface ConnectionStats {
+  total_connections: number;
+  unique_processes: number;
+  unique_destinations: number;
+  suspicious_connections: number;
+  top_ports: [number, number][];
+  top_protocols: [string, number][];
+}
+
+export interface DNSQuery {
+  id: string;
+  timestamp: string;
+  process_pid?: number;
+  process_name: string;
+  query: string;
+  query_type: string;
+  response_code?: string;
+  is_suspicious: boolean;
+  suspicion_reasons: string[];
+  entropy: number;
+  subdomain_count: number;
+}
+
+export type NetworkSegment = 'LAN' | 'Guest' | 'IoT' | 'Work' | 'Servers' | 'Internet' | 'Unknown';
+
+export interface SegmentPolicy {
+  segment: NetworkSegment;
+  blocked_asns: number[];
+  blocked_countries: string[];
+  allowed_ports?: number[];
+  blocked_ports: number[];
+  restrict_lateral: boolean;
+  block_internet: boolean;
+}
+
+export interface GeoIPInfo {
+  ip: string;
+  country_code?: string;
+  country_name?: string;
+  city?: string;
+  asn?: number;
+  asn_org?: string;
+  is_known_vpn: boolean;
+  is_tor: boolean;
+  is_hosting: boolean;
+  is_proxy: boolean;
+}
+
+export type IsolationAction =
+  | { TemporaryIsolate: { hostname: string; duration_minutes: number } }
+  | { BlockDestination: { ip: string; duration_minutes?: number } }
+  | { BlockASN: { asn: number; duration_minutes?: number } }
+  | { BlockPort: { port: number; protocol: string } }
+  | { BlockDomain: { domain: string; duration_minutes?: number } };
+
+export interface ActionPreview {
+  action: IsolationAction;
+  affected_connections: number;
+  affected_processes: string[];
+  will_break: string[];
+  reversible: boolean;
+  recommended: boolean;
+}
+
+export interface ActionResult {
+  action_id: string;
+  action: IsolationAction;
+  executed_at: string;
+  executed_by: string;
+  success: boolean;
+  rollback_info?: RollbackInfo;
+  error?: string;
+}
+
+export interface RollbackInfo {
+  action_id: string;
+  original_rules: string[];
+  expires_at?: string;
+}
+
+export interface IsolationRecord {
+  id: string;
+  action: IsolationAction;
+  executed_at: string;
+  executed_by: string;
+  expires_at?: string;
+  rolled_back_at?: string;
+  status: 'Active' | 'Expired' | 'RolledBack';
+}
+
+// ========================================
+// Vulnerability Scanning Types
+// ========================================
+
+export type CVESeverity = 'None' | 'Low' | 'Medium' | 'High' | 'Critical';
+
+export interface CVE {
+  id: string;
+  description: string;
+  cvss_score?: number;
+  cvss_vector?: string;
+  severity: CVESeverity;
+  published_date: string;
+  modified_date: string;
+  affected_packages: AffectedPackage[];
+  references: string[];
+  cisa_kev: boolean;
+  has_exploit: boolean;
+  epss_score?: number;
+}
+
+export interface AffectedPackage {
+  package_name: string;
+  ecosystem: string;
+  affected_versions: VersionRange[];
+  fixed_version?: string;
+}
+
+export interface VersionRange {
+  introduced?: string;
+  fixed?: string;
+}
+
+export interface Package {
+  name: string;
+  version: string;
+  architecture?: string;
+  source: string;
+}
+
+export type FindingStatus = 'New' | 'Acknowledged' | 'InRemediation' | 'Resolved' | 'Accepted';
+
+export type RemediationAction =
+  | { Upgrade: { to_version: string; package_manager_command: string } }
+  | { Patch: { description: string } }
+  | { Mitigate: { steps: string[] } }
+  | 'NoFixAvailable';
+
+export interface VulnerabilityFinding {
+  id: string;
+  cve: CVE;
+  affected_package: Package;
+  risk_score: number;
+  exploitable: boolean;
+  exposed: boolean;
+  fix_available: boolean;
+  recommended_action: RemediationAction;
+  discovered_at: string;
+  status: FindingStatus;
+}
+
+export interface ScanStatistics {
+  total_vulnerabilities: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  exploitable: number;
+  fix_available: number;
+  last_scan?: string;
+}
+
+export type PriorityLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Info';
+
+export interface PrioritizedFinding {
+  finding: VulnerabilityFinding;
+  priority_score: number;
+  priority_level: PriorityLevel;
+  rationale: string[];
+}
+
+export interface PackageVulnerabilityGroup {
+  package_name: string;
+  vulnerability_count: number;
+  highest_priority: number;
+  findings: PrioritizedFinding[];
+}
+
+export type MisconfigCategory =
+  | 'Firewall'
+  | 'Encryption'
+  | 'Authentication'
+  | 'Services'
+  | 'Permissions'
+  | 'Auditing'
+  | 'Updates'
+  | 'Network';
+
+export type MisconfigSeverity = 'Info' | 'Low' | 'Medium' | 'High' | 'Critical';
+
+export type MisconfigStatus = 'New' | 'Acknowledged' | 'InRemediation' | 'Resolved' | 'Accepted';
+
+export interface Misconfiguration {
+  id: string;
+  category: MisconfigCategory;
+  title: string;
+  description: string;
+  severity: MisconfigSeverity;
+  affected_component: string;
+  discovered_at: string;
+  remediation_steps: string[];
+  status: MisconfigStatus;
+  cis_benchmark_ref?: string;
+}
