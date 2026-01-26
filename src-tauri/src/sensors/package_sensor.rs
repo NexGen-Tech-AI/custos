@@ -368,15 +368,11 @@ impl EventCollector for PackageSensor {
         #[cfg(target_os = "linux")]
         {
             if self.package_manager == PackageManager::None {
-                println!("No supported package manager detected");
                 return Ok(());
             }
 
-            println!("Detected package manager: {:?}", self.package_manager);
-
             // Initialize known packages
             let packages = self.get_packages();
-            println!("Found {} installed packages", packages.len());
 
             let mut known = self.known_packages.lock();
             for package in packages {
@@ -412,7 +408,6 @@ impl EventCollector for PackageSensor {
 
                         if !known.contains_key(&key) {
                             // New package detected
-                            println!("New package installed: {} ({})", package.name, package.version);
                             let event = PackageSensor::create_package_event(&package);
                             events.lock().push(event);
                             known.insert(key, package);
@@ -420,8 +415,6 @@ impl EventCollector for PackageSensor {
                             // Check for version changes (updates)
                             if let Some(existing) = known.get(&key) {
                                 if existing.version != package.version {
-                                    println!("Package updated: {} ({} -> {})",
-                                        package.name, existing.version, package.version);
                                     // Update the stored version
                                     known.insert(key.clone(), package.clone());
                                 }
@@ -434,11 +427,8 @@ impl EventCollector for PackageSensor {
 
         #[cfg(target_os = "windows")]
         {
-            println!("Initializing Windows KB inventory sensor");
-
             // Initialize known KBs
             let packages = self.get_packages();
-            println!("Found {} installed Windows updates", packages.len());
 
             let mut known = self.known_packages.lock();
             for package in packages {
@@ -466,7 +456,6 @@ impl EventCollector for PackageSensor {
 
                         if !known.contains_key(&key) {
                             // New KB detected
-                            println!("New Windows update installed: {} ({})", package.name, package.version);
                             let event = PackageSensor::create_package_event(&package);
                             events.lock().push(event);
                             known.insert(key, package);

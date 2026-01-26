@@ -28,10 +28,7 @@ impl AIAnalyzer {
 
         match self.call_claude_api(&prompt).await {
             Ok(response) => Some(self.parse_analysis_response(&response)),
-            Err(e) => {
-                eprintln!("AI analysis failed: {}", e);
-                None
-            }
+            Err(_) => None
         }
     }
 
@@ -81,10 +78,7 @@ CONFIDENCE: [0.0-1.0]"#,
 
         match self.call_claude_api(&prompt).await {
             Ok(response) => Some(self.parse_analysis_response(&response)),
-            Err(e) => {
-                eprintln!("AI process analysis failed: {}", e);
-                None
-            }
+            Err(_) => None
         }
     }
 

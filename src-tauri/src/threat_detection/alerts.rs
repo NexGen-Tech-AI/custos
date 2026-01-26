@@ -138,23 +138,15 @@ impl AlertManager {
 
     /// Auto-remediate threat
     async fn auto_remediate(&self, event: &ThreatEvent) {
-        if let Some(process_id) = event.process_id {
+        if let Some(_process_id) = event.process_id {
             match event.severity {
                 ThreatSeverity::Critical => {
                     // Kill process for critical threats
-                    println!("AUTO-REMEDIATE: Terminating process {} (PID: {})",
-                        event.process_name.as_ref().unwrap_or(&"Unknown".to_string()),
-                        process_id
-                    );
                     // In production, actually kill the process
                     // Self::kill_process(process_id);
                 }
                 ThreatSeverity::High => {
                     // Suspend or isolate process
-                    println!("AUTO-REMEDIATE: Isolating process {} (PID: {})",
-                        event.process_name.as_ref().unwrap_or(&"Unknown".to_string()),
-                        process_id
-                    );
                     // In production, suspend process or limit its access
                 }
                 _ => {}
@@ -263,36 +255,8 @@ struct ConsoleAlertHandler;
 
 #[async_trait::async_trait]
 impl AlertHandler for ConsoleAlertHandler {
-    async fn handle_alert(&self, alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
-        let event = &alert.threat_event;
-
-        println!("\n{}", "=".repeat(80));
-        println!("🚨 SECURITY ALERT: {} - {:?}", event.title, event.severity);
-        println!("{}", "=".repeat(80));
-        println!("Description: {}", event.description);
-        println!("Category: {:?}", event.category);
-        println!("Detection: {:?}", event.detection_method);
-
-        if let Some(process) = &event.process_name {
-            println!("Process: {} (PID: {})", process, event.process_id.unwrap_or(0));
-        }
-
-        if !event.mitre_tactics.is_empty() {
-            println!("MITRE Tactics: {}", event.mitre_tactics.join(", "));
-        }
-
-        println!("Confidence: {:.0}%", event.confidence * 100.0);
-        println!("Timestamp: {}", event.timestamp);
-
-        if !event.recommended_actions.is_empty() {
-            println!("\nRecommended Actions:");
-            for (i, action) in event.recommended_actions.iter().enumerate() {
-                println!("  {}. {}", i + 1, action);
-            }
-        }
-
-        println!("{}\n", "=".repeat(80));
-
+    async fn handle_alert(&self, _alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
+        // Console output disabled for production
         Ok(())
     }
 }
@@ -346,10 +310,9 @@ pub struct EmailAlertHandler {
 
 #[async_trait::async_trait]
 impl AlertHandler for EmailAlertHandler {
-    async fn handle_alert(&self, alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
+    async fn handle_alert(&self, _alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
         // In production, implement actual email sending
         // Using lettre crate or similar
-        println!("EMAIL ALERT: Would send email to {:?}", self.to);
         Ok(())
     }
 }
@@ -395,9 +358,8 @@ pub struct DesktopNotificationHandler;
 
 #[async_trait::async_trait]
 impl AlertHandler for DesktopNotificationHandler {
-    async fn handle_alert(&self, alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
+    async fn handle_alert(&self, _alert: &Alert) -> Result<(), Box<dyn std::error::Error>> {
         // In production, use notify-rust or similar crate
-        println!("DESKTOP NOTIFICATION: {}", alert.threat_event.title);
         Ok(())
     }
 }
