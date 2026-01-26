@@ -12,8 +12,6 @@ import { Shield, Network, Search, Sparkles, FileText, Settings } from 'lucide-re
 import './App.css';
 
 export default function AppWrapper() {
-  console.log('=== AppWrapper component loaded ===');
-
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -23,17 +21,13 @@ export default function AppWrapper() {
   const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
-    console.log('AppWrapper useEffect running');
     const init = async () => {
       try {
-        console.log('Starting initialization...');
         document.title = 'System Monitor';
 
         // Load system info
         try {
-          console.log('Calling get_system_info...');
           const info = await invoke<SystemInfo>('get_system_info');
-          console.log('System info received:', info);
           setSystemInfo(info);
         } catch (err) {
           console.error('Failed to load system info:', err);
@@ -44,10 +38,8 @@ export default function AppWrapper() {
 
         // Start monitoring
         try {
-          console.log('Starting monitoring...');
           await invoke('start_monitoring');
           setIsMonitoring(true);
-          console.log('Monitoring started successfully');
         } catch (err) {
           console.error('Failed to start monitoring:', err);
           setError(`Failed to start monitoring: ${err}`);
@@ -57,9 +49,7 @@ export default function AppWrapper() {
 
         // Get initial metrics
         try {
-          console.log('Getting initial metrics...');
           const initialMetrics = await invoke<SystemMetrics>('get_current_metrics');
-          console.log('Initial metrics received:', initialMetrics);
           if (initialMetrics) {
             setMetrics(initialMetrics);
           }
@@ -68,7 +58,6 @@ export default function AppWrapper() {
         }
 
         // Set up polling for metrics
-        console.log('Setting up polling for metrics...');
         const pollInterval = setInterval(async () => {
           try {
             const currentMetrics = await invoke<SystemMetrics>('get_current_metrics');
@@ -81,11 +70,9 @@ export default function AppWrapper() {
         }, 3000); // Poll every 3 seconds
 
         setLoading(false);
-        console.log('Initialization completed successfully');
 
         // Return cleanup function
         return () => {
-          console.log('Cleaning up...');
           clearInterval(pollInterval);
           invoke('stop_monitoring').catch(console.error);
         };
@@ -113,12 +100,6 @@ export default function AppWrapper() {
       setError(`Failed to toggle monitoring: ${err}`);
     }
   };
-
-  console.log('=== AppWrapper Render ===');
-  console.log('Loading:', loading);
-  console.log('SystemInfo:', systemInfo ? 'LOADED' : 'NULL', systemInfo);
-  console.log('Metrics:', metrics ? 'LOADED' : 'NULL');
-  console.log('Error:', error);
 
   const renderSection = () => {
     switch (activeSection) {

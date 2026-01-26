@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pure HTML Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #content {
+            text-align: center;
+        }
+        h1 {
+            font-size: 72px;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        p {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>✅ HTML WORKS!</h1>
+        <p id="js-test">JavaScript: <span style="color: #ff0000;">NOT LOADED</span></p>
+    </div>
+    <script>
+        console.log('===== JAVASCRIPT IS RUNNING =====');
+        document.getElementById('js-test').innerHTML = 'JavaScript: <span style="color: #00ff00;">✓ WORKING</span>';
+        document.body.style.background = 'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)';
+    </script>
+</body>
+</html>

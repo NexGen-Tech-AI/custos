@@ -1,7 +1,7 @@
 # 🔧 Rust System Monitor
 
-A **real-time, cross-platform system monitoring application** built with **Tauri v2** (Rust backend + React frontend).  
-Collects comprehensive CPU, memory, GPU, disk, network, and process metrics using a clean architecture and extensible backend. Designed as a lightweight, open-source foundation for system diagnostics, embedded monitoring tools, or performance dashboards.
+A **real-time, cross-platform system monitoring application** built with **Tauri v2** (Rust backend + React frontend).
+Collects comprehensive CPU, memory, GPU, disk, network, and process metrics using a clean architecture and extensible backend. Designed as a professional-grade foundation for system diagnostics, embedded monitoring tools, or performance dashboards.
 
 ---
 
@@ -18,7 +18,7 @@ Collects comprehensive CPU, memory, GPU, disk, network, and process metrics usin
 - **Process monitoring** with top processes by CPU/memory usage
 - **Network monitoring** with real-time bandwidth tracking
 - **Disk monitoring** with I/O rate tracking
-- **Open Source** under the MIT License
+- **Enterprise-grade** threat detection and security monitoring
 
 ---
 
@@ -216,21 +216,24 @@ RUST_LOG=debug pnpm run tauri dev
 
 ## 🪪 License
 
-This project is licensed under the MIT License.
-You're free to use, modify, and distribute it — just keep the license notice intact.
+**Proprietary Software**
+Copyright (c) 2026 NexGen Tech AI. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use is strictly prohibited. See the LICENSE file for complete terms and conditions.
 
 ---
 
-## 🙋 Contributing
+## 🙋 Support
 
-Pull requests and suggestions are welcome!
-Open an issue or fork the project and submit a PR — let's build something great.
+For technical support, licensing inquiries, or feature requests, please contact:
+- Email: timothy@riffeandassociates.com
+- Website: https://www.riffe.tech
 
-### Development Guidelines
-- **No mock data**: All features must work with real system data
-- **Real-time updates**: All metrics should update live
-- **Cross-platform**: Ensure compatibility across Windows, macOS, and Linux
-- **Performance**: Optimize for minimal system impact
+### Technical Specifications
+- **No mock data**: All features work with real system data
+- **Real-time updates**: All metrics update live
+- **Cross-platform**: Compatible across Windows, macOS, and Linux
+- **Performance**: Optimized for minimal system impact
 
 ---
 
