@@ -423,8 +423,8 @@ mod tests {
 
     #[test]
     fn test_batch_insert() {
-        let conn = Connection::open_in_memory().unwrap();
-        schema::create_tables(&conn).unwrap();
+        let conn = Connection::open_in_memory().expect("Failed to create in-memory database for test");
+        schema::create_tables(&conn).expect("Failed to create test tables");
 
         let events = vec![
             SecurityEvent::new(EventType::ProcessCreated),
@@ -433,23 +433,23 @@ mod tests {
 
         assert!(batch_insert_events(&conn, &events).is_ok());
 
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0)).unwrap();
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0)).expect("Failed to query event count");
         assert_eq!(count, 2);
     }
 
     #[test]
     fn test_event_statistics() {
-        let conn = Connection::open_in_memory().unwrap();
-        schema::create_tables(&conn).unwrap();
+        let conn = Connection::open_in_memory().expect("Failed to create in-memory database for test");
+        schema::create_tables(&conn).expect("Failed to create test tables");
 
         // Insert some test data
         let events = vec![
             SecurityEvent::new(EventType::ProcessCreated),
             SecurityEvent::new(EventType::NetworkConnection),
         ];
-        batch_insert_events(&conn, &events).unwrap();
+        batch_insert_events(&conn, &events).expect("Failed to insert test events");
 
-        let stats = get_event_statistics(&conn).unwrap();
+        let stats = get_event_statistics(&conn).expect("Failed to get statistics");
         assert_eq!(stats.total_events, 2);
     }
 }

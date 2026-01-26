@@ -193,7 +193,7 @@ impl KernelMonitor {
     fn collect_linux_kernel_metrics() -> Result<KernelMetrics, KernelMonitorError> {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch")
             .as_nanos() as u64;
 
         // Collect hardware performance counters via perf_event
@@ -426,7 +426,7 @@ impl KernelMonitor {
     fn collect_windows_kernel_metrics() -> Result<KernelMetrics, KernelMonitorError> {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch")
             .as_nanos() as u64;
 
         // Collect Windows Performance Counters

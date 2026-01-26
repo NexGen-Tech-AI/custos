@@ -387,7 +387,7 @@ impl HighPerfMonitoringService {
     fn collect_metrics_high_perf(previous_stats: &DashMap<String, (u64, u64)>) -> HighPerfMetrics {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch")
             .as_nanos() as u64;
 
         // Use sysinfo with minimal refresh for high performance
@@ -528,7 +528,7 @@ impl HighPerfMonitoringService {
             .collect();
 
         // Sort by CPU usage and take top 20
-        processes.sort_by(|a, b| b.cpu_usage_percent.partial_cmp(&a.cpu_usage_percent).unwrap());
+        processes.sort_by(|a, b| b.cpu_usage_percent.partial_cmp(&a.cpu_usage_percent).expect("CPU usage comparison failed"));
         processes.truncate(20);
         
         processes

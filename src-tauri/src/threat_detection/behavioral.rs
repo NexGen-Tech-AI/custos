@@ -89,7 +89,7 @@ impl BehavioralAnalyzer {
     }
 
     fn get_or_create_baseline(&self, process_name: &str) -> BehavioralBaseline {
-        let mut baselines = self.baselines.lock().unwrap();
+        let mut baselines = self.baselines.lock().expect("Baselines mutex poisoned");
 
         baselines
             .entry(process_name.to_string())
@@ -247,7 +247,7 @@ impl BehavioralAnalyzer {
             return None;
         }
 
-        let parent = parent_process.unwrap();
+        let parent = parent_process.expect("Parent process should be Some after is_none check");
 
         // Check if this is an unusual parent
         if !baseline.typical_parent_processes.iter().any(|p| p == parent) {
@@ -362,7 +362,7 @@ impl BehavioralAnalyzer {
         file_operations: u64,
         parent_process: Option<&str>,
     ) {
-        let mut baselines = self.baselines.lock().unwrap();
+        let mut baselines = self.baselines.lock().expect("Baselines mutex poisoned");
 
         if let Some(baseline) = baselines.get_mut(process_name) {
             let count = baseline.observation_count as f64;
@@ -396,11 +396,11 @@ impl BehavioralAnalyzer {
 
     /// Export baselines for persistence
     pub fn export_baselines(&self) -> HashMap<String, BehavioralBaseline> {
-        self.baselines.lock().unwrap().clone()
+        self.baselines.lock().expect("Baselines mutex poisoned").clone()
     }
 
     /// Import baselines from storage
     pub fn import_baselines(&self, baselines: HashMap<String, BehavioralBaseline>) {
-        *self.baselines.lock().unwrap() = baselines;
+        *self.baselines.lock().expect("Baselines mutex poisoned") = baselines;
     }
 }

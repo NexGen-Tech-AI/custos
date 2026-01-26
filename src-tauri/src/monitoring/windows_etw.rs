@@ -74,7 +74,7 @@ impl WindowsEtwMonitor {
     pub fn collect_metrics(&self) -> Result<WindowsEtwMetrics, Box<dyn std::error::Error>> {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch")
             .as_nanos() as u64;
 
         #[cfg(target_os = "windows")]

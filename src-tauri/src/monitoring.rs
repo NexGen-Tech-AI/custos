@@ -798,7 +798,7 @@ impl MonitoringService {
             })
             .collect();
 
-        processes.sort_by(|a, b| b.cpu_usage_percent.partial_cmp(&a.cpu_usage_percent).unwrap());
+        processes.sort_by(|a, b| b.cpu_usage_percent.partial_cmp(&a.cpu_usage_percent).expect("CPU usage comparison failed"));
         processes.truncate(20);
 
         // Get system info without acquiring another lock (avoid deadlock)
@@ -818,7 +818,7 @@ impl MonitoringService {
         Ok(SystemMetrics {
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .expect("System time before UNIX epoch")
                 .as_secs()
                 .to_string(),
             system_info,

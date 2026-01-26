@@ -355,17 +355,17 @@ mod tests {
 
     #[test]
     fn test_schema_creation() {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn = Connection::open_in_memory().expect("Failed to create in-memory database for test");
         assert!(create_tables(&conn).is_ok());
 
         // Verify tables exist
         let tables: Vec<String> = conn
             .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-            .unwrap()
+            .expect("Failed to prepare SQL statement")
             .query_map([], |row| row.get(0))
-            .unwrap()
+            .expect("Failed to query tables")
             .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .expect("Failed to collect table names");
 
         assert!(tables.contains(&"events".to_string()));
         assert!(tables.contains(&"incidents".to_string()));
@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_schema_idempotent() {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn = Connection::open_in_memory().expect("Failed to create in-memory database for test");
         assert!(create_tables(&conn).is_ok());
         // Should succeed on second call (IF NOT EXISTS)
         assert!(create_tables(&conn).is_ok());
