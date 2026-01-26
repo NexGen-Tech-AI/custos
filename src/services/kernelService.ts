@@ -82,7 +82,6 @@ export class KernelMonitoringService {
       }, 1000); // Update every second
 
       this.isListening = true;
-      console.log('Kernel monitoring started successfully (mock mode)');
     } catch (error) {
       console.error('Failed to start kernel monitoring:', error);
       throw error;
@@ -101,7 +100,6 @@ export class KernelMonitoringService {
 
     this.isListening = false;
     this.metricsCallback = undefined;
-    console.log('Kernel monitoring stopped');
   }
 
   async getLatestMetrics(): Promise<KernelMetrics | null> {

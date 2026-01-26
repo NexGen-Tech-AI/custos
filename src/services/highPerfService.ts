@@ -8,7 +8,6 @@ try {
   invoke = tauriApi.invoke;
   listen = eventApi.listen;
 } catch (error) {
-  console.warn('Tauri API not available, using mock implementations');
   invoke = async () => null;
   listen = async () => () => {};
 }
@@ -59,7 +58,6 @@ export class HighPerfMonitoringService {
     try {
       await invoke('start_high_perf_monitoring');
       this.isRunning = true;
-      console.log('High-performance monitoring started');
     } catch (error) {
       console.error('Error starting high-performance monitoring:', error);
       throw error;
@@ -75,7 +73,6 @@ export class HighPerfMonitoringService {
       await invoke('stop_monitoring');
       this.isRunning = false;
       this.metricsCallback = undefined;
-      console.log('High-performance monitoring stopped');
     } catch (error) {
       console.error('Error stopping high-performance monitoring:', error);
     }

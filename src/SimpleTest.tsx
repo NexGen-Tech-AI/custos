@@ -1,6 +1,4 @@
 export default function SimpleTest() {
-  console.log('=== SIMPLE TEST COMPONENT RENDERING ===');
-
   return (
     <div style={{
       width: '100vw',

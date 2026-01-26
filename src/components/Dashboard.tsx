@@ -8,6 +8,5 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ systemInfo, metrics }) => {
-  console.log('Dashboard rendering with:', { systemInfo: !!systemInfo, metrics: !!metrics });
   return <DraggableDashboard systemInfo={systemInfo} metrics={metrics} />;
 };
