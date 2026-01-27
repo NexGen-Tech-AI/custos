@@ -51,6 +51,8 @@ md5 = "0.7"  # MD5 hashing
 rand = "0.8"  # Random number generation
 base64 = "0.21"  # Base64 encoding
 log = "0.4"  # Logging
+# YARA alternative - using regex-based pattern matching (no system deps required)
+# yara = "0.29"  # Requires libyara-dev system package
 
 [features]
 default = []
