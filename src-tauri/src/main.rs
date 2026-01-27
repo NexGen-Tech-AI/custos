@@ -8,6 +8,9 @@ mod keychain;
 mod network;
 mod vulnerability;
 mod ai_analysis;
+mod hardware_detector;
+mod ollama;
+mod malware;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
@@ -81,6 +84,9 @@ impl Default for ScanProgress {
 
 type ScanProgressState = Arc<Mutex<ScanProgress>>;
 type ComprehensiveScannerState = Arc<Mutex<Option<ComprehensiveScanner>>>;
+
+// Cached vulnerability findings from last scan
+type VulnerabilityFindingsCache = Arc<Mutex<Vec<VulnerabilityFinding>>>;
 
 #[tauri::command]
 async fn get_system_info(state: State<'_, ServiceState>) -> Result<SystemInfo, String> {
@@ -483,6 +489,7 @@ async fn get_scan_progress(scan_state: State<'_, ScanProgressState>) -> Result<S
 #[tauri::command]
 async fn start_quick_scan(
     scan_state: State<'_, ScanProgressState>,
+    findings_cache: State<'_, VulnerabilityFindingsCache>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     println!("=== QUICK SCAN STARTED ===");
@@ -505,6 +512,7 @@ async fn start_quick_scan(
 
     // Clone state for background task
     let scan_state_clone = Arc::clone(&scan_state.inner());
+    let findings_cache_clone = Arc::clone(&findings_cache.inner());
 
     // Run scan in background
     tokio::spawn(async move {
@@ -612,7 +620,7 @@ async fn start_quick_scan(
                 _ => "unknown",
             };
 
-            let findings = scanner.scan_packages(&[package.clone()]);
+            let findings = scanner.scan_packages_async(&[package.clone()]).await;
 
             if !findings.is_empty() {
                 println!("  Quick Scan: Found {} CVEs in {} v{}", findings.len(), package.name, package.version);
@@ -633,6 +641,13 @@ async fn start_quick_scan(
 
             // Small delay to make progress visible
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        // Save findings to cache
+        {
+            let mut cache = findings_cache_clone.lock();
+            *cache = all_findings.clone();
+            println!("Saved {} findings to cache", all_findings.len());
         }
 
         // Mark scan complete
@@ -769,7 +784,7 @@ async fn scan_vulnerabilities(
                 _ => "unknown",
             };
 
-            let findings = scanner.scan_packages(&[package.clone()]);
+            let findings = scanner.scan_packages_async(&[package.clone()]).await;
 
             if !findings.is_empty() {
                 println!("  Full Scan: Found {} CVEs in {} v{}", findings.len(), package.name, package.version);
@@ -876,21 +891,21 @@ async fn get_fix_now_list() -> Result<Vec<PrioritizedFinding>, String> {
 }
 
 #[tauri::command]
-async fn get_vulnerabilities_by_package() -> Result<Vec<PackageVulnerabilityGroup>, String> {
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+async fn get_vulnerabilities_by_package(
+    findings_cache: State<'_, VulnerabilityFindingsCache>,
+) -> Result<Vec<PackageVulnerabilityGroup>, String> {
+    // Return cached findings from last scan
+    let findings = {
+        let cache = findings_cache.lock();
+        cache.clone()
+    };
 
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+    // If cache is empty, return empty result (scan hasn't been run yet)
+    if findings.is_empty() {
+        return Ok(Vec::new());
+    }
 
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
-    let packages = sensor.get_inventory();
-
-    let scanner = VulnerabilityScanner::new();
-    let findings = scanner.scan_packages(&packages);
-
+    // Group and prioritize the cached findings
     let prioritized = VulnerabilityPrioritizer::prioritize(&findings);
     let grouped = VulnerabilityPrioritizer::group_by_package(&prioritized);
 
@@ -1023,6 +1038,40 @@ async fn analyze_vulnerabilities_with_ai() -> Result<AnalysisResponse, String> {
 }
 
 #[tauri::command]
+async fn analyze_vulnerability_ai(
+    cve_id: String,
+    package_name: String,
+    package_version: String,
+    severity: String,
+    summary: String,
+    question: String,
+) -> Result<String, String> {
+    println!("AI analyzing {} with question: {}", cve_id, question);
+
+    // Get Claude API key
+    let api_key = KeychainManager::load_api_key_with_fallback(
+        ApiKeyType::Claude,
+        "CLAUDE_API_KEY"
+    );
+
+    if api_key.is_none() {
+        return Err("Claude API key not configured. Please set up your API key in Settings.".to_string());
+    }
+
+    // Create analyzer and generate response
+    let analyzer = SecurityAnalyzer::new(api_key);
+
+    // Build context prompt
+    let context = format!(
+        "Vulnerability: {}\nPackage: {} version {}\nSeverity: {}\nDescription: {}\n\nUser Question: {}",
+        cve_id, package_name, package_version, severity, summary, question
+    );
+
+    // Use AI to analyze and respond
+    analyzer.chat_about_vulnerability(&context).await
+}
+
+#[tauri::command]
 async fn analyze_security_posture() -> Result<SystemSecurityPosture, String> {
     println!("Starting AI security posture analysis...");
 
@@ -1125,6 +1174,93 @@ async fn export_report_json(report: ComprehensiveReport) -> Result<String, Strin
         .map_err(|e| format!("Failed to serialize report: {}", e))
 }
 
+// ========================================
+// Hardware Detection & Tier System
+// ========================================
+
+use hardware_detector::{HardwareDetector, HardwareCapabilities, TierLevel};
+use ollama::{OllamaClient, OllamaStatus};
+
+#[tauri::command]
+async fn detect_hardware() -> Result<HardwareCapabilities, String> {
+    println!("Detecting hardware capabilities...");
+    HardwareDetector::detect()
+}
+
+#[tauri::command]
+async fn get_eligible_tiers() -> Result<Vec<(String, Vec<String>)>, String> {
+    println!("Checking eligible tiers...");
+    let capabilities = HardwareDetector::detect()?;
+    let eligible = HardwareDetector::get_eligible_tiers(&capabilities);
+
+    // Convert TierLevel enum to String for frontend
+    let result = eligible.into_iter()
+        .map(|(tier, warnings)| {
+            let tier_name = match tier {
+                TierLevel::Standard => "standard",
+                TierLevel::Pro => "pro",
+                TierLevel::Elite => "elite",
+            };
+            (tier_name.to_string(), warnings)
+        })
+        .collect();
+
+    Ok(result)
+}
+
+#[tauri::command]
+async fn check_ollama_status() -> Result<OllamaStatus, String> {
+    println!("Checking Ollama status...");
+    let client = OllamaClient::new();
+    Ok(client.check_status().await)
+}
+
+#[tauri::command]
+async fn list_ollama_models() -> Result<Vec<String>, String> {
+    println!("Listing Ollama models...");
+    let client = OllamaClient::new();
+    let models = client.list_models().await?;
+    Ok(models.into_iter().map(|m| m.name).collect())
+}
+
+#[tauri::command]
+async fn pull_ollama_model(model_name: String) -> Result<(), String> {
+    println!("Pulling Ollama model: {}", model_name);
+    let client = OllamaClient::new();
+    client.pull_model(&model_name).await
+}
+
+#[tauri::command]
+async fn test_ollama_model(model_name: String) -> Result<bool, String> {
+    println!("Testing Ollama model: {}", model_name);
+    let client = OllamaClient::new();
+    client.test_model(&model_name).await
+}
+
+#[tauri::command]
+async fn analyze_vulnerability_ollama(
+    model: String,
+    cve_id: String,
+    package_name: String,
+    package_version: String,
+    severity: String,
+    summary: String,
+    question: String,
+) -> Result<String, String> {
+    println!("Analyzing {} with Ollama model: {}", cve_id, model);
+
+    let client = OllamaClient::new();
+    client.analyze_vulnerability(
+        &model,
+        &cve_id,
+        &package_name,
+        &package_version,
+        &severity,
+        &summary,
+        &question,
+    ).await
+}
+
 fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
@@ -1176,11 +1312,15 @@ fn main() {
     // Initialize comprehensive scanner state
     let comprehensive_scanner = Arc::new(Mutex::new(None::<ComprehensiveScanner>));
 
+    // Initialize vulnerability findings cache
+    let findings_cache = Arc::new(Mutex::new(Vec::<VulnerabilityFinding>::new()));
+
     tauri::Builder::default()
         .manage(service)
         .manage(threat_engine)
         .manage(scan_progress)
         .manage(comprehensive_scanner)
+        .manage(findings_cache)
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -1244,13 +1384,22 @@ fn main() {
             get_comprehensive_progress,
             // AI Analysis
             analyze_vulnerabilities_with_ai,
+            analyze_vulnerability_ai,
             analyze_security_posture,
             generate_remediation_plan,
             // Security Reports
             generate_security_report,
             export_report_html,
             export_report_markdown,
-            export_report_json
+            export_report_json,
+            // Hardware Detection & Tier System
+            detect_hardware,
+            get_eligible_tiers,
+            check_ollama_status,
+            list_ollama_models,
+            pull_ollama_model,
+            test_ollama_model,
+            analyze_vulnerability_ollama
         ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())

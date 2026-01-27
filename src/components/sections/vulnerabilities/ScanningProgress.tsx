@@ -4,82 +4,27 @@ import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Shield, AlertTriangle, CheckCircle2, Loader2, Clock, FileSearch } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface ScanProgress {
-  status: 'idle' | 'scanning' | 'complete' | 'error';
-  scan_type: 'quick' | 'full';
-  packages_scanned: number;
-  total_packages: number;
-  vulnerabilities_found: number;
-  critical_threats: number;
-  elapsed_seconds: number;
-  current_package?: string;
-  eta_seconds?: number;
-}
+import { useScan } from '../../../contexts/ScanContext';
 
 interface ScanningProgressProps {
   onScanComplete?: () => void;
 }
 
 const ScanningProgress: React.FC<ScanningProgressProps> = ({ onScanComplete }) => {
-  const [progress, setProgress] = useState<ScanProgress>({
-    status: 'idle',
-    scan_type: 'quick',
-    packages_scanned: 0,
-    total_packages: 0,
-    vulnerabilities_found: 0,
-    critical_threats: 0,
-    elapsed_seconds: 0,
-  });
+  // Use global scan context
+  const { scanProgress: progress, startScan } = useScan();
 
   const [showResults, setShowResults] = useState(false);
 
-  const startScan = async (scan_type: 'quick' | 'full') => {
-    console.log(`Starting ${scan_type} scan...`);
-    setProgress({
-      status: 'scanning',
-      scan_type,
-      packages_scanned: 0,
-      total_packages: 0,
-      vulnerabilities_found: 0,
-      critical_threats: 0,
-      elapsed_seconds: 0,
-    });
-    setShowResults(false);
-
-    try {
-      // Start the scan in the background
-      if (scan_type === 'quick') {
-        await invoke('start_quick_scan');
-      } else {
-        await invoke('scan_vulnerabilities');
-      }
-    } catch (error) {
-      console.error('Scan failed:', error);
-      setProgress(prev => ({ ...prev, status: 'error' }));
-    }
-  };
-
-  // Poll for progress updates
+  // Watch for scan completion
   useEffect(() => {
-    if (progress.status !== 'scanning') return;
-
-    const interval = setInterval(async () => {
-      try {
-        const scanProgress = await invoke<ScanProgress>('get_scan_progress');
-        setProgress(scanProgress);
-
-        if (scanProgress.status === 'complete') {
-          setShowResults(true);
-          if (onScanComplete) onScanComplete();
-        }
-      } catch (error) {
-        console.error('Failed to get scan progress:', error);
-      }
-    }, 500); // Update every 500ms
-
-    return () => clearInterval(interval);
-  }, [progress.status, onScanComplete]);
+    if (progress.status === 'complete' && !showResults) {
+      setShowResults(true);
+      if (onScanComplete) onScanComplete();
+    } else if (progress.status === 'scanning') {
+      setShowResults(false);
+    }
+  }, [progress.status, showResults, onScanComplete]);
 
   // Calculate progress percentage
   const progressPercent = progress.total_packages > 0
@@ -258,7 +203,7 @@ const ScanningProgress: React.FC<ScanningProgressProps> = ({ onScanComplete }) =
             </div>
 
             <button
-              onClick={() => setProgress({ ...progress, status: 'idle' })}
+              onClick={() => setShowResults(false)}
               className="mt-6 rounded-xl bg-monitor-600 px-6 py-3 text-white transition-colors hover:bg-monitor-700"
             >
               Run Another Scan
@@ -276,7 +221,7 @@ const ScanningProgress: React.FC<ScanningProgressProps> = ({ onScanComplete }) =
             An error occurred during the scan. Please try again.
           </p>
           <button
-            onClick={() => setProgress({ ...progress, status: 'idle' })}
+            onClick={() => setShowResults(false)}
             className="mt-6 rounded-xl bg-red-600 px-6 py-3 text-white transition-colors hover:bg-red-700"
           >
             Try Again

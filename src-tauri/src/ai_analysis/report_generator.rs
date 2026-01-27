@@ -244,14 +244,28 @@ impl ReportGenerator {
         &self,
         config: ReportConfiguration,
     ) -> Result<ComprehensiveReport, String> {
+        println!("[Report Generator] Starting report generation...");
         let report_id = uuid::Uuid::new_v4().to_string();
         let generated_at = Utc::now();
 
-        // Collect data from all sources
-        let vulnerabilities = if config.include_vulnerabilities {
-            self.collect_vulnerability_data().await?
+        // OPTIMIZATION: Scan packages ONCE and reuse the results
+        // This prevents multiple expensive package scans
+        let (raw_vulnerabilities, vulnerabilities) = if config.include_vulnerabilities || config.include_ai_analysis {
+            println!("[Report Generator] Scanning packages for vulnerabilities (this may take a moment)...");
+            let (raw, vuln_data) = self.collect_vulnerability_data().await?;
+            println!("[Report Generator] Vulnerability scan complete: {} vulnerabilities found", vuln_data.total_count);
+            (Some(raw), vuln_data)
         } else {
-            VulnerabilityData::default()
+            (None, VulnerabilityData::default())
+        };
+
+        let (raw_misconfigs, misconfigurations) = if config.include_misconfigurations || config.include_ai_analysis {
+            println!("[Report Generator] Scanning for misconfigurations...");
+            let (raw, misconfig_data) = self.collect_misconfiguration_data().await?;
+            println!("[Report Generator] Misconfiguration scan complete: {} issues found", misconfig_data.total_issues);
+            (Some(raw), misconfig_data)
+        } else {
+            (None, MisconfigurationData::default())
         };
 
         let threats = if config.include_threats {
@@ -266,12 +280,6 @@ impl ReportGenerator {
             NetworkSecurityData::default()
         };
 
-        let misconfigurations = if config.include_misconfigurations {
-            self.collect_misconfiguration_data().await?
-        } else {
-            MisconfigurationData::default()
-        };
-
         let system_info = if config.include_system_info {
             self.collect_system_info().await?
         } else {
@@ -279,24 +287,31 @@ impl ReportGenerator {
         };
 
         // Generate executive summary
+        println!("[Report Generator] Generating executive summary...");
         let executive_summary = self.generate_executive_summary(
             &vulnerabilities,
             &threats,
             &misconfigurations,
         );
 
-        // Get AI insights if requested
-        let ai_insights = if config.include_ai_analysis && self.analyzer.is_some() {
-            self.get_ai_insights(&vulnerabilities).await.ok()
-        } else {
-            None
-        };
+        // Get AI insights if requested (reuse scanned data!)
+        let (ai_insights, security_posture) = if config.include_ai_analysis && self.analyzer.is_some() {
+            println!("[Report Generator] Running AI analysis...");
+            let insights = if let Some(ref raw_vulns) = raw_vulnerabilities {
+                self.get_ai_insights_from_vulns(raw_vulns).await.ok()
+            } else {
+                None
+            };
 
-        // Get security posture if AI is available
-        let security_posture = if config.include_ai_analysis && self.analyzer.is_some() {
-            self.get_security_posture().await.ok()
+            let posture = if let (Some(ref raw_vulns), Some(ref raw_miscs)) = (&raw_vulnerabilities, &raw_misconfigs) {
+                self.get_security_posture_from_data(raw_vulns, raw_miscs).await.ok()
+            } else {
+                None
+            };
+            println!("[Report Generator] AI analysis complete");
+            (insights, posture)
         } else {
-            None
+            (None, None)
         };
 
         // Check compliance
@@ -345,14 +360,22 @@ impl ReportGenerator {
         })
     }
 
-    async fn collect_vulnerability_data(&self) -> Result<VulnerabilityData, String> {
-        // Get package inventory
+    async fn collect_vulnerability_data(&self) -> Result<(Vec<VulnerabilityFinding>, VulnerabilityData), String> {
+        // Get package inventory - platform-specific
+        #[cfg(target_os = "linux")]
         let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+
+        #[cfg(target_os = "windows")]
+        let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
+
+        #[cfg(target_os = "macos")]
+        let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
+
         let packages = sensor.get_inventory();
 
-        // Scan for vulnerabilities
+        // Scan for vulnerabilities (using async version to avoid runtime panic)
         let scanner = VulnerabilityScanner::new();
-        let vulnerabilities = scanner.scan_packages(&packages);
+        let vulnerabilities = scanner.scan_packages_async(&packages).await;
 
         let critical_count = vulnerabilities.iter()
             .filter(|v| v.cve.severity == CVESeverity::Critical)
@@ -387,7 +410,7 @@ impl ReportGenerator {
             .collect::<std::collections::HashSet<_>>()
             .len();
 
-        Ok(VulnerabilityData {
+        let vuln_data = VulnerabilityData {
             total_count: vulnerabilities.len(),
             critical_count,
             high_count,
@@ -396,7 +419,10 @@ impl ReportGenerator {
             top_vulnerabilities,
             affected_packages,
             exploitable_count: critical_count + high_count, // Simplified
-        })
+        };
+
+        // Return BOTH raw vulnerabilities and summary data
+        Ok((vulnerabilities, vuln_data))
     }
 
     async fn collect_threat_data(&self) -> Result<ThreatData, String> {
@@ -422,7 +448,7 @@ impl ReportGenerator {
         })
     }
 
-    async fn collect_misconfiguration_data(&self) -> Result<MisconfigurationData, String> {
+    async fn collect_misconfiguration_data(&self) -> Result<(Vec<crate::vulnerability::misconfig::Misconfiguration>, MisconfigurationData), String> {
         let scanner = MisconfigurationScanner::new();
         let misconfigs = scanner.scan();
 
@@ -448,12 +474,15 @@ impl ReportGenerator {
             })
             .collect();
 
-        Ok(MisconfigurationData {
+        let misconfig_data = MisconfigurationData {
             total_issues: misconfigs.len(),
             critical_misconfigs,
             categories,
             top_issues,
-        })
+        };
+
+        // Return BOTH raw misconfigurations and summary data
+        Ok((misconfigs, misconfig_data))
     }
 
     async fn collect_system_info(&self) -> Result<SystemInfoData, String> {
@@ -535,34 +564,24 @@ impl ReportGenerator {
         }
     }
 
-    async fn get_ai_insights(&self, vuln_data: &VulnerabilityData) -> Result<AnalysisResponse, String> {
+    // New methods that reuse already-scanned data
+    async fn get_ai_insights_from_vulns(&self, vulnerabilities: &[VulnerabilityFinding]) -> Result<AnalysisResponse, String> {
         if let Some(analyzer) = &self.analyzer {
-            // Get actual vulnerabilities to analyze
-            let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-            let packages = sensor.get_inventory();
-            let scanner = VulnerabilityScanner::new();
-            let vulnerabilities = scanner.scan_packages(&packages);
-
-            analyzer.analyze_vulnerabilities(&vulnerabilities).await
+            analyzer.analyze_vulnerabilities(vulnerabilities).await
         } else {
             Err("AI analyzer not available".to_string())
         }
     }
 
-    async fn get_security_posture(&self) -> Result<SystemSecurityPosture, String> {
+    async fn get_security_posture_from_data(
+        &self,
+        vulnerabilities: &[VulnerabilityFinding],
+        misconfigs: &[crate::vulnerability::misconfig::Misconfiguration]
+    ) -> Result<SystemSecurityPosture, String> {
         if let Some(analyzer) = &self.analyzer {
-            let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-            let packages = sensor.get_inventory();
-            let vuln_scanner = VulnerabilityScanner::new();
-            let vulnerabilities = vuln_scanner.scan_packages(&packages);
-
-            let misconfig_scanner = MisconfigurationScanner::new();
-            let misconfigs = misconfig_scanner.scan();
-
             // Empty threats for now
             let threats: Vec<ThreatEvent> = Vec::new();
-
-            analyzer.analyze_system_posture(&vulnerabilities, &threats, &misconfigs).await
+            analyzer.analyze_system_posture(vulnerabilities, &threats, misconfigs).await
         } else {
             Err("AI analyzer not available".to_string())
         }

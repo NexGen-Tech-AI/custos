@@ -24,7 +24,9 @@ reqwest = { version = "0.11", features = ["json"] }
 regex = "1.10"
 async-trait = "0.1"
 sha2 = "0.10"
-rusqlite = { version = "0.30", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"  # Connection pooling
+r2d2_sqlite = "0.24"  # SQLite connection pool manager
 keyring = "2.3"  # Secure credential storage
 nvml-wrapper = { version = "0.11", optional = true }
 crossbeam = "0.8"  # Lock-free data structures
@@ -41,6 +43,14 @@ ringbuf = "0.3"  # Lock-free ring buffer
 thiserror = "1.0"  # Error handling
 tracing = "0.1"  # Structured logging
 tracing-subscriber = "0.3"  # Logging subscriber
+
+# Malware Detection Dependencies
+notify = "6.1"  # File system monitoring
+aes-gcm = "0.10"  # Encryption for quarantine
+md5 = "0.7"  # MD5 hashing
+rand = "0.8"  # Random number generation
+base64 = "0.21"  # Base64 encoding
+log = "0.4"  # Logging
 
 [features]
 default = []

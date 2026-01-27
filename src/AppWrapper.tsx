@@ -8,14 +8,18 @@ import ThreatDetectionSection from './components/sections/ThreatDetectionSection
 import NetworkSecuritySection from './components/sections/network-security/NetworkSecuritySection';
 import VulnerabilitiesSection from './components/sections/vulnerabilities/VulnerabilitiesSection';
 import AIAnalysisSection from './components/AIAnalysisSection';
+import ReportsSection from './components/sections/ReportsSection';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ScanProvider, useScan } from './contexts/ScanContext';
 import { ThemeToggle } from './components/ThemeToggle';
+import ScanProgressIndicator from './components/ScanProgressIndicator';
 import { SystemInfo, SystemMetrics } from './types';
 import { Shield, Network, Search, Sparkles, FileText, Settings } from 'lucide-react';
 
 import './App.css';
 
-export default function AppWrapper() {
+// Main App Content (uses context)
+function App() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -23,6 +27,9 @@ export default function AppWrapper() {
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
+
+  // Use scan context instead of local state
+  const { scanProgress, showFloatingIndicator, setShowFloatingIndicator } = useScan();
 
   useEffect(() => {
     const init = async () => {
@@ -90,6 +97,14 @@ export default function AppWrapper() {
     init();
   }, []);
 
+  const handleExpandScan = () => {
+    setActiveSection('vulnerabilities');
+  };
+
+  const handleDismissScan = () => {
+    setShowFloatingIndicator(false);
+  };
+
   const toggleMonitoring = async () => {
     try {
       if (isMonitoring) {
@@ -120,7 +135,7 @@ export default function AppWrapper() {
       case 'ai-analysis':
         return <AIAnalysisSection />;
       case 'reports':
-        return <PlaceholderSection title="Security Reports" description="Generate comprehensive security reports" icon={FileText} />;
+        return <ReportsSection />;
       case 'settings':
         return <PlaceholderSection title="Settings" description="Configure your security preferences" icon={Settings} comingSoon={false} />;
       default:
@@ -130,8 +145,7 @@ export default function AppWrapper() {
 
   // Always show something, even if loading
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         {loading ? (
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
@@ -195,7 +209,26 @@ export default function AppWrapper() {
             </div>
           </div>
         )}
-      </div>
+
+      {/* Floating scan progress indicator */}
+      {showFloatingIndicator && activeSection !== 'vulnerabilities' && (
+        <ScanProgressIndicator
+          progress={scanProgress}
+          onExpand={handleExpandScan}
+          onDismiss={handleDismissScan}
+        />
+      )}
+    </div>
+  );
+}
+
+// Wrapper component that provides context
+export default function AppWrapper() {
+  return (
+    <ThemeProvider>
+      <ScanProvider>
+        <App />
+      </ScanProvider>
     </ThemeProvider>
   );
 }

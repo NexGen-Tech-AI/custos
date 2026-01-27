@@ -1,0 +1,55 @@
+# ML Training Environment for DGX Spark
+# Python 3.10+ required
+
+# Deep Learning Frameworks
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+xgboost>=2.0.0
+lightgbm>=4.1.0
+
+# ML Infrastructure
+scikit-learn>=1.3.0
+pandas>=2.1.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Model Export & Serving
+onnx>=1.15.0
+onnxruntime-gpu>=1.16.0
+onnxmltools>=1.11.0
+skl2onnx>=1.16.0
+
+# Malware Analysis Tools
+pefile>=2023.2.7
+lief>=0.13.0
+yara-python>=4.3.1
+capstone>=5.0.1
+python-magic>=0.4.27
+
+# Feature Extraction
+pyimpfuzzy>=0.5
+ssdeep>=3.4
+entropy>=0.2.0
+
+# Data Processing
+pyarrow>=14.0.0
+h5py>=3.10.0
+zarr>=2.16.0
+dask>=2023.11.0
+
+# Threat Intelligence
+virustotal-api>=1.1.11
+requests>=2.31.0
+
+# Monitoring & Logging
+wandb>=0.16.0
+tensorboard>=2.15.0
+loguru>=0.7.0
+tqdm>=4.66.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+click>=8.1.7
+joblib>=1.3.0

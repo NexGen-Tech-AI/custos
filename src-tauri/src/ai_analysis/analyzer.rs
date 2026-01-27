@@ -482,4 +482,70 @@ Use the standard JSON response format."#,
                 .unwrap_or_default(),
         })
     }
+
+    /// Chat about a specific vulnerability - simple conversational response
+    pub async fn chat_about_vulnerability(&self, context: &str) -> Result<String, String> {
+        if self.api_key.is_none() {
+            return Err("No API key configured. Please set your Claude API key in Settings.".to_string());
+        }
+
+        let api_key = self.api_key.as_ref().unwrap();
+
+        let prompt = format!(
+            r#"You are a cybersecurity expert helping users understand vulnerabilities.
+
+{}
+
+Please provide a clear, concise, and helpful response to the user's question. Format your response in a conversational, easy-to-understand way. Focus on:
+
+1. Explaining the vulnerability in plain language
+2. Describing the real-world impact and risk
+3. Providing practical, actionable advice
+4. Being specific about severity and urgency
+
+Use formatting to make your response easy to read:
+- Use **bold** for important terms
+- Use bullet points (starting with "-") for lists
+- Break information into short paragraphs
+- Avoid overly technical jargon unless necessary
+
+Keep your response focused and relevant to the user's specific question."#,
+            context
+        );
+
+        let request_body = json!({
+            "model": CLAUDE_MODEL,
+            "max_tokens": 2048,
+            "messages": [{
+                "role": "user",
+                "content": prompt
+            }]
+        });
+
+        let response = self.client
+            .post(CLAUDE_API_URL)
+            .header("x-api-key", api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("content-type", "application/json")
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| format!("API request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let response_json: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        // Extract text content from Claude's response
+        let content = response_json["content"][0]["text"]
+            .as_str()
+            .ok_or("No content in response")?
+            .to_string();
+
+        Ok(content)
+    }
 }

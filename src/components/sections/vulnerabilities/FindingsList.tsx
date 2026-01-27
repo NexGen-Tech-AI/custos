@@ -2,16 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Search, Filter, Package, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Search, Filter, Package, AlertTriangle, ExternalLink, Sparkles } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { PrioritizedFinding, PackageVulnerabilityGroup } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import VulnerabilityChat from './VulnerabilityChat';
 
 const FindingsList: React.FC = () => {
   const [findings, setFindings] = useState<PackageVulnerabilityGroup[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [chatVulnerability, setChatVulnerability] = useState<any | null>(null);
 
   useEffect(() => {
     loadFindings();
@@ -90,19 +93,30 @@ const FindingsList: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {filteredFindings.map((group) => (
-            <PackageGroupCard key={group.package_name} group={group} />
+            <PackageGroupCard key={group.package_name} group={group} onOpenChat={setChatVulnerability} />
           ))}
         </div>
       )}
+
+      {/* AI Chat Modal */}
+      <AnimatePresence>
+        {chatVulnerability && (
+          <VulnerabilityChat
+            vulnerability={chatVulnerability}
+            onClose={() => setChatVulnerability(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 interface PackageGroupCardProps {
   group: PackageVulnerabilityGroup;
+  onOpenChat: (vulnerability: any) => void;
 }
 
-const PackageGroupCard: React.FC<PackageGroupCardProps> = ({ group }) => {
+const PackageGroupCard: React.FC<PackageGroupCardProps> = ({ group, onOpenChat }) => {
   const [expanded, setExpanded] = useState(false);
 
   const highestFinding = group.findings[0];
@@ -145,7 +159,7 @@ const PackageGroupCard: React.FC<PackageGroupCardProps> = ({ group }) => {
       {expanded && (
         <div className="border-t border-gray-700 bg-gray-900/50 p-4 space-y-2">
           {group.findings.map((finding) => (
-            <VulnerabilityRow key={finding.finding.id} finding={finding} />
+            <VulnerabilityRow key={finding.finding.id} finding={finding} onOpenChat={onOpenChat} />
           ))}
         </div>
       )}
@@ -155,9 +169,10 @@ const PackageGroupCard: React.FC<PackageGroupCardProps> = ({ group }) => {
 
 interface VulnerabilityRowProps {
   finding: PrioritizedFinding;
+  onOpenChat: (vulnerability: any) => void;
 }
 
-const VulnerabilityRow: React.FC<VulnerabilityRowProps> = ({ finding }) => {
+const VulnerabilityRow: React.FC<VulnerabilityRowProps> = ({ finding, onOpenChat }) => {
   const { cve } = finding.finding;
 
   const priorityColors = {
@@ -166,6 +181,19 @@ const VulnerabilityRow: React.FC<VulnerabilityRowProps> = ({ finding }) => {
     Medium: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
     Low: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
     Info: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+  };
+
+  const handleAskAI = () => {
+    // Prepare vulnerability data for chat
+    const vulnerabilityData = {
+      cve_id: cve.id,
+      severity: finding.priority_level,
+      summary: cve.description || '',
+      package_name: finding.finding.package_name || 'Unknown',
+      package_version: finding.finding.package_version || 'Unknown',
+      affected_versions: finding.finding.affected_versions,
+    };
+    onOpenChat(vulnerabilityData);
   };
 
   return (
@@ -199,16 +227,27 @@ const VulnerabilityRow: React.FC<VulnerabilityRowProps> = ({ finding }) => {
         </div>
       </div>
 
-      {cve.references.length > 0 && (
-        <a
-          href={cve.references[0]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-4 flex-shrink-0 text-monitor-400 hover:text-monitor-300"
+      <div className="ml-4 flex items-center gap-2">
+        <button
+          onClick={handleAskAI}
+          className="flex items-center gap-1 rounded-lg bg-purple-600/20 px-3 py-1.5 text-xs text-purple-300 transition-colors hover:bg-purple-600/30 hover:text-purple-200"
+          title="Ask AI about this vulnerability"
         >
-          <ExternalLink className="h-4 w-4" />
-        </a>
-      )}
+          <Sparkles className="h-3.5 w-3.5" />
+          Ask AI
+        </button>
+
+        {cve.references.length > 0 && (
+          <a
+            href={cve.references[0]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 text-monitor-400 hover:text-monitor-300"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        )}
+      </div>
     </div>
   );
 };
