@@ -1,14 +1,20 @@
 /*!
- * eBPF Kernel-Level Syscall Monitoring
+ * ProcFS-Based Syscall Monitoring (STUB - Not Real eBPF)
  *
- * Production-grade syscall monitoring using eBPF tracepoints for:
- * - Process execution (execve, execveat, clone, fork)
- * - File operations (open, openat, unlink, rename)
- * - Network operations (connect, bind, sendto, recvfrom)
- * - Security-sensitive syscalls (ptrace, kill, setuid, mount)
- * - Memory operations (mmap, mprotect, process_vm_writev)
+ * **WARNING: This is a placeholder/stub implementation!**
  *
- * This provides kernel-level visibility similar to Falcon/CrowdStrike.
+ * This module reads from `/proc` filesystem to simulate syscall monitoring.
+ * It does NOT use actual eBPF bytecode, tracepoints, or kernel hooks.
+ *
+ * For real eBPF monitoring, compile with `--features ebpf` which will
+ * use the aya-based implementation with actual kernel-level visibility.
+ *
+ * Current capabilities (procfs-based):
+ * - Process enumeration from /proc
+ * - Basic process metadata (comm, uid, gid)
+ * - Simulated event generation
+ *
+ * This provides ~5% of what real eBPF would provide.
  */
 
 use serde::{Serialize, Deserialize};
@@ -20,7 +26,7 @@ use std::os::unix::io::RawFd;
 #[cfg(target_os = "linux")]
 use nix::libc;
 
-/// eBPF syscall event captured from kernel
+/// Syscall event (simulated from procfs, NOT from kernel tracepoints)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyscallEvent {
     pub timestamp: u64,
@@ -48,9 +54,9 @@ pub enum EventSeverity {
     Critical,
 }
 
-/// eBPF syscall monitor configuration
+/// ProcFS monitor configuration (stub - not real eBPF)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EbpfMonitorConfig {
+pub struct ProcMonitorConfig {
     pub enabled: bool,
     pub monitor_execve: bool,
     pub monitor_file_ops: bool,
@@ -61,7 +67,7 @@ pub struct EbpfMonitorConfig {
     pub max_events_per_sec: usize,
 }
 
-impl Default for EbpfMonitorConfig {
+impl Default for ProcMonitorConfig {
     fn default() -> Self {
         Self {
             enabled: true,
@@ -70,25 +76,25 @@ impl Default for EbpfMonitorConfig {
             monitor_network: true,
             monitor_ptrace: true,
             monitor_memory: true,
-            buffer_size_kb: 8192, // 8MB ring buffer
+            buffer_size_kb: 8192, // Simulated buffer
             max_events_per_sec: 10000,
         }
     }
 }
 
-/// eBPF syscall monitor
-pub struct EbpfSyscallMonitor {
-    config: EbpfMonitorConfig,
+/// ProcFS-based syscall monitor (stub - reads /proc, not real eBPF)
+pub struct ProcSyscallMonitor {
+    config: ProcMonitorConfig,
     active_tracers: HashMap<String, TracepointHandle>,
     event_buffer: Vec<SyscallEvent>,
     stats: MonitorStats,
 }
 
-/// Handle to an attached eBPF tracepoint
+/// Simulated tracepoint handle (not actually attached to kernel)
 #[derive(Debug)]
 struct TracepointHandle {
     name: String,
-    fd: Option<RawFd>,
+    fd: Option<RawFd>,  // Always None in stub implementation
     category: String,
 }
 
@@ -102,9 +108,9 @@ pub struct MonitorStats {
     pub active_tracers: usize,
 }
 
-impl EbpfSyscallMonitor {
+impl ProcSyscallMonitor {
     /// Create new eBPF syscall monitor
-    pub fn new(config: EbpfMonitorConfig) -> Result<Self, String> {
+    pub fn new(config: ProcMonitorConfig) -> Result<Self, String> {
         log::info!("🔍 Initializing eBPF syscall monitor");
 
         // Check if we have CAP_BPF or CAP_SYS_ADMIN
@@ -536,7 +542,7 @@ impl EbpfSyscallMonitor {
     }
 }
 
-impl Drop for EbpfSyscallMonitor {
+impl Drop for ProcSyscallMonitor {
     fn drop(&mut self) {
         self.stop();
     }
@@ -548,16 +554,16 @@ mod tests {
 
     #[test]
     fn test_monitor_creation() {
-        let config = EbpfMonitorConfig::default();
+        let config = ProcMonitorConfig::default();
         // May fail if not running with proper capabilities
-        let monitor = EbpfSyscallMonitor::new(config);
+        let monitor = ProcSyscallMonitor::new(config);
         // Just test that it doesn't panic
         assert!(monitor.is_ok() || monitor.is_err());
     }
 
     #[test]
     fn test_capability_check() {
-        let has_caps = EbpfSyscallMonitor::check_bpf_capabilities();
+        let has_caps = ProcSyscallMonitor::check_bpf_capabilities();
         println!("BPF capabilities: {}", has_caps);
     }
 }

@@ -57,6 +57,10 @@ log = "0.4"  # Logging
 [features]
 default = []
 nvidia = ["nvml-wrapper"]
+# Real eBPF monitoring (requires Linux kernel 5.8+, CAP_BPF)
+ebpf = []  # Will add aya dependencies in Phase 1
+# Real YARA pattern matching engine
+yara = []  # Will uncomment yara crate when implemented
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nix = { version = "0.27", features = ["mman"] }
