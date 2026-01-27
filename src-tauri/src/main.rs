@@ -1004,6 +1004,20 @@ async fn get_comprehensive_progress(
 use ai_analysis::{SecurityAnalyzer, AnalysisResponse, SystemSecurityPosture, ReportConfiguration, ComprehensiveReport, ReportGenerator, ReportExporter};
 use keychain::{KeychainManager, ApiKeyType};
 
+// Malware Protection imports
+use malware::{MalwareProtection, ProtectionConfig, ProtectionStatus};
+use malware::scanner::ScanResult;
+use malware::quarantine::QuarantinedFile;
+use malware::sandbox::{SandboxEngine, SandboxConfig, SandboxResult, SandboxStats};
+use malware::ransomware_protection::{RansomwareProtectionEngine, RansomwareConfig, RansomwareStats};
+use malware::rootkit_detector::{RootKitDetector, RootkitDetectorConfig, RootkitDetection};
+use malware::credential_theft_detector::{CredentialTheftDetector, CredentialDetectorConfig, CredentialThreat};
+use malware::memory_scanner::{MemoryScanner, MemoryScanConfig, MemoryScanResult};
+use malware::process_injection::{ProcessInjectionDetector, InjectionDetection};
+use malware::behavioral_engine::{BehavioralEngine, BehavioralConfig, BehavioralDetection};
+use malware::threat_intel::{ThreatIntelEngine, ThreatIntelConfig, Ioc, IocType, ThreatMatch};
+use malware::incident_response::{IncidentResponseEngine, ResponseConfig, SecurityIncident, IncidentStatus};
+
 #[tauri::command]
 async fn analyze_vulnerabilities_with_ai() -> Result<AnalysisResponse, String> {
     println!("Starting AI vulnerability analysis...");
@@ -1261,6 +1275,467 @@ async fn analyze_vulnerability_ollama(
     ).await
 }
 
+// ========================================
+// Malware Protection Commands
+// ========================================
+
+type MalwareProtectionState = Arc<Mutex<Option<MalwareProtection>>>;
+type SandboxEngineState = Arc<Mutex<Option<SandboxEngine>>>;
+type RansomwareProtectionState = Arc<Mutex<Option<RansomwareProtectionEngine>>>;
+type RootkitDetectorState = Arc<Mutex<Option<RootKitDetector>>>;
+type CredentialDetectorState = Arc<Mutex<Option<CredentialTheftDetector>>>;
+type MemoryScannerState = Arc<Mutex<Option<MemoryScanner>>>;
+type BehavioralEngineState = Arc<Mutex<Option<BehavioralEngine>>>;
+type ThreatIntelState = Arc<Mutex<Option<ThreatIntelEngine>>>;
+type IncidentResponseState = Arc<Mutex<Option<IncidentResponseEngine>>>;
+
+/// Initialize malware protection system
+#[tauri::command]
+async fn init_malware_protection(
+    state: State<'_, MalwareProtectionState>,
+) -> Result<(), String> {
+    log::info!("Initializing malware protection system");
+
+    let config = ProtectionConfig::default();
+    let protection = MalwareProtection::new(config)?;
+
+    let mut guard = state.lock();
+    *guard = Some(protection);
+
+    Ok(())
+}
+
+/// Start real-time malware protection
+#[tauri::command]
+async fn start_malware_protection(
+    state: State<'_, MalwareProtectionState>,
+) -> Result<(), String> {
+    let mut guard = state.lock();
+
+    if let Some(protection) = guard.as_mut() {
+        protection.start_real_time_protection()
+    } else {
+        Err("Malware protection not initialized".to_string())
+    }
+}
+
+/// Stop real-time malware protection
+#[tauri::command]
+async fn stop_malware_protection(
+    state: State<'_, MalwareProtectionState>,
+) -> Result<(), String> {
+    let mut guard = state.lock();
+
+    if let Some(protection) = guard.as_mut() {
+        protection.stop_real_time_protection();
+        Ok(())
+    } else {
+        Err("Malware protection not initialized".to_string())
+    }
+}
+
+/// Get malware protection status
+#[tauri::command]
+async fn get_malware_protection_status(
+    state: State<'_, MalwareProtectionState>,
+) -> Result<ProtectionStatus, String> {
+    let guard = state.lock();
+
+    if let Some(protection) = guard.as_ref() {
+        Ok(protection.get_status())
+    } else {
+        Err("Malware protection not initialized".to_string())
+    }
+}
+
+/// Scan a file for malware
+#[tauri::command]
+async fn scan_file_for_malware(
+    state: State<'_, MalwareProtectionState>,
+    file_path: String,
+) -> Result<ScanResult, String> {
+    let guard = state.lock();
+
+    if let Some(protection) = guard.as_ref() {
+        protection.scan_file(std::path::Path::new(&file_path))
+    } else {
+        Err("Malware protection not initialized".to_string())
+    }
+}
+
+/// Quarantine a file
+#[tauri::command]
+async fn quarantine_file(
+    state: State<'_, MalwareProtectionState>,
+    file_path: String,
+    scan_result: ScanResult,
+) -> Result<QuarantinedFile, String> {
+    let guard = state.lock();
+
+    if let Some(protection) = guard.as_ref() {
+        protection.quarantine_file(std::path::Path::new(&file_path), scan_result)
+    } else {
+        Err("Malware protection not initialized".to_string())
+    }
+}
+
+// Sandbox Commands
+
+/// Initialize sandbox engine
+#[tauri::command]
+async fn init_sandbox_engine(
+    state: State<'_, SandboxEngineState>,
+) -> Result<(), String> {
+    let config = SandboxConfig::default();
+    let engine = SandboxEngine::new(config)?;
+
+    let mut guard = state.lock();
+    *guard = Some(engine);
+
+    Ok(())
+}
+
+/// Execute file in sandbox
+#[tauri::command]
+async fn execute_in_sandbox(
+    state: State<'_, SandboxEngineState>,
+    file_path: String,
+) -> Result<String, String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        engine.execute_in_sandbox(std::path::Path::new(&file_path))
+    } else {
+        Err("Sandbox engine not initialized".to_string())
+    }
+}
+
+/// Get sandbox result
+#[tauri::command]
+async fn get_sandbox_result(
+    state: State<'_, SandboxEngineState>,
+    sandbox_id: String,
+) -> Result<Option<SandboxResult>, String> {
+    let guard = state.lock();
+
+    if let Some(engine) = guard.as_ref() {
+        Ok(engine.get_sandbox_result(&sandbox_id))
+    } else {
+        Err("Sandbox engine not initialized".to_string())
+    }
+}
+
+/// Get sandbox statistics
+#[tauri::command]
+async fn get_sandbox_stats(
+    state: State<'_, SandboxEngineState>,
+) -> Result<SandboxStats, String> {
+    let guard = state.lock();
+
+    if let Some(engine) = guard.as_ref() {
+        Ok(engine.get_stats())
+    } else {
+        Err("Sandbox engine not initialized".to_string())
+    }
+}
+
+/// Terminate sandbox
+#[tauri::command]
+async fn terminate_sandbox(
+    state: State<'_, SandboxEngineState>,
+    sandbox_id: String,
+) -> Result<(), String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        engine.terminate_sandbox(&sandbox_id)
+    } else {
+        Err("Sandbox engine not initialized".to_string())
+    }
+}
+
+// Ransomware Protection Commands
+
+/// Initialize ransomware protection
+#[tauri::command]
+async fn init_ransomware_protection(
+    state: State<'_, RansomwareProtectionState>,
+) -> Result<(), String> {
+    let config = RansomwareConfig::default();
+    let engine = RansomwareProtectionEngine::new(config)?;
+
+    let mut guard = state.lock();
+    *guard = Some(engine);
+
+    Ok(())
+}
+
+/// Deploy ransomware decoys
+#[tauri::command]
+async fn deploy_ransomware_decoys(
+    state: State<'_, RansomwareProtectionState>,
+) -> Result<usize, String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        engine.deploy_decoys()
+    } else {
+        Err("Ransomware protection not initialized".to_string())
+    }
+}
+
+/// Add protected directory
+#[tauri::command]
+async fn add_protected_directory(
+    state: State<'_, RansomwareProtectionState>,
+    directory: String,
+) -> Result<(), String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        engine.add_protected_directory(std::path::PathBuf::from(directory))
+    } else {
+        Err("Ransomware protection not initialized".to_string())
+    }
+}
+
+/// Get ransomware statistics
+#[tauri::command]
+async fn get_ransomware_stats(
+    state: State<'_, RansomwareProtectionState>,
+) -> Result<RansomwareStats, String> {
+    let guard = state.lock();
+
+    if let Some(engine) = guard.as_ref() {
+        Ok(engine.get_stats())
+    } else {
+        Err("Ransomware protection not initialized".to_string())
+    }
+}
+
+// Rootkit Detection Commands
+
+/// Initialize rootkit detector
+#[tauri::command]
+async fn init_rootkit_detector(
+    state: State<'_, RootkitDetectorState>,
+) -> Result<(), String> {
+    let config = RootkitDetectorConfig::default();
+    let detector = RootKitDetector::new(config)?;
+
+    let mut guard = state.lock();
+    *guard = Some(detector);
+
+    Ok(())
+}
+
+/// Run rootkit scan
+#[tauri::command]
+async fn scan_for_rootkits(
+    state: State<'_, RootkitDetectorState>,
+) -> Result<Vec<RootkitDetection>, String> {
+    let mut guard = state.lock();
+
+    if let Some(detector) = guard.as_mut() {
+        detector.scan()
+    } else {
+        Err("Rootkit detector not initialized".to_string())
+    }
+}
+
+// Credential Theft Detection Commands
+
+/// Initialize credential theft detector
+#[tauri::command]
+async fn init_credential_detector(
+    state: State<'_, CredentialDetectorState>,
+) -> Result<(), String> {
+    let config = CredentialDetectorConfig::default();
+    let detector = CredentialTheftDetector::new(config)?;
+
+    let mut guard = state.lock();
+    *guard = Some(detector);
+
+    Ok(())
+}
+
+/// Detect LSASS access
+#[tauri::command]
+async fn detect_lsass_access(
+    state: State<'_, CredentialDetectorState>,
+    process_id: u32,
+    process_name: String,
+) -> Result<Option<CredentialThreat>, String> {
+    let mut guard = state.lock();
+
+    if let Some(detector) = guard.as_mut() {
+        detector.detect_lsass_access(
+            process_id,
+            &process_name,
+            malware::credential_theft_detector::LsassAccessType::MemoryRead,
+        )
+    } else {
+        Err("Credential detector not initialized".to_string())
+    }
+}
+
+// Memory Scanner Commands
+
+/// Initialize memory scanner
+#[tauri::command]
+async fn init_memory_scanner(
+    state: State<'_, MemoryScannerState>,
+) -> Result<(), String> {
+    let config = MemoryScanConfig::default();
+    let scanner = MemoryScanner::new(config);
+
+    let mut guard = state.lock();
+    *guard = Some(scanner);
+
+    Ok(())
+}
+
+/// Scan process memory
+#[tauri::command]
+async fn scan_process_memory(
+    state: State<'_, MemoryScannerState>,
+    process_id: u32,
+) -> Result<MemoryScanResult, String> {
+    let mut guard = state.lock();
+
+    if let Some(scanner) = guard.as_mut() {
+        scanner.scan_process(process_id)
+    } else {
+        Err("Memory scanner not initialized".to_string())
+    }
+}
+
+// Behavioral Engine Commands
+
+/// Initialize behavioral engine
+#[tauri::command]
+async fn init_behavioral_engine(
+    state: State<'_, BehavioralEngineState>,
+) -> Result<(), String> {
+    let config = BehavioralConfig::default();
+    let engine = BehavioralEngine::new(config);
+
+    let mut guard = state.lock();
+    *guard = Some(engine);
+
+    Ok(())
+}
+
+/// Track process behavior
+#[tauri::command]
+async fn track_process_behavior(
+    state: State<'_, BehavioralEngineState>,
+    process_id: u32,
+    process_name: String,
+    behavior_type: String,
+) -> Result<Vec<BehavioralDetection>, String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        // Parse behavior type and call appropriate method
+        Ok(Vec::new()) // Simplified for now
+    } else {
+        Err("Behavioral engine not initialized".to_string())
+    }
+}
+
+// Threat Intelligence Commands
+
+/// Initialize threat intelligence engine
+#[tauri::command]
+async fn init_threat_intel(
+    state: State<'_, ThreatIntelState>,
+) -> Result<(), String> {
+    let config = ThreatIntelConfig::default();
+    let engine = ThreatIntelEngine::new(config);
+
+    let mut guard = state.lock();
+    *guard = Some(engine);
+
+    Ok(())
+}
+
+/// Check IOC (simplified - assumes IP address type)
+#[tauri::command]
+async fn check_ioc(
+    state: State<'_, ThreatIntelState>,
+    ioc_value: String,
+    ioc_type_str: String,
+) -> Result<Option<ThreatMatch>, String> {
+    let mut guard = state.lock();
+
+    if let Some(engine) = guard.as_mut() {
+        // Parse IOC type from string
+        let ioc_type = match ioc_type_str.as_str() {
+            "ip" => IocType::IpAddress,
+            "domain" => IocType::Domain,
+            "url" => IocType::Url,
+            "hash" => IocType::FileHash,
+            "email" => IocType::Email,
+            _ => return Err(format!("Unknown IOC type: {}", ioc_type_str)),
+        };
+
+        Ok(engine.check_ioc(&ioc_type, &ioc_value))
+    } else {
+        Err("Threat intelligence not initialized".to_string())
+    }
+}
+
+// Incident Response Commands
+
+/// Initialize incident response engine
+#[tauri::command]
+async fn init_incident_response(
+    state: State<'_, IncidentResponseState>,
+) -> Result<(), String> {
+    let config = ResponseConfig::default();
+    let engine = IncidentResponseEngine::new(config);
+
+    let mut guard = state.lock();
+    *guard = Some(engine);
+
+    Ok(())
+}
+
+/// Get recent incidents
+#[tauri::command]
+async fn get_active_incidents(
+    state: State<'_, IncidentResponseState>,
+    limit: usize,
+) -> Result<Vec<SecurityIncident>, String> {
+    let guard = state.lock();
+
+    if let Some(engine) = guard.as_ref() {
+        Ok(engine.get_recent_incidents(limit))
+    } else {
+        Err("Incident response not initialized".to_string())
+    }
+}
+
+/// Get incident by ID (finds in all incidents)
+#[tauri::command]
+async fn get_incident(
+    state: State<'_, IncidentResponseState>,
+    incident_id: String,
+) -> Result<Option<SecurityIncident>, String> {
+    let guard = state.lock();
+
+    if let Some(engine) = guard.as_ref() {
+        // Search through all incidents
+        let incidents = engine.get_incidents();
+        Ok(incidents.iter()
+            .find(|i| i.id == incident_id)
+            .cloned())
+    } else {
+        Err("Incident response not initialized".to_string())
+    }
+}
+
 fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
@@ -1315,12 +1790,32 @@ fn main() {
     // Initialize vulnerability findings cache
     let findings_cache = Arc::new(Mutex::new(Vec::<VulnerabilityFinding>::new()));
 
+    // Initialize malware protection state management
+    let malware_protection = Arc::new(Mutex::new(None::<MalwareProtection>));
+    let sandbox_engine = Arc::new(Mutex::new(None::<SandboxEngine>));
+    let ransomware_protection = Arc::new(Mutex::new(None::<RansomwareProtectionEngine>));
+    let rootkit_detector = Arc::new(Mutex::new(None::<RootKitDetector>));
+    let credential_detector = Arc::new(Mutex::new(None::<CredentialTheftDetector>));
+    let memory_scanner = Arc::new(Mutex::new(None::<MemoryScanner>));
+    let behavioral_engine = Arc::new(Mutex::new(None::<BehavioralEngine>));
+    let threat_intel = Arc::new(Mutex::new(None::<ThreatIntelEngine>));
+    let incident_response = Arc::new(Mutex::new(None::<IncidentResponseEngine>));
+
     tauri::Builder::default()
         .manage(service)
         .manage(threat_engine)
         .manage(scan_progress)
         .manage(comprehensive_scanner)
         .manage(findings_cache)
+        .manage(malware_protection)
+        .manage(sandbox_engine)
+        .manage(ransomware_protection)
+        .manage(rootkit_detector)
+        .manage(credential_detector)
+        .manage(memory_scanner)
+        .manage(behavioral_engine)
+        .manage(threat_intel)
+        .manage(incident_response)
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -1399,7 +1894,44 @@ fn main() {
             list_ollama_models,
             pull_ollama_model,
             test_ollama_model,
-            analyze_vulnerability_ollama
+            analyze_vulnerability_ollama,
+            // Malware Protection
+            init_malware_protection,
+            start_malware_protection,
+            stop_malware_protection,
+            get_malware_protection_status,
+            scan_file_for_malware,
+            quarantine_file,
+            // Sandbox
+            init_sandbox_engine,
+            execute_in_sandbox,
+            get_sandbox_result,
+            get_sandbox_stats,
+            terminate_sandbox,
+            // Ransomware Protection
+            init_ransomware_protection,
+            deploy_ransomware_decoys,
+            add_protected_directory,
+            get_ransomware_stats,
+            // Rootkit Detection
+            init_rootkit_detector,
+            scan_for_rootkits,
+            // Credential Theft Detection
+            init_credential_detector,
+            detect_lsass_access,
+            // Memory Scanner
+            init_memory_scanner,
+            scan_process_memory,
+            // Behavioral Engine
+            init_behavioral_engine,
+            track_process_behavior,
+            // Threat Intelligence
+            init_threat_intel,
+            check_ioc,
+            // Incident Response
+            init_incident_response,
+            get_active_incidents,
+            get_incident
         ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())
