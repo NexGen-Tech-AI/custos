@@ -18,6 +18,7 @@ use ultra_perf_monitor::{UltraPerfMonitoringService, UltraPerfMetrics};
 // Import kernel-level monitoring
 pub mod kernel_monitor;
 pub mod linux_ebpf;
+pub mod ebpf_syscall_monitor;
 pub mod windows_etw;
 pub mod pci_devices;
 pub mod platform_security;
