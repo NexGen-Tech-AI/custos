@@ -19,6 +19,7 @@ use ultra_perf_monitor::{UltraPerfMonitoringService, UltraPerfMetrics};
 pub mod kernel_monitor;
 pub mod linux_ebpf;
 pub mod proc_syscall_monitor;  // ProcFS-based stub (use --features ebpf for real eBPF)
+pub mod ebpf_monitor;  // Real eBPF monitoring (requires --features ebpf)
 pub mod windows_etw;
 pub mod pci_devices;
 pub mod platform_security;
@@ -29,6 +30,10 @@ pub use platform_security::{
     PlatformSecurityStatus, PlatformSecurityMonitor, TpmStatus,
     SecureBootStatus, FirmwareInfo, BootIntegrityStatus, SecurityError
 };
+
+// Export eBPF types for integration tests
+#[cfg(all(target_os = "linux", feature = "ebpf"))]
+pub use ebpf_monitor::{EbpfMonitor, SystemEvent};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemInfo {

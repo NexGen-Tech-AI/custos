@@ -11,6 +11,7 @@ mod ai_analysis;
 mod hardware_detector;
 mod ollama;
 mod malware;
+mod sudo_auth;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
@@ -28,8 +29,12 @@ use threat_detection::threat_intel::ThreatIntelApiKeys;
 use threat_detection::alerts::Alert;
 use threat_detection::engine::ThreatStats;
 
+use sensors::PackageSensor;
+
 type ServiceState = Arc<RwLock<MonitoringService>>;
 type ThreatDetectionState = Arc<ThreatDetectionEngine>;
+type PackageSensorState = Arc<Mutex<PackageSensor>>;
+type SudoAuthState = Arc<sudo_auth::SudoAuthenticator>;
 
 // ========================================
 // Scan Progress State
@@ -239,6 +244,40 @@ async fn acknowledge_alert(
 ) -> Result<bool, String> {
     let alert_manager = state.get_alert_manager();
     Ok(alert_manager.acknowledge_alert(&alert_id, &user))
+}
+
+// ========================================
+// Sudo Authentication Commands
+// ========================================
+
+#[tauri::command]
+async fn check_sudo_required() -> Result<bool, String> {
+    Ok(!sudo_auth::has_root_privileges())
+}
+
+#[tauri::command]
+async fn verify_sudo_password(
+    password: String,
+    sudo_auth: State<'_, SudoAuthState>
+) -> Result<bool, String> {
+    sudo_auth.authenticate(&password)
+}
+
+#[tauri::command]
+async fn has_sudo_access(
+    sudo_auth: State<'_, SudoAuthState>
+) -> Result<bool, String> {
+    Ok(sudo_auth.has_cached_access() || sudo_auth::has_root_privileges())
+}
+
+#[tauri::command]
+async fn execute_privileged_command(
+    command: String,
+    args: Vec<String>,
+    password: String,
+) -> Result<String, String> {
+    let args_refs: Vec<&str> = args.iter().map(AsRef::as_ref).collect();
+    sudo_auth::execute_with_sudo(&command, &args_refs, &password)
 }
 
 #[tauri::command]
@@ -476,7 +515,6 @@ use vulnerability::{
     ComprehensiveScanner, ComprehensiveScanProgress, ThreatFinding,
     ThreatType, ThreatSeverity, ScanPhase,
 };
-use sensors::PackageSensor;
 
 /// Get current scan progress (polled by UI)
 #[tauri::command]
@@ -490,6 +528,7 @@ async fn get_scan_progress(scan_state: State<'_, ScanProgressState>) -> Result<S
 async fn start_quick_scan(
     scan_state: State<'_, ScanProgressState>,
     findings_cache: State<'_, VulnerabilityFindingsCache>,
+    sensor_state: State<'_, PackageSensorState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     println!("=== QUICK SCAN STARTED ===");
@@ -513,47 +552,18 @@ async fn start_quick_scan(
     // Clone state for background task
     let scan_state_clone = Arc::clone(&scan_state.inner());
     let findings_cache_clone = Arc::clone(&findings_cache.inner());
+    let sensor_state_clone = Arc::clone(&sensor_state.inner());
 
     // Run scan in background
     tokio::spawn(async move {
         let start_time = std::time::Instant::now();
 
-        // Get package sensor
-        #[cfg(target_os = "linux")]
-        let sensor = match PackageSensor::new_linux() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
-
-        #[cfg(target_os = "windows")]
-        let sensor = match PackageSensor::new_windows() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
-
-        #[cfg(target_os = "macos")]
-        let sensor = match PackageSensor::new_macos() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
-
-        println!("Getting installed packages inventory...");
-        let all_packages = sensor.get_inventory();
+        // Get package sensor from state
+        let all_packages = {
+            let sensor = sensor_state_clone.lock();
+            println!("Getting installed packages inventory...");
+            sensor.get_inventory()
+        }; // sensor lock is released here
 
         // Quick scan - filter to critical packages only
         let critical_package_names = vec![
@@ -672,6 +682,7 @@ async fn start_quick_scan(
 async fn scan_vulnerabilities(
     state: State<'_, ThreatDetectionState>,
     scan_state: State<'_, ScanProgressState>,
+    sensor_state: State<'_, PackageSensorState>,
 ) -> Result<(), String> {
     println!("=== FULL VULNERABILITY SCAN STARTED ===");
 
@@ -693,46 +704,19 @@ async fn scan_vulnerabilities(
 
     // Clone state for background task
     let scan_state_clone = Arc::clone(&scan_state.inner());
+    let sensor_state_clone = Arc::clone(&sensor_state.inner());
 
     // Run scan in background
     tokio::spawn(async move {
         let start_time = std::time::Instant::now();
 
-        #[cfg(target_os = "linux")]
-        let sensor = match PackageSensor::new_linux() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
+        // Get package sensor from state
+        let packages = {
+            let sensor = sensor_state_clone.lock();
+            println!("Getting installed packages inventory...");
+            sensor.get_inventory()
+        }; // sensor lock is released here
 
-        #[cfg(target_os = "windows")]
-        let sensor = match PackageSensor::new_windows() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
-
-        #[cfg(target_os = "macos")]
-        let sensor = match PackageSensor::new_macos() {
-            Ok(s) => s,
-            Err(e) => {
-                println!("ERROR: Failed to create package sensor: {}", e);
-                let mut progress = scan_state_clone.lock();
-                progress.status = ScanStatus::Error;
-                return;
-            }
-        };
-
-        println!("Getting installed packages inventory...");
-        let packages = sensor.get_inventory();
         let total = packages.len();
         println!("Found {} installed packages for full scan", total);
 
@@ -826,19 +810,13 @@ async fn scan_vulnerabilities(
 }
 
 #[tauri::command]
-async fn get_vulnerability_statistics() -> Result<ScanStatistics, String> {
+async fn get_vulnerability_statistics(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<ScanStatistics, String> {
     // For now, run a scan to get statistics
     // In production, cache scan results
 
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
+    let sensor = sensor_state.lock();
     let packages = sensor.get_inventory();
 
     let scanner = VulnerabilityScanner::new();
@@ -848,16 +826,10 @@ async fn get_vulnerability_statistics() -> Result<ScanStatistics, String> {
 }
 
 #[tauri::command]
-async fn get_prioritized_vulnerabilities() -> Result<Vec<PrioritizedFinding>, String> {
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
+async fn get_prioritized_vulnerabilities(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<Vec<PrioritizedFinding>, String> {
+    let sensor = sensor_state.lock();
     let packages = sensor.get_inventory();
 
     let scanner = VulnerabilityScanner::new();
@@ -869,16 +841,10 @@ async fn get_prioritized_vulnerabilities() -> Result<Vec<PrioritizedFinding>, St
 }
 
 #[tauri::command]
-async fn get_fix_now_list() -> Result<Vec<PrioritizedFinding>, String> {
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
+async fn get_fix_now_list(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<Vec<PrioritizedFinding>, String> {
+    let sensor = sensor_state.lock();
     let packages = sensor.get_inventory();
 
     let scanner = VulnerabilityScanner::new();
@@ -921,16 +887,10 @@ async fn scan_misconfigurations() -> Result<Vec<Misconfiguration>, String> {
 }
 
 #[tauri::command]
-async fn get_exploitable_exposed() -> Result<Vec<VulnerabilityFinding>, String> {
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
+async fn get_exploitable_exposed(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<Vec<VulnerabilityFinding>, String> {
+    let sensor = sensor_state.lock();
     let packages = sensor.get_inventory();
 
     let scanner = VulnerabilityScanner::new();
@@ -1019,7 +979,9 @@ use malware::threat_intel::{ThreatIntelEngine, ThreatIntelConfig, Ioc, IocType, 
 use malware::incident_response::{IncidentResponseEngine, ResponseConfig, SecurityIncident, IncidentStatus};
 
 #[tauri::command]
-async fn analyze_vulnerabilities_with_ai() -> Result<AnalysisResponse, String> {
+async fn analyze_vulnerabilities_with_ai(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<AnalysisResponse, String> {
     println!("Starting AI vulnerability analysis...");
 
     // Get Claude API key
@@ -1029,16 +991,11 @@ async fn analyze_vulnerabilities_with_ai() -> Result<AnalysisResponse, String> {
     );
 
     // Get vulnerabilities
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+    let packages = {
+        let sensor = sensor_state.lock();
+        sensor.get_inventory()
+    }; // sensor lock released here
 
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
-    let packages = sensor.get_inventory();
     let scanner = VulnerabilityScanner::new();
     let vulnerabilities = scanner.scan_packages(&packages);
 
@@ -1086,7 +1043,9 @@ async fn analyze_vulnerability_ai(
 }
 
 #[tauri::command]
-async fn analyze_security_posture() -> Result<SystemSecurityPosture, String> {
+async fn analyze_security_posture(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<SystemSecurityPosture, String> {
     println!("Starting AI security posture analysis...");
 
     // Get Claude API key
@@ -1096,16 +1055,11 @@ async fn analyze_security_posture() -> Result<SystemSecurityPosture, String> {
     );
 
     // Get all security data
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+    let packages = {
+        let sensor = sensor_state.lock();
+        sensor.get_inventory()
+    }; // sensor lock released here
 
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
-    let packages = sensor.get_inventory();
     let vuln_scanner = VulnerabilityScanner::new();
     let vulnerabilities = vuln_scanner.scan_packages(&packages);
 
@@ -1118,7 +1072,9 @@ async fn analyze_security_posture() -> Result<SystemSecurityPosture, String> {
 }
 
 #[tauri::command]
-async fn generate_remediation_plan() -> Result<AnalysisResponse, String> {
+async fn generate_remediation_plan(
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<AnalysisResponse, String> {
     println!("Generating AI remediation plan...");
 
     // Get Claude API key
@@ -1128,16 +1084,11 @@ async fn generate_remediation_plan() -> Result<AnalysisResponse, String> {
     );
 
     // Get vulnerabilities and misconfigurations
-    #[cfg(target_os = "linux")]
-    let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
+    let packages = {
+        let sensor = sensor_state.lock();
+        sensor.get_inventory()
+    }; // sensor lock released here
 
-    #[cfg(target_os = "windows")]
-    let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-    #[cfg(target_os = "macos")]
-    let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
-    let packages = sensor.get_inventory();
     let scanner = VulnerabilityScanner::new();
     let vulnerabilities = scanner.scan_packages(&packages);
 
@@ -1801,6 +1752,25 @@ fn main() {
     let threat_intel = Arc::new(Mutex::new(None::<ThreatIntelEngine>));
     let incident_response = Arc::new(Mutex::new(None::<IncidentResponseEngine>));
 
+    // Initialize PackageSensor once at startup
+    let package_sensor = {
+        #[cfg(target_os = "linux")]
+        let sensor = PackageSensor::new_linux().expect("Failed to initialize package sensor");
+
+        #[cfg(target_os = "windows")]
+        let sensor = PackageSensor::new_windows().expect("Failed to initialize package sensor");
+
+        #[cfg(target_os = "macos")]
+        let sensor = PackageSensor::new_macos().expect("Failed to initialize package sensor");
+
+        Arc::new(Mutex::new(sensor))
+    };
+
+    // Initialize sudo authenticator
+    let sudo_auth = Arc::new(sudo_auth::SudoAuthenticator::new());
+
+    println!("✓ PackageSensor initialized");
+
     tauri::Builder::default()
         .manage(service)
         .manage(threat_engine)
@@ -1816,6 +1786,8 @@ fn main() {
         .manage(behavioral_engine)
         .manage(threat_intel)
         .manage(incident_response)
+        .manage(package_sensor)
+        .manage(sudo_auth)
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -1931,7 +1903,12 @@ fn main() {
             // Incident Response
             init_incident_response,
             get_active_incidents,
-            get_incident
+            get_incident,
+            // Sudo Authentication
+            check_sudo_required,
+            verify_sudo_password,
+            has_sudo_access,
+            execute_privileged_command
         ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())

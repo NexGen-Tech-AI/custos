@@ -1,1 +1,3 @@
-// Tauri lib.rs - empty for now
+//! Custos library for integration tests
+
+pub mod monitoring;
