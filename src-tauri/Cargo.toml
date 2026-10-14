@@ -24,9 +24,9 @@ reqwest = { version = "0.11", features = ["json"] }
 regex = "1.10"
 async-trait = "0.1"
 sha2 = "0.10"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled"] }  # same as aegis-perf: one bundled SQLite
 r2d2 = "0.8"  # Connection pooling
-r2d2_sqlite = "0.24"  # SQLite connection pool manager
+r2d2_sqlite = "0.25"  # SQLite connection pool manager (rusqlite 0.32)
 keyring = "2.3"  # Secure credential storage
 nvml-wrapper = { version = "0.11", optional = true }
 crossbeam = "0.8"  # Lock-free data structures
@@ -53,6 +53,9 @@ base64 = "0.21"  # Base64 encoding
 log = "0.4"  # Logging
 # YARA alternative - using regex-based pattern matching (no system deps required)
 # yara = "0.29"  # Requires libyara-dev system package
+
+# AEGIS Custos: read-only perf DB views over AEGIS Core (aegis-perf)
+custos-perf = { path = "../custos-perf" }
 
 [features]
 default = []
