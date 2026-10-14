@@ -5,7 +5,7 @@
 //! at view time from the arch file (contract rule 3), never stored.
 use std::path::{Path, PathBuf};
 
-use aegis_perf::rusqlite::Connection;
+pub use aegis_perf::rusqlite::Connection;
 use anyhow::Result;
 
 /// Where Custos reads Core's data from.
@@ -41,3 +41,16 @@ impl Sources {
         self.core.join(rel)
     }
 }
+
+pub mod device;
+pub mod kernel;
+pub mod measure;
+pub mod roof;
+pub mod roofline;
+pub mod winners;
+
+pub use device::{arch_model, devices, measured_archs};
+pub use kernel::kernel_detail;
+pub use measure::{compare, measurements, Filter};
+pub use roofline::roofline;
+pub use winners::winners;

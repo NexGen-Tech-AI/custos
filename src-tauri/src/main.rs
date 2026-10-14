@@ -12,6 +12,7 @@ mod hardware_detector;
 mod ollama;
 mod malware;
 mod sudo_auth;
+mod perf;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
@@ -1788,6 +1789,7 @@ fn main() {
         .manage(incident_response)
         .manage(package_sensor)
         .manage(sudo_auth)
+        .manage(perf::PerfState::from_env())
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -1798,6 +1800,15 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // AEGIS Custos: read-only perf DB views (src/perf.rs)
+            perf::perf_sources,
+            perf::devices,
+            perf::arch_model,
+            perf::winners,
+            perf::measurements,
+            perf::kernel_detail,
+            perf::roofline,
+            perf::compare,
             get_system_info,
             start_monitoring,
             start_high_perf_monitoring,
