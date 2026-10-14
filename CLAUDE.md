@@ -73,3 +73,56 @@ Unrelated security scope (kept, not extended): `malware/`, `threat_detection/`,
 `vulnerability/`, `network/`, `sensors/`, `ai_analysis/`, `storage/`
 (security events), `platform_security.rs`, `sudo_auth.rs`, `keychain.rs`, and
 their UI sections.
+
+## Custos rules (non-negotiable)
+
+### Data contract with AEGIS Core
+
+Each rule matches a mistake Core already caught in its own data. Break one and
+Custos shows numbers Core has disowned.
+
+1. **Read-only.** Open the perf DB read-only (`aegis_perf::db::connect_ro`,
+   SQLite `mode=ro`), so a running tune or sweep is never blocked or
+   corrupted. Writes stay in aegis-perf.
+2. **Protocol v2, cold, idle by default.** Every view defaults to
+   `protocol_version = 2`, `cache_mode = cold`, rows not marked `allow_busy`.
+   Version 1 rows are recorded history: shown only on request, labeled.
+3. **Derived metrics at view time.** % of roof, GB/s % and TFLOPS % are
+   computed from `include/aegis/arch/<sm>.json` when rendering
+   (`aegis_perf::params::ArchParams::roof`). Never store or cache them; the
+   bandwidth changed once (214.7 to 236.8 GB/s) and inflated older percentages.
+4. **The right roof.** Decode shapes (M ≤ 16) use the read-bandwidth roof;
+   everything else the copy roof. Label which roof each row uses.
+5. **The right baseline.** Performance is % of `cublaslt_best`, never of
+   default cuBLAS or of a naive kernel.
+6. **Ties are statistical.** Show the paired ratio and its 95% CI from
+   `winners`. A shape is tied when the CI contains 1.0. Never show a single
+   median as a win.
+7. **Superseded rows stay hidden.** Microbench rows marked superseded stay in
+   the DB for history but are excluded from the hardware-model view.
+8. **Two kinds of data, never mixed.** Continuous telemetry (NVML on the
+   Spark; sysfs and tegrastats on Jetson) is separate from profiled kernel
+   metrics (Nsight). Never imply that NVML provides hardware counters.
+9. **No numbers Core doesn't have.** If a value isn't in the DB, the arch file
+   or an artifact, show "not measured" (or "not profiled" for Nsight data),
+   never an estimate.
+
+### Engineering rules
+
+10. **Rust, Tauri, React only.** No Python, no second backend language.
+11. **One chart library: recharts.** Do not add another.
+12. **No custom theming in v1.** Use the existing Tailwind tokens and
+    `components/ui/*`; no new themes, palettes or theme switches.
+13. **No metric is ever estimated.** Missing data is `None` in Rust, `null`
+    in TS, and "not measured" on screen. No interpolation, no datasheet
+    fallbacks (Core rule 8: datasheet figures only as labeled context).
+14. **All SQL lives in aegis-perf.** Custos queries through
+    `aegis_perf::view` / `db` / `roofline` (path dependency on
+    `~/Documents/projects/aegis/rust/aegis-perf`, a library, never the CLI),
+    so a schema change breaks Custos at compile time. A query Custos needs
+    goes into aegis-perf as its own Core commit, with Core's tests passing.
+15. **Design for many archs.** All data is sm_121 today; every command and
+    view takes the arch as a parameter (sm_87 arrives with the Jetson port).
+16. **Development uses a fixture copy** of the DB:
+    `~/custos-fixtures/aegis_perf.db` (`cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/`).
+    Override with `AEGIS_PERFDB`; the Core root with `AEGIS_CORE`.
