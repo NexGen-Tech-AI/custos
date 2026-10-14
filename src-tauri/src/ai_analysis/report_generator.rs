@@ -243,16 +243,17 @@ impl ReportGenerator {
     pub async fn generate_report(
         &self,
         config: ReportConfiguration,
+        packages: Vec<crate::sensors::Package>,
     ) -> Result<ComprehensiveReport, String> {
         println!("[Report Generator] Starting report generation...");
         let report_id = uuid::Uuid::new_v4().to_string();
         let generated_at = Utc::now();
 
-        // OPTIMIZATION: Scan packages ONCE and reuse the results
-        // This prevents multiple expensive package scans
+        // OPTIMIZATION: Use pre-fetched package list from singleton sensor
+        // This prevents expensive re-initialization of PackageSensor
         let (raw_vulnerabilities, vulnerabilities) = if config.include_vulnerabilities || config.include_ai_analysis {
             println!("[Report Generator] Scanning packages for vulnerabilities (this may take a moment)...");
-            let (raw, vuln_data) = self.collect_vulnerability_data().await?;
+            let (raw, vuln_data) = self.collect_vulnerability_data(packages).await?;
             println!("[Report Generator] Vulnerability scan complete: {} vulnerabilities found", vuln_data.total_count);
             (Some(raw), vuln_data)
         } else {
@@ -360,18 +361,12 @@ impl ReportGenerator {
         })
     }
 
-    async fn collect_vulnerability_data(&self) -> Result<(Vec<VulnerabilityFinding>, VulnerabilityData), String> {
-        // Get package inventory - platform-specific
-        #[cfg(target_os = "linux")]
-        let sensor = PackageSensor::new_linux().map_err(|e| e.to_string())?;
-
-        #[cfg(target_os = "windows")]
-        let sensor = PackageSensor::new_windows().map_err(|e| e.to_string())?;
-
-        #[cfg(target_os = "macos")]
-        let sensor = PackageSensor::new_macos().map_err(|e| e.to_string())?;
-
-        let packages = sensor.get_inventory();
+    async fn collect_vulnerability_data(
+        &self,
+        packages: Vec<crate::sensors::Package>
+    ) -> Result<(Vec<VulnerabilityFinding>, VulnerabilityData), String> {
+        // Use pre-fetched packages from singleton PackageSensor
+        // No need to re-initialize sensor here!
 
         // Scan for vulnerabilities (using async version to avoid runtime panic)
         let scanner = VulnerabilityScanner::new();

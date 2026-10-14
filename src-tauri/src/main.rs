@@ -1104,7 +1104,10 @@ async fn generate_remediation_plan(
 // Report Generation Commands
 
 #[tauri::command]
-async fn generate_security_report(config: ReportConfiguration) -> Result<ComprehensiveReport, String> {
+async fn generate_security_report(
+    config: ReportConfiguration,
+    sensor_state: State<'_, PackageSensorState>
+) -> Result<ComprehensiveReport, String> {
     println!("Generating comprehensive security report...");
 
     // Get Claude API key if AI analysis is requested
@@ -1117,8 +1120,14 @@ async fn generate_security_report(config: ReportConfiguration) -> Result<Compreh
         None
     };
 
+    // Get package inventory from singleton sensor (no re-initialization!)
+    let packages = {
+        let sensor = sensor_state.lock();
+        sensor.get_inventory()
+    };
+
     let generator = ReportGenerator::new(api_key);
-    generator.generate_report(config).await
+    generator.generate_report(config, packages).await
 }
 
 #[tauri::command]

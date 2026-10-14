@@ -19,7 +19,7 @@ pub use file_sensor::FileSensor;
 pub use network_sensor::NetworkSensor;
 pub use identity_sensor::IdentitySensor;
 pub use persistence_sensor::PersistenceSensor;
-pub use package_sensor::PackageSensor;
+pub use package_sensor::{Package, PackageSensor};
 
 /// Unified Security Event - Sigma-like schema
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -942,6 +942,7 @@ name = "custos"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
+ "anyhow",
  "async-trait",
  "base64 0.21.7",
  "bincode",
@@ -976,6 +977,7 @@ dependencies = [
  "sysinfo",
  "tauri",
  "tauri-build",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tracing",

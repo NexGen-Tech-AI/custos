@@ -56,6 +56,10 @@ log = "0.4"  # Logging
 
 # AEGIS Custos: read-only perf DB views over AEGIS Core (aegis-perf)
 custos-perf = { path = "../custos-perf" }
+anyhow = "1.0"  # EbpfMonitor (eBPF and stub) error type
+
+[dev-dependencies]
+tempfile = "3"
 
 [features]
 default = []

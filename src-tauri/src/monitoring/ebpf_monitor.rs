@@ -430,9 +430,10 @@ impl EbpfMonitor {
     pub fn stop(&self) {}
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux", feature = "ebpf"))]
 mod tests {
     use super::*;
+    use custos_ebpf_common::EventType;
 
     #[test]
     fn test_event_parsing() {
