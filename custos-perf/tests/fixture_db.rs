@@ -215,7 +215,7 @@ fn compare_flags_and_refuses_cross_protocol() {
     // Two full protocol v2 sweeps on the Spark.
     let c = custos_perf::compare(&con, "cef5728", "7b99002", &Filter::default()).unwrap();
     assert_eq!(c.rows.len(), 294);
-    assert_eq!(c.slower + c.faster + c.within, 294);
+    assert_eq!(c.confirmed_slower + c.unconfirmed_slower + c.faster + c.within, 294);
     assert!(c.not_comparable.is_empty());
     assert_eq!((c.excluded_a, c.excluded_b), (56, 56), "warm rows are never compared with cold");
     for r in &c.rows {
@@ -223,6 +223,11 @@ fn compare_flags_and_refuses_cross_protocol() {
         let expect = if r.change_pct > 3.0 { "slower" } else if r.change_pct < -3.0 { "faster" } else { "within" };
         assert_eq!(r.flag, expect);
     }
+    // The DB holds no cross-build paired results: every slowdown is
+    // unconfirmed, none is called a regression.
+    assert!(c.unconfirmed_slower > 0, "these two sweeps differ by > 3% somewhere");
+    assert_eq!(c.confirmed_slower, 0);
+    assert!(c.rows.iter().filter(|r| r.flag == "slower").all(|r| r.status == "unconfirmed" && r.paired.is_none()));
 
     // A protocol v1 build against a v2 build: nothing comparable.
     let x = custos_perf::compare(&con, "7365a7b", "cef5728", &Filter::default()).unwrap();
