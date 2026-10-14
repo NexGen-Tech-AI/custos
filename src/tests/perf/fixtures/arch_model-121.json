@@ -1,0 +1,303 @@
+{
+  "sm": 121,
+  "arch_file": "/home/riffe007/Documents/projects/aegis/include/aegis/arch/sm_121.json",
+  "device": "NVIDIA GB10",
+  "sm_count": 48,
+  "l2_bytes": 25165824,
+  "generated_by": "aegis-perf emit-arch on spark-5822, 2026-10-14 20:14 UTC",
+  "roof_rule": "memory roof: read_bw_gbps for GEMV and decode shapes (M <= 16), copy_bw_gbps elsewhere",
+  "roofs": {
+    "sm": 121,
+    "arch_file": "/home/riffe007/Documents/projects/aegis/include/aegis/arch/sm_121.json",
+    "copy_bw_gbps": 236.696,
+    "read_bw_gbps": 257.841,
+    "peak_tflops": 125.597,
+    "ridge_read": 487.110273385536,
+    "ridge_copy": 530.6257815932673,
+    "decode_max_m": 16.0
+  },
+  "copy_bw": {
+    "gbps": 236.696,
+    "reps": [
+      236.696,
+      236.739,
+      230.24,
+      236.317,
+      237.948
+    ],
+    "method": "cudaMemcpyAsync D2D, 512 MiB, (read + write bytes) / time; median of 20 copies per rep, median of reps",
+    "source": {
+      "run_id": "941ff9215564",
+      "probe": "dram_bandwidth",
+      "detail": "memcpy_d2d",
+      "device_id": "spark-5822",
+      "git_sha": "3b46bf9",
+      "started_at": "2026-10-14T20:13:25.303600+00:00",
+      "superseded_rows": 0,
+      "superseded_by": []
+    }
+  },
+  "read_bw": {
+    "gbps": 257.841,
+    "reps": [
+      258.27,
+      257.841,
+      256.086,
+      258.764,
+      257.0
+    ],
+    "method": "read-only stream, 4 independent 128-bit loads per thread per iteration (SASS-proven), 512 MiB, bytes read / time; median of 20 runs per rep, median of reps",
+    "source": {
+      "run_id": "941ff9215564",
+      "probe": "dram_bandwidth",
+      "detail": "read_v4",
+      "device_id": "spark-5822",
+      "git_sha": "3b46bf9",
+      "started_at": "2026-10-14T20:13:25.303600+00:00",
+      "superseded_rows": 0,
+      "superseded_by": []
+    }
+  },
+  "mma_peak": {
+    "tflops": 125.597,
+    "hmma_per_clk_per_sm": 0.249981,
+    "instruction": "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32",
+    "at": {
+      "chains": 8,
+      "sms": 48,
+      "warps_per_sm": 32
+    },
+    "source": {
+      "run_id": "eb3e197afc8e",
+      "probe": "mma_throughput",
+      "detail": null,
+      "device_id": "spark-5822",
+      "git_sha": "dcdb29b",
+      "started_at": "2026-10-14T19:20:06.112466+00:00",
+      "superseded_rows": 0,
+      "superseded_by": []
+    }
+  },
+  "l2_latency": {
+    "ns": 132.292,
+    "cycles": 337.9465,
+    "ns_min": 132.115,
+    "ns_max": 139.376,
+    "points": 30,
+    "working_sets": "256 KiB - 8 MiB",
+    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; the value is the median across points and runs",
+    "sources": [
+      {
+        "run_id": "6141123bbcc4",
+        "probe": "ptr_chase_latency",
+        "detail": "both",
+        "device_id": "spark-5822",
+        "git_sha": "318b023",
+        "started_at": "2026-10-14T18:51:59.436096+00:00",
+        "superseded_rows": 144,
+        "superseded_by": [
+          "f1925d6a0fa4"
+        ]
+      },
+      {
+        "run_id": "f1925d6a0fa4",
+        "probe": "ptr_chase_latency",
+        "detail": "cross_page",
+        "device_id": "spark-5822",
+        "git_sha": "f7ec84c",
+        "started_at": "2026-10-14T19:01:11.757251+00:00",
+        "superseded_rows": 144,
+        "superseded_by": [
+          "a825f4e557a3"
+        ]
+      },
+      {
+        "run_id": "a825f4e557a3",
+        "probe": "ptr_chase_latency",
+        "detail": "both",
+        "device_id": "spark-5822",
+        "git_sha": "f7ec84c",
+        "started_at": "2026-10-14T19:02:00.964368+00:00",
+        "superseded_rows": 0,
+        "superseded_by": []
+      }
+    ]
+  },
+  "dram_latency": {
+    "ns": 381.25,
+    "cycles": 960.66,
+    "ns_min": 370.439,
+    "ns_max": 400.853,
+    "points": 25,
+    "working_sets": ">= 32 MiB",
+    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; the value is the median across points and runs",
+    "sources": [
+      {
+        "run_id": "6141123bbcc4",
+        "probe": "ptr_chase_latency",
+        "detail": "both",
+        "device_id": "spark-5822",
+        "git_sha": "318b023",
+        "started_at": "2026-10-14T18:51:59.436096+00:00",
+        "superseded_rows": 144,
+        "superseded_by": [
+          "f1925d6a0fa4"
+        ]
+      },
+      {
+        "run_id": "f1925d6a0fa4",
+        "probe": "ptr_chase_latency",
+        "detail": "cross_page",
+        "device_id": "spark-5822",
+        "git_sha": "f7ec84c",
+        "started_at": "2026-10-14T19:01:11.757251+00:00",
+        "superseded_rows": 144,
+        "superseded_by": [
+          "a825f4e557a3"
+        ]
+      },
+      {
+        "run_id": "a825f4e557a3",
+        "probe": "ptr_chase_latency",
+        "detail": "both",
+        "device_id": "spark-5822",
+        "git_sha": "f7ec84c",
+        "started_at": "2026-10-14T19:02:00.964368+00:00",
+        "superseded_rows": 0,
+        "superseded_by": []
+      }
+    ]
+  },
+  "sm_clock_mhz": [
+    [
+      "6141123bbcc4",
+      2557.22
+    ],
+    [
+      "f1925d6a0fa4",
+      2558.06
+    ],
+    [
+      "a825f4e557a3",
+      2406.78
+    ]
+  ],
+  "power": null,
+  "probes": [
+    {
+      "probe": "dram_bandwidth",
+      "rows": 12,
+      "runs": [
+        "941ff9215564"
+      ],
+      "units": [
+        "GB/s"
+      ]
+    },
+    {
+      "probe": "gmem_to_smem_copy",
+      "rows": 4,
+      "runs": [
+        "fb77bc085d64"
+      ],
+      "units": [
+        "GB/s"
+      ]
+    },
+    {
+      "probe": "launch_overhead",
+      "rows": 54,
+      "runs": [
+        "0de7ff68bb2f"
+      ],
+      "units": [
+        "us"
+      ]
+    },
+    {
+      "probe": "ldmatrix_x4_throughput",
+      "rows": 12,
+      "runs": [
+        "eb3e197afc8e"
+      ],
+      "units": [
+        "B/clk/SM",
+        "GB/s"
+      ]
+    },
+    {
+      "probe": "mma_latency",
+      "rows": 3,
+      "runs": [
+        "eb3e197afc8e"
+      ],
+      "units": [
+        "cycles"
+      ]
+    },
+    {
+      "probe": "mma_throughput",
+      "rows": 48,
+      "runs": [
+        "eb3e197afc8e"
+      ],
+      "units": [
+        "TFLOPS",
+        "HMMA/clk/SM"
+      ]
+    },
+    {
+      "probe": "ptr_chase_latency",
+      "rows": 144,
+      "runs": [
+        "a825f4e557a3"
+      ],
+      "units": [
+        "cycles",
+        "ns"
+      ]
+    },
+    {
+      "probe": "sm_clock",
+      "rows": 1,
+      "runs": [
+        "a825f4e557a3"
+      ],
+      "units": [
+        "MHz"
+      ]
+    },
+    {
+      "probe": "smem_bank_conflict",
+      "rows": 144,
+      "runs": [
+        "fb77bc085d64"
+      ],
+      "units": [
+        "cycles/warp_load"
+      ]
+    },
+    {
+      "probe": "smem_bank_conflict_calibration",
+      "rows": 2,
+      "runs": [
+        "fb77bc085d64"
+      ],
+      "units": [
+        "cycles/iter"
+      ]
+    },
+    {
+      "probe": "smem_bank_conflict_fit",
+      "rows": 18,
+      "runs": [
+        "fb77bc085d64"
+      ],
+      "units": [
+        "cycles/warp_load",
+        "cycles/way",
+        "1"
+      ]
+    }
+  ]
+}

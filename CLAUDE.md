@@ -22,6 +22,11 @@ Commands: `npm run tauri:dev` (app), `npm run build` (frontend), `npm test`
 (vitest), `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
 layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
+Perf views: `src/components/sections/perf/` (Device, Roofline), API and types in
+`src/perf/`. Their tests (`src/tests/perf/`) run on real command output;
+refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump --
+devices | arch_model 121 | roofline 121` into `src/tests/perf/fixtures/`.
+
 `cargo test` in `src-tauri` does **not** compile today: pre-existing errors in
 the security modules (`tempfile` missing in `malware/quarantine.rs` and
 `malware/ml_inference.rs`, `sensors::Package` in

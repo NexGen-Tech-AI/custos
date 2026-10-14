@@ -9,6 +9,8 @@ import {
   FileText,
   Settings,
   ChevronLeft,
+  Cpu,
+  LineChart,
   ChevronRight
 } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -23,6 +25,8 @@ interface SidebarProps {
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'monitoring', label: 'System Monitoring', icon: Activity },
+  { id: 'perf-device', label: 'Device (AEGIS)', icon: Cpu },
+  { id: 'perf-roofline', label: 'Roofline (AEGIS)', icon: LineChart },
   { id: 'threats', label: 'Threat Detection', icon: Shield },
   { id: 'network', label: 'Network Security', icon: Network },
   { id: 'vulnerabilities', label: 'Vulnerability Scan', icon: Search },

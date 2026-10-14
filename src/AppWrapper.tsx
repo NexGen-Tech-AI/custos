@@ -9,6 +9,8 @@ import NetworkSecuritySection from './components/sections/network-security/Netwo
 import VulnerabilitiesSection from './components/sections/vulnerabilities/VulnerabilitiesSection';
 import AIAnalysisSection from './components/AIAnalysisSection';
 import ReportsSection from './components/sections/ReportsSection';
+import { DeviceSection } from './components/sections/perf/DeviceSection';
+import { RooflineSection } from './components/sections/perf/RooflineSection';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ScanProvider, useScan } from './contexts/ScanContext';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -126,6 +128,10 @@ function App() {
         return <DashboardSection />;
       case 'monitoring':
         return <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
+      case 'perf-device':
+        return <DeviceSection />;
+      case 'perf-roofline':
+        return <RooflineSection />;
       case 'threats':
         return <ThreatDetectionSection />;
       case 'network':

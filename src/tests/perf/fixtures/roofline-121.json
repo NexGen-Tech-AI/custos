@@ -1,0 +1,1755 @@
+{
+  "sm": 121,
+  "roofs": {
+    "sm": 121,
+    "arch_file": "/home/riffe007/Documents/projects/aegis/include/aegis/arch/sm_121.json",
+    "copy_bw_gbps": 236.696,
+    "read_bw_gbps": 257.841,
+    "peak_tflops": 125.597,
+    "ridge_read": 487.110273385536,
+    "ridge_copy": 530.6257815932673,
+    "decode_max_m": 16.0
+  },
+  "points": [
+    {
+      "label": "1024x1024x1024 mma_pipe_128x128x32_2x4_s2",
+      "shape_bucket": "1024x1024x1024",
+      "m": 1024,
+      "n": 1024,
+      "k": 1024,
+      "impl": "mma_pipe_128x128x32_2x4_s2",
+      "series": "winner",
+      "median_us": 47.112,
+      "roof": {
+        "ai": 341.3333333333333,
+        "tflops": 45.58251927322126,
+        "gbps": 133.5425369332654,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 36.29268157139204,
+        "pct_bw": 56.419431225396885,
+        "pct_roof": 56.419431225396885,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 75.18466632705044,
+          "ci": {
+            "ratio_median": 0.74304,
+            "lo": 0.73873,
+            "hi": 0.74719,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_pipe_128x64x32_2x2_s2",
+          "ci": {
+            "ratio_median": 1.04659,
+            "lo": 1.04192,
+            "hi": 1.04807,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 4.658999999999991,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "1024x1024x1024 cublaslt_best",
+      "shape_bucket": "1024x1024x1024",
+      "m": 1024,
+      "n": 1024,
+      "k": 1024,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 35.421,
+      "roof": {
+        "ai": 341.3333333333333,
+        "tflops": 60.62741447164112,
+        "gbps": 177.61937833488608,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 48.27138743094272,
+        "pct_bw": 75.04114067617792,
+        "pct_roof": 75.04114067617793,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 75.18466632705044,
+          "ci": {
+            "ratio_median": 0.74304,
+            "lo": 0.73873,
+            "hi": 0.74719,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_pipe_128x64x32_2x2_s2",
+          "ci": {
+            "ratio_median": 1.04659,
+            "lo": 1.04192,
+            "hi": 1.04807,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 4.658999999999991,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "16x4864x896 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "16x4864x896",
+      "m": 16,
+      "n": 4864,
+      "k": 896,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 42.678,
+      "roof": {
+        "ai": 15.668660837551771,
+        "tflops": 3.267740006560758,
+        "gbps": 208.55260321477112,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.6017659709712477,
+        "pct_bw": 80.88418956441028,
+        "pct_roof": 80.88418956441028,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 88.09456863020762,
+          "ci": {
+            "ratio_median": 0.88748,
+            "lo": 0.88297,
+            "hi": 0.8963,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x128x32_2x4_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "mma_pipe_64x128x32_2x4_s4",
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 1.00167,
+            "lo": 0.99742,
+            "hi": 1.00594,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": 0.16700000000000603,
+          "pick_reason": "tie-break: less smem (38912 B), neighbors and registers tied"
+        }
+      }
+    },
+    {
+      "label": "16x4864x896 cublaslt_best",
+      "shape_bucket": "16x4864x896",
+      "m": 16,
+      "n": 4864,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 37.597,
+      "roof": {
+        "ai": 15.668660837551771,
+        "tflops": 3.709354682554459,
+        "gbps": 236.7371864776445,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.9533784107538072,
+        "pct_bw": 91.8151831856239,
+        "pct_roof": 91.81518318562388,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 88.09456863020762,
+          "ci": {
+            "ratio_median": 0.88748,
+            "lo": 0.88297,
+            "hi": 0.8963,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x128x32_2x4_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "mma_pipe_64x128x32_2x4_s4",
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 1.00167,
+            "lo": 0.99742,
+            "hi": 1.00594,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": 0.16700000000000603,
+          "pick_reason": "tie-break: less smem (38912 B), neighbors and registers tied"
+        }
+      }
+    },
+    {
+      "label": "16x896x4864 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "16x896x4864",
+      "m": 16,
+      "n": 896,
+      "k": 4864,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 51.369,
+      "roof": {
+        "ai": 15.668660837551771,
+        "tflops": 2.7148787790301547,
+        "gbps": 173.26807997041018,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.1615793203899414,
+        "pct_bw": 67.19958422842379,
+        "pct_roof": 67.19958422842379,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 74.12252525842435,
+          "ci": {
+            "ratio_median": 0.7445,
+            "lo": 0.74065,
+            "hi": 0.74802,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.15796,
+            "lo": 1.15322,
+            "hi": 1.16489,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 15.79600000000001,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "16x896x4864 cublaslt_best",
+      "shape_bucket": "16x896x4864",
+      "m": 16,
+      "n": 896,
+      "k": 4864,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 38.076,
+      "roof": {
+        "ai": 15.668660837551771,
+        "tflops": 3.662690618762475,
+        "gbps": 233.7590082991911,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.9162246062903376,
+        "pct_bw": 90.66013872859286,
+        "pct_roof": 90.66013872859286,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 74.12252525842435,
+          "ci": {
+            "ratio_median": 0.7445,
+            "lo": 0.74065,
+            "hi": 0.74802,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.15796,
+            "lo": 1.15322,
+            "hi": 1.16489,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 15.79600000000001,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "16x896x896 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "16x896x896",
+      "m": 16,
+      "n": 896,
+      "k": 896,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 10.887,
+      "roof": {
+        "ai": 15.448275862068966,
+        "tflops": 2.3597053366400296,
+        "gbps": 152.74878295214478,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 1.8787911627188785,
+        "pct_bw": 59.24146390688245,
+        "pct_roof": 59.241463906882444,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 94.05713235969505,
+          "ci": {
+            "ratio_median": 0.94149,
+            "lo": 0.93589,
+            "hi": 0.94685,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.15016,
+            "lo": 1.14602,
+            "hi": 1.15504,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 15.016000000000007,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "16x896x896 cublaslt_best",
+      "shape_bucket": "16x896x896",
+      "m": 16,
+      "n": 896,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 10.24,
+      "roof": {
+        "ai": 15.448275862068966,
+        "tflops": 2.5088,
+        "gbps": 162.4,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 1.9974999402851978,
+        "pct_bw": 62.98455249553019,
+        "pct_roof": 62.98455249553019,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 94.05713235969505,
+          "ci": {
+            "ratio_median": 0.94149,
+            "lo": 0.93589,
+            "hi": 0.94685,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.15016,
+            "lo": 1.14602,
+            "hi": 1.15504,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 15.016000000000007,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "1x4864x896 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "1x4864x896",
+      "m": 1,
+      "n": 4864,
+      "k": 896,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 41.863,
+      "roof": {
+        "ai": 0.9986800809550348,
+        "tflops": 0.2082098272937917,
+        "gbps": 208.48501062991187,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.16577611510927148,
+        "pct_bw": 80.857974732456,
+        "pct_roof": 80.857974732456,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 86.86668418412441,
+          "ci": {
+            "ratio_median": 0.87831,
+            "lo": 0.87157,
+            "hi": 0.8805,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x128x32_2x4_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "mma_pipe_64x128x32_2x4_s4",
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 0.99819,
+            "lo": 0.99499,
+            "hi": 1.00248,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": -0.18099999999999783,
+          "pick_reason": "tie-break: less smem (38912 B), neighbors and registers tied"
+        }
+      }
+    },
+    {
+      "label": "1x4864x896 cublaslt_best",
+      "shape_bucket": "1x4864x896",
+      "m": 1,
+      "n": 4864,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 36.365,
+      "roof": {
+        "ai": 0.9986800809550348,
+        "tflops": 0.23968893166506255,
+        "gbps": 240.00571978550803,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.19083969494897376,
+        "pct_bw": 93.08283778976502,
+        "pct_roof": 93.08283778976502,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 86.86668418412441,
+          "ci": {
+            "ratio_median": 0.87831,
+            "lo": 0.87157,
+            "hi": 0.8805,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x128x32_2x4_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "mma_pipe_64x128x32_2x4_s4",
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 0.99819,
+            "lo": 0.99499,
+            "hi": 1.00248,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": -0.18099999999999783,
+          "pick_reason": "tie-break: less smem (38912 B), neighbors and registers tied"
+        }
+      }
+    },
+    {
+      "label": "1x896x4864 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "1x896x4864",
+      "m": 1,
+      "n": 896,
+      "k": 4864,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 50.881,
+      "roof": {
+        "ai": 0.9986800809550348,
+        "tflops": 0.17130732493465145,
+        "gbps": 171.53373557909634,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.136394440101795,
+        "pct_bw": 66.52694318556644,
+        "pct_roof": 66.52694318556642,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 77.84045124899275,
+          "ci": {
+            "ratio_median": 0.77923,
+            "lo": 0.77369,
+            "hi": 0.78256,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.17815,
+            "lo": 1.17163,
+            "hi": 1.18508,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 17.815000000000005,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "1x896x4864 cublaslt_best",
+      "shape_bucket": "1x896x4864",
+      "m": 1,
+      "n": 896,
+      "k": 4864,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 39.606,
+      "roof": {
+        "ai": 0.9986800809550348,
+        "tflops": 0.22007493814068577,
+        "gbps": 220.3658031611372,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.17522308505831014,
+        "pct_bw": 85.4657727673788,
+        "pct_roof": 85.46577276737881,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 77.84045124899275,
+          "ci": {
+            "ratio_median": 0.77923,
+            "lo": 0.77369,
+            "hi": 0.78256,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.17815,
+            "lo": 1.17163,
+            "hi": 1.18508,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 17.815000000000005,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "1x896x896 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "1x896x896",
+      "m": 1,
+      "n": 896,
+      "k": 896,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 10.761,
+      "roof": {
+        "ai": 0.9977728285077951,
+        "tflops": 0.1492084378775207,
+        "gbps": 149.54149242635444,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.11879936453698792,
+        "pct_bw": 57.99756145312593,
+        "pct_roof": 57.99756145312595,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 82.07415667688878,
+          "ci": {
+            "ratio_median": 0.84234,
+            "lo": 0.83467,
+            "hi": 0.8481,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.1802,
+            "lo": 1.17611,
+            "hi": 1.18505,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 18.019999999999992,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "1x896x896 cublaslt_best",
+      "shape_bucket": "1x896x896",
+      "m": 1,
+      "n": 896,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 8.832,
+      "roof": {
+        "ai": 0.9977728285077951,
+        "tflops": 0.18179710144927533,
+        "gbps": 182.2028985507246,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 0.14474637248443462,
+        "pct_bw": 70.66482776235145,
+        "pct_roof": 70.66482776235145,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 82.07415667688878,
+          "ci": {
+            "ratio_median": 0.84234,
+            "lo": 0.83467,
+            "hi": 0.8481,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.1802,
+            "lo": 1.17611,
+            "hi": 1.18505,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 18.019999999999992,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "2048x2048x2048 mma_pipe_128x128x32_2x4_s2",
+      "shape_bucket": "2048x2048x2048",
+      "m": 2048,
+      "n": 2048,
+      "k": 2048,
+      "impl": "mma_pipe_128x128x32_2x4_s2",
+      "series": "winner",
+      "median_us": 275.795,
+      "roof": {
+        "ai": 682.6666666666666,
+        "tflops": 62.292170575971284,
+        "gbps": 91.24829674214543,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 49.59686184858817,
+        "pct_bw": 38.55084020944394,
+        "pct_roof": 49.59686184858817,
+        "bound": "compute"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 71.07996881741873,
+          "ci": {
+            "ratio_median": 0.6887,
+            "lo": 0.68566,
+            "hi": 0.6909,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_pipe_128x256x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.02193,
+            "lo": 1.01832,
+            "hi": 1.02621,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 2.1930000000000005,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "2048x2048x2048 cublaslt_best",
+      "shape_bucket": "2048x2048x2048",
+      "m": 2048,
+      "n": 2048,
+      "k": 2048,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 196.035,
+      "roof": {
+        "ai": 682.6666666666666,
+        "tflops": 87.63674437727958,
+        "gbps": 128.37413727140563,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 69.77614463504669,
+        "pct_bw": 54.23587102080544,
+        "pct_roof": 69.77614463504669,
+        "bound": "compute"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 71.07996881741873,
+          "ci": {
+            "ratio_median": 0.6887,
+            "lo": 0.68566,
+            "hi": 0.6909,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_pipe_128x256x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.02193,
+            "lo": 1.01832,
+            "hi": 1.02621,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 2.1930000000000005,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "256x256x256 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "256x256x256",
+      "m": 256,
+      "n": 256,
+      "k": 256,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 4.103,
+      "roof": {
+        "ai": 85.33333333333333,
+        "tflops": 8.178023884962224,
+        "gbps": 95.83621740190107,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 6.511321038689001,
+        "pct_bw": 40.48915799248871,
+        "pct_roof": 40.48915799248871,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 91.78649768462101,
+          "ci": {
+            "ratio_median": 0.92697,
+            "lo": 0.92367,
+            "hi": 0.93204,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.09965,
+            "lo": 1.09747,
+            "hi": 1.10233,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 9.965000000000002,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "256x256x256 cublaslt_best",
+      "shape_bucket": "256x256x256",
+      "m": 256,
+      "n": 256,
+      "k": 256,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 3.766,
+      "roof": {
+        "ai": 85.33333333333333,
+        "tflops": 8.909833244822092,
+        "gbps": 104.4121083377589,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 7.093985720058674,
+        "pct_bw": 44.11232481231575,
+        "pct_roof": 44.112324812315755,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 91.78649768462101,
+          "ci": {
+            "ratio_median": 0.92697,
+            "lo": 0.92367,
+            "hi": 0.93204,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "ci": {
+            "ratio_median": 1.09965,
+            "lo": 1.09747,
+            "hi": 1.10233,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 9.965000000000002,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "4096x4096x4096 mma_pipe_128x256x32_2x4_s3",
+      "shape_bucket": "4096x4096x4096",
+      "m": 4096,
+      "n": 4096,
+      "k": 4096,
+      "impl": "mma_pipe_128x256x32_2x4_s3",
+      "series": "winner",
+      "median_us": 2236.688,
+      "roof": {
+        "ai": 1365.3333333333333,
+        "tflops": 61.44753021968195,
+        "gbps": 45.00551529761862,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 48.924361425577004,
+        "pct_bw": 19.014058242479223,
+        "pct_roof": 48.924361425577004,
+        "bound": "compute"
+      },
+      "hover": {
+        "kernel_id": "0beee566487c829c",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 256,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 63.60833518130379,
+          "ci": {
+            "ratio_median": 0.66227,
+            "lo": 0.65679,
+            "hi": 0.66453,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x256x32_2x4_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x256x32_2x4_s3"
+          ],
+          "contender": "mma_pipe_128x256x32_2x4_s2",
+          "ci": {
+            "ratio_median": 1.06049,
+            "lo": 1.05513,
+            "hi": 1.06712,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 6.048999999999993,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "4096x4096x4096 cublaslt_best",
+      "shape_bucket": "4096x4096x4096",
+      "m": 4096,
+      "n": 4096,
+      "k": 4096,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 1422.72,
+      "roof": {
+        "ai": 1365.3333333333333,
+        "tflops": 96.60295312640577,
+        "gbps": 70.75411605937923,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 76.91501638287998,
+        "pct_bw": 29.892400403631335,
+        "pct_roof": 76.91501638287998,
+        "bound": "compute"
+      },
+      "hover": {
+        "kernel_id": "0beee566487c829c",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 256,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 63.60833518130379,
+          "ci": {
+            "ratio_median": 0.66227,
+            "lo": 0.65679,
+            "hi": 0.66453,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x256x32_2x4_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x256x32_2x4_s3"
+          ],
+          "contender": "mma_pipe_128x256x32_2x4_s2",
+          "ci": {
+            "ratio_median": 1.06049,
+            "lo": 1.05513,
+            "hi": 1.06712,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 6.048999999999993,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x4864x896 mma_pipe_128x128x32_2x4_s2",
+      "shape_bucket": "512x4864x896",
+      "m": 512,
+      "n": 4864,
+      "k": 896,
+      "impl": "mma_pipe_128x128x32_2x4_s2",
+      "series": "winner",
+      "median_us": 112.88,
+      "roof": {
+        "ai": 305.36322869955154,
+        "tflops": 39.53525386250886,
+        "gbps": 129.46959603118356,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 31.477864807685584,
+        "pct_bw": 54.698683556622655,
+        "pct_roof": 54.69868355662266,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 67.12526576895819,
+          "ci": {
+            "ratio_median": 0.6691,
+            "lo": 0.66285,
+            "hi": 0.67268,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_64x128x32_2x4",
+          "ci": {
+            "ratio_median": 1.04687,
+            "lo": 1.04237,
+            "hi": 1.04919,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 4.686999999999997,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x4864x896 cublaslt_best",
+      "shape_bucket": "512x4864x896",
+      "m": 512,
+      "n": 4864,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 75.771,
+      "roof": {
+        "ai": 305.36322869955154,
+        "tflops": 58.897724142481955,
+        "gbps": 192.87759169075238,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 46.894212554823724,
+        "pct_bw": 81.4874740978945,
+        "pct_roof": 81.48747409789453,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "9e2efcd73edd4fa9",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 128,
+          "STAGES": 2,
+          "WARPS_M": 2,
+          "WARPS_N": 4,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 67.12526576895819,
+          "ci": {
+            "ratio_median": 0.6691,
+            "lo": 0.66285,
+            "hi": 0.67268,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x128x32_2x4_s2"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x128x32_2x4_s2"
+          ],
+          "contender": "mma_64x128x32_2x4",
+          "ci": {
+            "ratio_median": 1.04687,
+            "lo": 1.04237,
+            "hi": 1.04919,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 4.686999999999997,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x512x512 mma_pipe_64x64x32_2x2_s4",
+      "shape_bucket": "512x512x512",
+      "m": 512,
+      "n": 512,
+      "k": 512,
+      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "series": "winner",
+      "median_us": 10.244,
+      "roof": {
+        "ai": 170.66666666666666,
+        "tflops": 26.204163998438112,
+        "gbps": 153.54002342834832,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 20.86368623330025,
+        "pct_bw": 64.86802625661115,
+        "pct_roof": 64.86802625661116,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 79.69543147208121,
+          "ci": {
+            "ratio_median": 0.80805,
+            "lo": 0.80316,
+            "hi": 0.81367,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 1.01737,
+            "lo": 1.00592,
+            "hi": 1.01925,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.7370000000000108,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x512x512 cublaslt_best",
+      "shape_bucket": "512x512x512",
+      "m": 512,
+      "n": 512,
+      "k": 512,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 8.164,
+      "roof": {
+        "ai": 170.66666666666666,
+        "tflops": 32.88038412542871,
+        "gbps": 192.65850073493388,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 26.17927508254872,
+        "pct_bw": 81.39491192708532,
+        "pct_roof": 81.39491192708532,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "68018941c4de922b",
+        "config": {
+          "BK": 32,
+          "BM": 64,
+          "BN": 64,
+          "STAGES": 4,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 79.69543147208121,
+          "ci": {
+            "ratio_median": 0.80805,
+            "lo": 0.80316,
+            "hi": 0.81367,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_64x64x32_2x2_s4"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "ci": {
+            "ratio_median": 1.01737,
+            "lo": 1.00592,
+            "hi": 1.01925,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.7370000000000108,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x896x4864 mma_pipe_128x64x32_2x2_s3",
+      "shape_bucket": "512x896x4864",
+      "m": 512,
+      "n": 896,
+      "k": 4864,
+      "impl": "mma_pipe_128x64x32_2x2_s3",
+      "series": "winner",
+      "median_us": 110.252,
+      "roof": {
+        "ai": 305.36322869955154,
+        "tflops": 40.47762812465987,
+        "gbps": 132.55567245945653,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 32.228180708663324,
+        "pct_bw": 56.00249791270513,
+        "pct_roof": 56.00249791270513,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "cc2294c67d4152ef",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 64,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 63.75666654573161,
+          "ci": {
+            "ratio_median": 0.67333,
+            "lo": 0.67067,
+            "hi": 0.67659,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x64x32_2x2_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x64x32_2x2_s3"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.01964,
+            "lo": 1.01605,
+            "hi": 1.02374,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.9640000000000102,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x896x4864 cublaslt_best",
+      "shape_bucket": "512x896x4864",
+      "m": 512,
+      "n": 896,
+      "k": 4864,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 70.293,
+      "roof": {
+        "ai": 305.36322869955154,
+        "tflops": 63.48767951289602,
+        "gbps": 207.90872490859687,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 50.548722909700096,
+        "pct_bw": 87.83787005635789,
+        "pct_roof": 87.8378700563579,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "cc2294c67d4152ef",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 64,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 63.75666654573161,
+          "ci": {
+            "ratio_median": 0.67333,
+            "lo": 0.67067,
+            "hi": 0.67659,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x64x32_2x2_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x64x32_2x2_s3"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.01964,
+            "lo": 1.01605,
+            "hi": 1.02374,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.9640000000000102,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x896x896 mma_pipe_128x64x32_2x2_s3",
+      "shape_bucket": "512x896x896",
+      "m": 512,
+      "n": 896,
+      "k": 896,
+      "impl": "mma_pipe_128x64x32_2x2_s3",
+      "series": "winner",
+      "median_us": 24.171,
+      "roof": {
+        "ai": 238.93333333333334,
+        "tflops": 34.01115320011584,
+        "gbps": 142.34578627280624,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 27.079590436169532,
+        "pct_bw": 60.138653070945956,
+        "pct_roof": 60.13865307094597,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "cc2294c67d4152ef",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 64,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 74.82934094576144,
+          "ci": {
+            "ratio_median": 0.7507,
+            "lo": 0.74637,
+            "hi": 0.75428,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x64x32_2x2_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x64x32_2x2_s3"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.01903,
+            "lo": 1.01673,
+            "hi": 1.02158,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.9030000000000102,
+          "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "512x896x896 cublaslt_best",
+      "shape_bucket": "512x896x896",
+      "m": 512,
+      "n": 896,
+      "k": 896,
+      "impl": "cublaslt_best",
+      "series": "cublaslt_best",
+      "median_us": 18.087,
+      "roof": {
+        "ai": 238.93333333333334,
+        "tflops": 45.451627356665014,
+        "gbps": 190.22723503068502,
+        "roof": "copy",
+        "roof_gbps": 236.696,
+        "pct_peak": 36.188465772801116,
+        "pct_bw": 80.36774387006331,
+        "pct_roof": 80.36774387006331,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "cc2294c67d4152ef",
+        "config": {
+          "BK": 32,
+          "BM": 128,
+          "BN": 64,
+          "STAGES": 3,
+          "WARPS_M": 2,
+          "WARPS_N": 2,
+          "smem": "pad8"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 74.82934094576144,
+          "ci": {
+            "ratio_median": 0.7507,
+            "lo": 0.74637,
+            "hi": 0.75428,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "slower",
+          "tested_impl": "mma_pipe_128x64x32_2x2_s3"
+        },
+        "tie": {
+          "method": "paired",
+          "tied": false,
+          "tie_set": [
+            "mma_pipe_128x64x32_2x2_s3"
+          ],
+          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "ci": {
+            "ratio_median": 1.01903,
+            "lo": 1.01673,
+            "hi": 1.02158,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "runner_up_gap_pct": 1.9030000000000102,
+          "pick_reason": "fastest"
+        }
+      }
+    }
+  ]
+}
