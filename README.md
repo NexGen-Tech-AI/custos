@@ -214,6 +214,14 @@ RUST_LOG=debug pnpm run tauri dev
 
 ---
 
+## How this was built
+
+Built with Claude Code as an implementation tool. Architecture, the data
+contract, measurement methodology, and review were mine; every number traces
+to a measured run.
+
+---
+
 ## 🪪 License
 
 **Proprietary Software**
