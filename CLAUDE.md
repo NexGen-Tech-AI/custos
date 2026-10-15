@@ -123,10 +123,9 @@ Custos shows numbers Core has disowned.
     in TS, and "not measured" on screen. No interpolation, no datasheet
     fallbacks (Core rule 8: datasheet figures only as labeled context).
 14. **All SQL lives in aegis-perf.** Custos queries through
-    `aegis_perf::view` / `db` / `roofline` (path dependency on
-    `~/Documents/projects/aegis/rust/aegis-perf`, a library, never the CLI),
-    so a schema change breaks Custos at compile time. A query Custos needs
-    goes into aegis-perf as its own Core commit, with Core's tests passing.
+    `aegis_perf::view` / `db` / `roofline` (the library, never the CLI), so a
+    schema change breaks Custos at compile time. A query Custos needs is
+    requested in `docs/core-requests.md` (rule 18), never written in Custos.
 15. **Design for many archs.** All data is sm_121 today; every command and
     view takes the arch as a parameter (sm_87 arrives with the Jetson port).
 16. **Development and tests use fixture snapshots, never live Core data.**
@@ -136,4 +135,14 @@ Custos shows numbers Core has disowned.
     `~/custos-fixtures/core` (tests: `AEGIS_FIXTURE_CORE`). The app reads the
     live Core repo (`AEGIS_CORE`), which other sessions change at any time.
 17. **Never run git in Core's main working tree.** Another session works
-    there. Changes to aegis-perf go through a separate `git worktree add`.
+    there. To read Core at a rev, clone it elsewhere (scratch directory).
+18. **Custos never commits to aegis-core.** When Custos needs a Core change
+    (a query, a column, a fix), write it up in `docs/core-requests.md` (what,
+    why, the Custos code waiting on it) and stop that work until Core lands it.
+19. **aegis-perf is a git dependency pinned to a specific rev** of
+    https://github.com/Riffe007/aegis-core (`rev = "<full sha>"` in
+    `custos-perf/Cargo.toml`), never a path or a branch, so a Custos build is
+    reproducible and Core's working tree never leaks into it.
+20. **A pin bump is its own commit.** It changes only the rev (plus what the
+    bump forces in Custos) and its message records the new Core rev, the
+    previous one, and the reason for the bump.
