@@ -1,8 +1,8 @@
-# AEGIS Custos — instructions for Claude Code
+# AEGIS Custos — project instructions
 
 This app (formerly the System Detection / Custos security monitor) is becoming
 **AEGIS Custos**: a GPU performance-engineering workstation over the AEGIS Core
-perf DB. Core lives at `~/Documents/projects/aegis` (read its `CLAUDE.md`);
+perf DB. Core lives at `~/Documents/projects/aegis` (read its project instructions);
 Custos reads Core's data and never writes it.
 
 ## Inventory (2026-10-14)
