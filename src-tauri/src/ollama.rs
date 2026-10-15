@@ -249,6 +249,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "network: needs an Ollama server on localhost:11434"]
     async fn test_ollama_connection() {
         let client = OllamaClient::new();
         let status = client.check_status().await;
@@ -263,6 +264,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "network: needs an Ollama server on localhost:11434"]
     async fn test_model_list() {
         let client = OllamaClient::new();
         match client.list_models().await {

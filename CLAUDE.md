@@ -28,11 +28,15 @@ refresh it with `AEGIS_CORE=~/custos-fixtures/core cargo run --manifest-path
 custos-perf/Cargo.toml --example dump -- devices | arch_model 121 | roofline 121`
 into `src/tests/perf/fixtures/`.
 
-`cargo test` in `src-tauri` does **not** compile today: pre-existing errors in
-the security modules (`tempfile` missing in `malware/quarantine.rs` and
-`malware/ml_inference.rs`, `sensors::Package` in
-`ai_analysis/report_generator.rs`, `EventType` in `monitoring/ebpf_monitor.rs`).
-That is why Custos logic lives in `custos-perf`, where tests run.
+Legacy code is out of the default build (it is kept, not maintained):
+- `src-tauri` feature `legacy-security`: the security modules (`malware`,
+  `threat_detection`, `vulnerability`, `network`, `sensors`, `ai_analysis`,
+  `storage`, `keychain`, `sudo_auth`), their state and their ~76 commands.
+- root crate feature `legacy-backend`: `src/backend`, `src/services`, their
+  tests (`src/tests/*_tests.rs`) and the three `src/bin` tools. It does not
+  compile (20 errors in `src/backend`); not fixed on purpose.
+Default builds compile with zero errors and their tests never hang; a test
+needing the network or root is `#[ignore = "<reason>"]` or feature-gated.
 
 ### Tauri (v2)
 

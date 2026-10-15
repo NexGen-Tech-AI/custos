@@ -13,7 +13,7 @@
 //! 
 //! ## Quick Start
 //! 
-//! ```rust,no_run
+//! ```rust,ignore
 //! use system_monitor::services::MonitoringService;
 //! use system_monitor::core::ConfigManager;
 //! 
@@ -41,13 +41,16 @@
 //! ```
 
 /// Backend monitoring implementations for various system components
+/// (legacy: feature "legacy-backend").
+#[cfg(feature = "legacy-backend")]
 pub mod backend;
 
 /// Core types, traits, and abstractions
 pub mod core;
 
-/// High-level monitoring services
+/// High-level monitoring services (legacy: built on `backend`).
+#[cfg(feature = "legacy-backend")]
 pub mod services;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "legacy-backend"))]
 mod tests;

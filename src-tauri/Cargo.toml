@@ -63,6 +63,9 @@ tempfile = "3"
 
 [features]
 default = []
+# The pre-Custos security platform (threat detection, malware, network,
+# vulnerability, AI analysis, reports, sudo, keychain): out of the default build.
+legacy-security = []
 nvidia = ["nvml-wrapper"]
 # Real eBPF monitoring (requires Linux kernel 5.8+, CAP_BPF)
 ebpf = []  # Will add aya dependencies in Phase 1

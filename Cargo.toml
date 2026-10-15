@@ -10,14 +10,17 @@ path = "src/lib.rs"
 [[bin]]
 name = "test_monitors"
 path = "src/bin/test_monitors.rs"
+required-features = ["legacy-backend"]
 
 [[bin]]
 name = "quick_test"
 path = "src/bin/quick_test.rs"
+required-features = ["legacy-backend"]
 
 [[bin]]
 name = "config_demo"
 path = "src/bin/config_demo.rs"
+required-features = ["legacy-backend"]
 
 [dependencies]
 # System monitoring
@@ -70,3 +73,6 @@ predicates = "3.0"
 [features]
 default = ["nvidia"]
 nvidia = ["nvml-wrapper"]
+# The pre-Tauri monitor backends (src/backend), the services and binaries
+# built on them, and their tests: out of the default build.
+legacy-backend = []

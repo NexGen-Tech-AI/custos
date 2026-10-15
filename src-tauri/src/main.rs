@@ -1,22 +1,32 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod monitoring;
+#[cfg(feature = "legacy-security")]
 mod threat_detection;
+#[cfg(feature = "legacy-security")]
 mod sensors;
+#[cfg(feature = "legacy-security")]
 mod storage;
+#[cfg(feature = "legacy-security")]
 mod keychain;
+#[cfg(feature = "legacy-security")]
 mod network;
+#[cfg(feature = "legacy-security")]
 mod vulnerability;
+#[cfg(feature = "legacy-security")]
 mod ai_analysis;
 mod hardware_detector;
 mod ollama;
+#[cfg(feature = "legacy-security")]
 mod malware;
+#[cfg(feature = "legacy-security")]
 mod sudo_auth;
 mod perf;
 
 use std::sync::Arc;
 use tauri::{Manager, State, Emitter};
 use tokio::sync::RwLock;
+#[cfg(feature = "legacy-security")]
 use parking_lot::Mutex;
 use monitoring::{MonitoringService, SystemInfo, SystemMetrics};
 use monitoring::high_perf_monitor::HighPerfMetrics;
@@ -24,25 +34,36 @@ use monitoring::kernel_monitor::KernelMetrics;
 use monitoring::{PciDevice, PciEnumerator};
 use monitoring::{PlatformSecurityStatus, PlatformSecurityMonitor};
 
+#[cfg(feature = "legacy-security")]
 use threat_detection::engine::ThreatDetectionEngine;
+#[cfg(feature = "legacy-security")]
 use threat_detection::{ThreatDetectionConfig, ThreatEvent};
+#[cfg(feature = "legacy-security")]
 use threat_detection::threat_intel::ThreatIntelApiKeys;
+#[cfg(feature = "legacy-security")]
 use threat_detection::alerts::Alert;
+#[cfg(feature = "legacy-security")]
 use threat_detection::engine::ThreatStats;
 
+#[cfg(feature = "legacy-security")]
 use sensors::PackageSensor;
 
 type ServiceState = Arc<RwLock<MonitoringService>>;
+#[cfg(feature = "legacy-security")]
 type ThreatDetectionState = Arc<ThreatDetectionEngine>;
+#[cfg(feature = "legacy-security")]
 type PackageSensorState = Arc<Mutex<PackageSensor>>;
+#[cfg(feature = "legacy-security")]
 type SudoAuthState = Arc<sudo_auth::SudoAuthenticator>;
 
 // ========================================
 // Scan Progress State
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 use serde::{Serialize, Deserialize};
 
+#[cfg(feature = "legacy-security")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanProgress {
     pub status: ScanStatus,
@@ -56,6 +77,7 @@ pub struct ScanProgress {
     pub eta_seconds: Option<u64>,
 }
 
+#[cfg(feature = "legacy-security")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ScanStatus {
@@ -65,6 +87,7 @@ pub enum ScanStatus {
     Error,
 }
 
+#[cfg(feature = "legacy-security")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ScanType {
@@ -72,6 +95,7 @@ pub enum ScanType {
     Full,
 }
 
+#[cfg(feature = "legacy-security")]
 impl Default for ScanProgress {
     fn default() -> Self {
         Self {
@@ -88,10 +112,13 @@ impl Default for ScanProgress {
     }
 }
 
+#[cfg(feature = "legacy-security")]
 type ScanProgressState = Arc<Mutex<ScanProgress>>;
+#[cfg(feature = "legacy-security")]
 type ComprehensiveScannerState = Arc<Mutex<Option<ComprehensiveScanner>>>;
 
 // Cached vulnerability findings from last scan
+#[cfg(feature = "legacy-security")]
 type VulnerabilityFindingsCache = Arc<Mutex<Vec<VulnerabilityFinding>>>;
 
 #[tauri::command]
@@ -215,28 +242,33 @@ async fn get_platform_security() -> Result<PlatformSecurityStatus, String> {
 
 // Threat Detection Commands
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_threat_statistics(state: State<'_, ThreatDetectionState>) -> Result<ThreatStats, String> {
     Ok(state.get_statistics())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_recent_threats(state: State<'_, ThreatDetectionState>, limit: usize) -> Result<Vec<ThreatEvent>, String> {
     Ok(state.get_recent_threats(limit))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_all_alerts(state: State<'_, ThreatDetectionState>) -> Result<Vec<Alert>, String> {
     let alert_manager = state.get_alert_manager();
     Ok(alert_manager.get_alerts())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_unacknowledged_alerts(state: State<'_, ThreatDetectionState>) -> Result<Vec<Alert>, String> {
     let alert_manager = state.get_alert_manager();
     Ok(alert_manager.get_unacknowledged_alerts())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn acknowledge_alert(
     state: State<'_, ThreatDetectionState>,
@@ -251,11 +283,13 @@ async fn acknowledge_alert(
 // Sudo Authentication Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn check_sudo_required() -> Result<bool, String> {
     Ok(!sudo_auth::has_root_privileges())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn verify_sudo_password(
     password: String,
@@ -264,6 +298,7 @@ async fn verify_sudo_password(
     sudo_auth.authenticate(&password)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn has_sudo_access(
     sudo_auth: State<'_, SudoAuthState>
@@ -271,6 +306,7 @@ async fn has_sudo_access(
     Ok(sudo_auth.has_cached_access() || sudo_auth::has_root_privileges())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn execute_privileged_command(
     command: String,
@@ -281,6 +317,7 @@ async fn execute_privileged_command(
     sudo_auth::execute_with_sudo(&command, &args_refs, &password)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn add_alert_note(
     state: State<'_, ThreatDetectionState>,
@@ -293,6 +330,7 @@ async fn add_alert_note(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn scan_process_for_threats(
     state: State<'_, ThreatDetectionState>,
@@ -321,6 +359,7 @@ async fn scan_process_for_threats(
 
 // API Key Management Commands
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn set_api_key(
     key_type: String,
@@ -340,6 +379,7 @@ async fn set_api_key(
         .map_err(|e| format!("Failed to store API key: {}", e))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_api_key(
     key_type: String,
@@ -358,6 +398,7 @@ async fn get_api_key(
         .map_err(|e| format!("Failed to retrieve API key: {}", e))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn delete_api_key(
     key_type: String,
@@ -376,6 +417,7 @@ async fn delete_api_key(
         .map_err(|e| format!("Failed to delete API key: {}", e))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn has_api_key(
     key_type: String,
@@ -393,6 +435,7 @@ async fn has_api_key(
     Ok(KeychainManager::has_api_key(key_type_enum))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_configured_api_keys() -> Result<Vec<String>, String> {
     use keychain::KeychainManager;
@@ -410,6 +453,7 @@ async fn get_configured_api_keys() -> Result<Vec<String>, String> {
 // Network Security Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 use network::{
     NetworkConnectionRecord, ConnectionHistoryManager, TopTalker, ConnectionStats,
     DNSAnalyzer, DNSQuery,
@@ -418,6 +462,7 @@ use network::{
     IsolationManager, IsolationAction, ActionPreview, ActionResult, IsolationRecord,
 };
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_network_connections(
     hours: u64,
@@ -429,6 +474,7 @@ async fn get_network_connections(
     manager.get_recent_connections(hours, limit)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_top_talkers(limit: usize, hours: u64) -> Result<Vec<TopTalker>, String> {
     let db_path = "data/events.db";
@@ -437,6 +483,7 @@ async fn get_top_talkers(limit: usize, hours: u64) -> Result<Vec<TopTalker>, Str
     manager.get_top_talkers(limit, hours)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_connection_stats(hours: u64) -> Result<ConnectionStats, String> {
     let db_path = "data/events.db";
@@ -445,24 +492,28 @@ async fn get_connection_stats(hours: u64) -> Result<ConnectionStats, String> {
     manager.get_stats(hours)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn analyze_dns_query(query: String, process_name: String) -> Result<(bool, Vec<String>), String> {
     let analyzer = DNSAnalyzer::new();
     Ok(analyzer.analyze(&query, &process_name))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn classify_ip(ip: String) -> Result<NetworkSegment, String> {
     let engine = NetworkSegmentationEngine::new();
     Ok(engine.classify_ip(&ip))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_segment_policies() -> Result<Vec<SegmentPolicy>, String> {
     let engine = NetworkSegmentationEngine::new();
     Ok(engine.get_policies().to_vec())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn update_segment_policy(policy: SegmentPolicy) -> Result<(), String> {
     // In production, persist this to config file/database
@@ -470,18 +521,21 @@ async fn update_segment_policy(policy: SegmentPolicy) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn lookup_ip_info(ip: String) -> Result<GeoIPInfo, String> {
     let geoip = GeoIPLookup::new();
     geoip.lookup(&ip)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn preview_isolation_action(action: IsolationAction) -> Result<ActionPreview, String> {
     let manager = IsolationManager::new();
     Ok(manager.preview_action(&action))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn execute_isolation_action(
     action: IsolationAction,
@@ -491,12 +545,14 @@ async fn execute_isolation_action(
     manager.execute_action(action, user)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn rollback_isolation(action_id: String) -> Result<(), String> {
     let mut manager = IsolationManager::new();
     manager.rollback_action(&action_id)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_isolation_history() -> Result<Vec<IsolationRecord>, String> {
     let manager = IsolationManager::new();
@@ -507,6 +563,7 @@ async fn get_isolation_history() -> Result<Vec<IsolationRecord>, String> {
 // Vulnerability Scanning Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 use vulnerability::{
     VulnerabilityScanner, VulnerabilityFinding, ScanStatistics,
     CVE, CVESeverity,
@@ -517,6 +574,7 @@ use vulnerability::{
     ThreatType, ThreatSeverity, ScanPhase,
 };
 
+#[cfg(feature = "legacy-security")]
 /// Get current scan progress (polled by UI)
 #[tauri::command]
 async fn get_scan_progress(scan_state: State<'_, ScanProgressState>) -> Result<ScanProgress, String> {
@@ -524,6 +582,7 @@ async fn get_scan_progress(scan_state: State<'_, ScanProgressState>) -> Result<S
     Ok(progress)
 }
 
+#[cfg(feature = "legacy-security")]
 /// Start a quick scan (critical packages only)
 #[tauri::command]
 async fn start_quick_scan(
@@ -679,6 +738,7 @@ async fn start_quick_scan(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn scan_vulnerabilities(
     state: State<'_, ThreatDetectionState>,
@@ -810,6 +870,7 @@ async fn scan_vulnerabilities(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_vulnerability_statistics(
     sensor_state: State<'_, PackageSensorState>
@@ -826,6 +887,7 @@ async fn get_vulnerability_statistics(
     Ok(scanner.get_scan_stats())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_prioritized_vulnerabilities(
     sensor_state: State<'_, PackageSensorState>
@@ -841,6 +903,7 @@ async fn get_prioritized_vulnerabilities(
     Ok(prioritized)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_fix_now_list(
     sensor_state: State<'_, PackageSensorState>
@@ -857,6 +920,7 @@ async fn get_fix_now_list(
     Ok(fix_now)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_vulnerabilities_by_package(
     findings_cache: State<'_, VulnerabilityFindingsCache>,
@@ -879,6 +943,7 @@ async fn get_vulnerabilities_by_package(
     Ok(grouped)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn scan_misconfigurations() -> Result<Vec<Misconfiguration>, String> {
     let scanner = MisconfigurationScanner::new();
@@ -887,6 +952,7 @@ async fn scan_misconfigurations() -> Result<Vec<Misconfiguration>, String> {
     Ok(findings)
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_exploitable_exposed(
     sensor_state: State<'_, PackageSensorState>
@@ -906,6 +972,7 @@ async fn get_exploitable_exposed(
 // Comprehensive System Scanner Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn start_comprehensive_scan(
     scanner_state: State<'_, ComprehensiveScannerState>,
@@ -935,6 +1002,7 @@ async fn start_comprehensive_scan(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn get_comprehensive_progress(
     scanner_state: State<'_, ComprehensiveScannerState>,
@@ -962,23 +1030,38 @@ async fn get_comprehensive_progress(
 // AI Analysis Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 use ai_analysis::{SecurityAnalyzer, AnalysisResponse, SystemSecurityPosture, ReportConfiguration, ComprehensiveReport, ReportGenerator, ReportExporter};
+#[cfg(feature = "legacy-security")]
 use keychain::{KeychainManager, ApiKeyType};
 
 // Malware Protection imports
+#[cfg(feature = "legacy-security")]
 use malware::{MalwareProtection, ProtectionConfig, ProtectionStatus};
+#[cfg(feature = "legacy-security")]
 use malware::scanner::ScanResult;
+#[cfg(feature = "legacy-security")]
 use malware::quarantine::QuarantinedFile;
+#[cfg(feature = "legacy-security")]
 use malware::sandbox::{SandboxEngine, SandboxConfig, SandboxResult, SandboxStats};
+#[cfg(feature = "legacy-security")]
 use malware::ransomware_protection::{RansomwareProtectionEngine, RansomwareConfig, RansomwareStats};
+#[cfg(feature = "legacy-security")]
 use malware::rootkit_detector::{RootKitDetector, RootkitDetectorConfig, RootkitDetection};
+#[cfg(feature = "legacy-security")]
 use malware::credential_theft_detector::{CredentialTheftDetector, CredentialDetectorConfig, CredentialThreat};
+#[cfg(feature = "legacy-security")]
 use malware::memory_scanner::{MemoryScanner, MemoryScanConfig, MemoryScanResult};
+#[cfg(feature = "legacy-security")]
 use malware::process_injection::{ProcessInjectionDetector, InjectionDetection};
+#[cfg(feature = "legacy-security")]
 use malware::behavioral_engine::{BehavioralEngine, BehavioralConfig, BehavioralDetection};
+#[cfg(feature = "legacy-security")]
 use malware::threat_intel::{ThreatIntelEngine, ThreatIntelConfig, Ioc, IocType, ThreatMatch};
+#[cfg(feature = "legacy-security")]
 use malware::incident_response::{IncidentResponseEngine, ResponseConfig, SecurityIncident, IncidentStatus};
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn analyze_vulnerabilities_with_ai(
     sensor_state: State<'_, PackageSensorState>
@@ -1009,6 +1092,7 @@ async fn analyze_vulnerabilities_with_ai(
     analyzer.analyze_vulnerabilities(&vulnerabilities).await
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn analyze_vulnerability_ai(
     cve_id: String,
@@ -1043,6 +1127,7 @@ async fn analyze_vulnerability_ai(
     analyzer.chat_about_vulnerability(&context).await
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn analyze_security_posture(
     sensor_state: State<'_, PackageSensorState>
@@ -1072,6 +1157,7 @@ async fn analyze_security_posture(
     analyzer.analyze_system_posture(&vulnerabilities, &[], &misconfigurations).await
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn generate_remediation_plan(
     sensor_state: State<'_, PackageSensorState>
@@ -1103,6 +1189,7 @@ async fn generate_remediation_plan(
 
 // Report Generation Commands
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn generate_security_report(
     config: ReportConfiguration,
@@ -1130,18 +1217,21 @@ async fn generate_security_report(
     generator.generate_report(config, packages).await
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn export_report_html(report: ComprehensiveReport) -> Result<String, String> {
     println!("Exporting report as HTML...");
     Ok(ReportExporter::to_html(&report))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn export_report_markdown(report: ComprehensiveReport) -> Result<String, String> {
     println!("Exporting report as Markdown...");
     Ok(ReportExporter::to_markdown(&report))
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn export_report_json(report: ComprehensiveReport) -> Result<String, String> {
     println!("Exporting report as JSON...");
@@ -1212,6 +1302,7 @@ async fn test_ollama_model(model_name: String) -> Result<bool, String> {
     client.test_model(&model_name).await
 }
 
+#[cfg(feature = "legacy-security")]
 #[tauri::command]
 async fn analyze_vulnerability_ollama(
     model: String,
@@ -1240,16 +1331,26 @@ async fn analyze_vulnerability_ollama(
 // Malware Protection Commands
 // ========================================
 
+#[cfg(feature = "legacy-security")]
 type MalwareProtectionState = Arc<Mutex<Option<MalwareProtection>>>;
+#[cfg(feature = "legacy-security")]
 type SandboxEngineState = Arc<Mutex<Option<SandboxEngine>>>;
+#[cfg(feature = "legacy-security")]
 type RansomwareProtectionState = Arc<Mutex<Option<RansomwareProtectionEngine>>>;
+#[cfg(feature = "legacy-security")]
 type RootkitDetectorState = Arc<Mutex<Option<RootKitDetector>>>;
+#[cfg(feature = "legacy-security")]
 type CredentialDetectorState = Arc<Mutex<Option<CredentialTheftDetector>>>;
+#[cfg(feature = "legacy-security")]
 type MemoryScannerState = Arc<Mutex<Option<MemoryScanner>>>;
+#[cfg(feature = "legacy-security")]
 type BehavioralEngineState = Arc<Mutex<Option<BehavioralEngine>>>;
+#[cfg(feature = "legacy-security")]
 type ThreatIntelState = Arc<Mutex<Option<ThreatIntelEngine>>>;
+#[cfg(feature = "legacy-security")]
 type IncidentResponseState = Arc<Mutex<Option<IncidentResponseEngine>>>;
 
+#[cfg(feature = "legacy-security")]
 /// Initialize malware protection system
 #[tauri::command]
 async fn init_malware_protection(
@@ -1266,6 +1367,7 @@ async fn init_malware_protection(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Start real-time malware protection
 #[tauri::command]
 async fn start_malware_protection(
@@ -1280,6 +1382,7 @@ async fn start_malware_protection(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Stop real-time malware protection
 #[tauri::command]
 async fn stop_malware_protection(
@@ -1295,6 +1398,7 @@ async fn stop_malware_protection(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get malware protection status
 #[tauri::command]
 async fn get_malware_protection_status(
@@ -1309,6 +1413,7 @@ async fn get_malware_protection_status(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Scan a file for malware
 #[tauri::command]
 async fn scan_file_for_malware(
@@ -1324,6 +1429,7 @@ async fn scan_file_for_malware(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Quarantine a file
 #[tauri::command]
 async fn quarantine_file(
@@ -1342,6 +1448,7 @@ async fn quarantine_file(
 
 // Sandbox Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize sandbox engine
 #[tauri::command]
 async fn init_sandbox_engine(
@@ -1356,6 +1463,7 @@ async fn init_sandbox_engine(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Execute file in sandbox
 #[tauri::command]
 async fn execute_in_sandbox(
@@ -1371,6 +1479,7 @@ async fn execute_in_sandbox(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get sandbox result
 #[tauri::command]
 async fn get_sandbox_result(
@@ -1386,6 +1495,7 @@ async fn get_sandbox_result(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get sandbox statistics
 #[tauri::command]
 async fn get_sandbox_stats(
@@ -1400,6 +1510,7 @@ async fn get_sandbox_stats(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Terminate sandbox
 #[tauri::command]
 async fn terminate_sandbox(
@@ -1417,6 +1528,7 @@ async fn terminate_sandbox(
 
 // Ransomware Protection Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize ransomware protection
 #[tauri::command]
 async fn init_ransomware_protection(
@@ -1431,6 +1543,7 @@ async fn init_ransomware_protection(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Deploy ransomware decoys
 #[tauri::command]
 async fn deploy_ransomware_decoys(
@@ -1445,6 +1558,7 @@ async fn deploy_ransomware_decoys(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Add protected directory
 #[tauri::command]
 async fn add_protected_directory(
@@ -1460,6 +1574,7 @@ async fn add_protected_directory(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get ransomware statistics
 #[tauri::command]
 async fn get_ransomware_stats(
@@ -1476,6 +1591,7 @@ async fn get_ransomware_stats(
 
 // Rootkit Detection Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize rootkit detector
 #[tauri::command]
 async fn init_rootkit_detector(
@@ -1490,6 +1606,7 @@ async fn init_rootkit_detector(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Run rootkit scan
 #[tauri::command]
 async fn scan_for_rootkits(
@@ -1506,6 +1623,7 @@ async fn scan_for_rootkits(
 
 // Credential Theft Detection Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize credential theft detector
 #[tauri::command]
 async fn init_credential_detector(
@@ -1520,6 +1638,7 @@ async fn init_credential_detector(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Detect LSASS access
 #[tauri::command]
 async fn detect_lsass_access(
@@ -1542,6 +1661,7 @@ async fn detect_lsass_access(
 
 // Memory Scanner Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize memory scanner
 #[tauri::command]
 async fn init_memory_scanner(
@@ -1556,6 +1676,7 @@ async fn init_memory_scanner(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Scan process memory
 #[tauri::command]
 async fn scan_process_memory(
@@ -1573,6 +1694,7 @@ async fn scan_process_memory(
 
 // Behavioral Engine Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize behavioral engine
 #[tauri::command]
 async fn init_behavioral_engine(
@@ -1587,6 +1709,7 @@ async fn init_behavioral_engine(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Track process behavior
 #[tauri::command]
 async fn track_process_behavior(
@@ -1607,6 +1730,7 @@ async fn track_process_behavior(
 
 // Threat Intelligence Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize threat intelligence engine
 #[tauri::command]
 async fn init_threat_intel(
@@ -1621,6 +1745,7 @@ async fn init_threat_intel(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Check IOC (simplified - assumes IP address type)
 #[tauri::command]
 async fn check_ioc(
@@ -1649,6 +1774,7 @@ async fn check_ioc(
 
 // Incident Response Commands
 
+#[cfg(feature = "legacy-security")]
 /// Initialize incident response engine
 #[tauri::command]
 async fn init_incident_response(
@@ -1663,6 +1789,7 @@ async fn init_incident_response(
     Ok(())
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get recent incidents
 #[tauri::command]
 async fn get_active_incidents(
@@ -1678,6 +1805,7 @@ async fn get_active_incidents(
     }
 }
 
+#[cfg(feature = "legacy-security")]
 /// Get incident by ID (finds in all incidents)
 #[tauri::command]
 async fn get_incident(
@@ -1701,104 +1829,228 @@ fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
 
-    // Initialize threat detection engine
-    let threat_config = ThreatDetectionConfig {
-        enabled: true,
-        behavioral_detection: true,
-        signature_detection: true,
-        ai_analysis: false, // Disabled by default, can be enabled with API key
-        threat_intel: false, // Disabled by default, can be enabled with API keys
-        min_severity_to_alert: threat_detection::ThreatSeverity::Medium,
-        auto_remediate: false, // Disabled by default for safety
-        learning_mode: true,
-        scan_interval_ms: 5000,
-    };
-
-    // API keys loaded from OS keychain with environment variable fallback
-    use keychain::{KeychainManager, ApiKeyType};
-
-    let claude_api_key = KeychainManager::load_api_key_with_fallback(
-        ApiKeyType::Claude,
-        "CLAUDE_API_KEY"
-    );
-    let threat_intel_keys = ThreatIntelApiKeys {
-        virustotal_api_key: KeychainManager::load_api_key_with_fallback(
-            ApiKeyType::VirusTotal,
-            "VIRUSTOTAL_API_KEY"
-        ),
-        abuseipdb_api_key: KeychainManager::load_api_key_with_fallback(
-            ApiKeyType::AbuseIPDB,
-            "ABUSEIPDB_API_KEY"
-        ),
-        alienvault_api_key: KeychainManager::load_api_key_with_fallback(
-            ApiKeyType::AlienVault,
-            "ALIENVAULT_API_KEY"
-        ),
-    };
-
-    let threat_engine = Arc::new(ThreatDetectionEngine::new(
-        threat_config,
-        claude_api_key,
-        threat_intel_keys,
-    ));
-
-    // Initialize scan progress state
-    let scan_progress = Arc::new(Mutex::new(ScanProgress::default()));
-
-    // Initialize comprehensive scanner state
-    let comprehensive_scanner = Arc::new(Mutex::new(None::<ComprehensiveScanner>));
-
-    // Initialize vulnerability findings cache
-    let findings_cache = Arc::new(Mutex::new(Vec::<VulnerabilityFinding>::new()));
-
-    // Initialize malware protection state management
-    let malware_protection = Arc::new(Mutex::new(None::<MalwareProtection>));
-    let sandbox_engine = Arc::new(Mutex::new(None::<SandboxEngine>));
-    let ransomware_protection = Arc::new(Mutex::new(None::<RansomwareProtectionEngine>));
-    let rootkit_detector = Arc::new(Mutex::new(None::<RootKitDetector>));
-    let credential_detector = Arc::new(Mutex::new(None::<CredentialTheftDetector>));
-    let memory_scanner = Arc::new(Mutex::new(None::<MemoryScanner>));
-    let behavioral_engine = Arc::new(Mutex::new(None::<BehavioralEngine>));
-    let threat_intel = Arc::new(Mutex::new(None::<ThreatIntelEngine>));
-    let incident_response = Arc::new(Mutex::new(None::<IncidentResponseEngine>));
-
-    // Initialize PackageSensor once at startup
-    let package_sensor = {
-        #[cfg(target_os = "linux")]
-        let sensor = PackageSensor::new_linux().expect("Failed to initialize package sensor");
-
-        #[cfg(target_os = "windows")]
-        let sensor = PackageSensor::new_windows().expect("Failed to initialize package sensor");
-
-        #[cfg(target_os = "macos")]
-        let sensor = PackageSensor::new_macos().expect("Failed to initialize package sensor");
-
-        Arc::new(Mutex::new(sensor))
-    };
-
-    // Initialize sudo authenticator
-    let sudo_auth = Arc::new(sudo_auth::SudoAuthenticator::new());
-
-    println!("✓ PackageSensor initialized");
-
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(service)
-        .manage(threat_engine)
-        .manage(scan_progress)
-        .manage(comprehensive_scanner)
-        .manage(findings_cache)
-        .manage(malware_protection)
-        .manage(sandbox_engine)
-        .manage(ransomware_protection)
-        .manage(rootkit_detector)
-        .manage(credential_detector)
-        .manage(memory_scanner)
-        .manage(behavioral_engine)
-        .manage(threat_intel)
-        .manage(incident_response)
-        .manage(package_sensor)
-        .manage(sudo_auth)
-        .manage(perf::PerfState::from_env())
+        .manage(perf::PerfState::from_env());
+
+    // Legacy security state (feature "legacy-security", off by default).
+    #[cfg(feature = "legacy-security")]
+    let builder = {
+        // Initialize threat detection engine
+        let threat_config = ThreatDetectionConfig {
+            enabled: true,
+            behavioral_detection: true,
+            signature_detection: true,
+            ai_analysis: false, // Disabled by default, can be enabled with API key
+            threat_intel: false, // Disabled by default, can be enabled with API keys
+            min_severity_to_alert: threat_detection::ThreatSeverity::Medium,
+            auto_remediate: false, // Disabled by default for safety
+            learning_mode: true,
+            scan_interval_ms: 5000,
+        };
+
+        // API keys loaded from OS keychain with environment variable fallback
+        use keychain::{KeychainManager, ApiKeyType};
+
+        let claude_api_key = KeychainManager::load_api_key_with_fallback(
+            ApiKeyType::Claude,
+            "CLAUDE_API_KEY"
+        );
+        let threat_intel_keys = ThreatIntelApiKeys {
+            virustotal_api_key: KeychainManager::load_api_key_with_fallback(
+                ApiKeyType::VirusTotal,
+                "VIRUSTOTAL_API_KEY"
+            ),
+            abuseipdb_api_key: KeychainManager::load_api_key_with_fallback(
+                ApiKeyType::AbuseIPDB,
+                "ABUSEIPDB_API_KEY"
+            ),
+            alienvault_api_key: KeychainManager::load_api_key_with_fallback(
+                ApiKeyType::AlienVault,
+                "ALIENVAULT_API_KEY"
+            ),
+        };
+
+        let threat_engine = Arc::new(ThreatDetectionEngine::new(
+            threat_config,
+            claude_api_key,
+            threat_intel_keys,
+        ));
+
+        // Initialize scan progress state
+        let scan_progress = Arc::new(Mutex::new(ScanProgress::default()));
+
+        // Initialize comprehensive scanner state
+        let comprehensive_scanner = Arc::new(Mutex::new(None::<ComprehensiveScanner>));
+
+        // Initialize vulnerability findings cache
+        let findings_cache = Arc::new(Mutex::new(Vec::<VulnerabilityFinding>::new()));
+
+        // Initialize malware protection state management
+        let malware_protection = Arc::new(Mutex::new(None::<MalwareProtection>));
+        let sandbox_engine = Arc::new(Mutex::new(None::<SandboxEngine>));
+        let ransomware_protection = Arc::new(Mutex::new(None::<RansomwareProtectionEngine>));
+        let rootkit_detector = Arc::new(Mutex::new(None::<RootKitDetector>));
+        let credential_detector = Arc::new(Mutex::new(None::<CredentialTheftDetector>));
+        let memory_scanner = Arc::new(Mutex::new(None::<MemoryScanner>));
+        let behavioral_engine = Arc::new(Mutex::new(None::<BehavioralEngine>));
+        let threat_intel = Arc::new(Mutex::new(None::<ThreatIntelEngine>));
+        let incident_response = Arc::new(Mutex::new(None::<IncidentResponseEngine>));
+
+        // Initialize PackageSensor once at startup
+        let package_sensor = {
+            #[cfg(target_os = "linux")]
+            let sensor = PackageSensor::new_linux().expect("Failed to initialize package sensor");
+
+            #[cfg(target_os = "windows")]
+            let sensor = PackageSensor::new_windows().expect("Failed to initialize package sensor");
+
+            #[cfg(target_os = "macos")]
+            let sensor = PackageSensor::new_macos().expect("Failed to initialize package sensor");
+
+            Arc::new(Mutex::new(sensor))
+        };
+
+        // Initialize sudo authenticator
+        let sudo_auth = Arc::new(sudo_auth::SudoAuthenticator::new());
+
+        println!("✓ PackageSensor initialized");
+
+        builder
+            .manage(threat_engine)
+            .manage(scan_progress)
+            .manage(comprehensive_scanner)
+            .manage(findings_cache)
+            .manage(malware_protection)
+            .manage(sandbox_engine)
+            .manage(ransomware_protection)
+            .manage(rootkit_detector)
+            .manage(credential_detector)
+            .manage(memory_scanner)
+            .manage(behavioral_engine)
+            .manage(threat_intel)
+            .manage(incident_response)
+            .manage(package_sensor)
+            .manage(sudo_auth)
+    };
+
+    // One command list; the legacy security commands join it only with the feature.
+    macro_rules! handler {
+        ($($legacy:ident),* $(,)?) => {
+            tauri::generate_handler![
+                // AEGIS Custos: read-only perf DB views (src/perf.rs)
+                perf::perf_sources,
+                perf::devices,
+                perf::arch_model,
+                perf::winners,
+                perf::measurements,
+                perf::kernel_detail,
+                perf::roofline,
+                perf::compare,
+                get_system_info,
+                start_monitoring,
+                start_high_perf_monitoring,
+                stop_monitoring,
+                get_current_metrics,
+                get_high_perf_metrics,
+                start_kernel_monitoring,
+                stop_kernel_monitoring,
+                get_kernel_metrics,
+                get_pci_devices,
+                get_platform_security,
+                detect_hardware,
+                get_eligible_tiers,
+                check_ollama_status,
+                list_ollama_models,
+                pull_ollama_model,
+                test_ollama_model,
+                $($legacy),*
+            ]
+        };
+    }
+    #[cfg(feature = "legacy-security")]
+    let builder = builder.invoke_handler(handler![
+        get_threat_statistics,
+        get_recent_threats,
+        get_all_alerts,
+        get_unacknowledged_alerts,
+        acknowledge_alert,
+        add_alert_note,
+        scan_process_for_threats,
+        set_api_key,
+        get_api_key,
+        delete_api_key,
+        has_api_key,
+        get_configured_api_keys,
+        get_network_connections,
+        get_top_talkers,
+        get_connection_stats,
+        analyze_dns_query,
+        classify_ip,
+        get_segment_policies,
+        update_segment_policy,
+        lookup_ip_info,
+        preview_isolation_action,
+        execute_isolation_action,
+        rollback_isolation,
+        get_isolation_history,
+        get_scan_progress,
+        start_quick_scan,
+        scan_vulnerabilities,
+        get_vulnerability_statistics,
+        get_prioritized_vulnerabilities,
+        get_fix_now_list,
+        get_vulnerabilities_by_package,
+        scan_misconfigurations,
+        get_exploitable_exposed,
+        start_comprehensive_scan,
+        get_comprehensive_progress,
+        analyze_vulnerabilities_with_ai,
+        analyze_vulnerability_ai,
+        analyze_security_posture,
+        generate_remediation_plan,
+        generate_security_report,
+        export_report_html,
+        export_report_markdown,
+        export_report_json,
+        analyze_vulnerability_ollama,
+        init_malware_protection,
+        start_malware_protection,
+        stop_malware_protection,
+        get_malware_protection_status,
+        scan_file_for_malware,
+        quarantine_file,
+        init_sandbox_engine,
+        execute_in_sandbox,
+        get_sandbox_result,
+        get_sandbox_stats,
+        terminate_sandbox,
+        init_ransomware_protection,
+        deploy_ransomware_decoys,
+        add_protected_directory,
+        get_ransomware_stats,
+        init_rootkit_detector,
+        scan_for_rootkits,
+        init_credential_detector,
+        detect_lsass_access,
+        init_memory_scanner,
+        scan_process_memory,
+        init_behavioral_engine,
+        track_process_behavior,
+        init_threat_intel,
+        check_ioc,
+        init_incident_response,
+        get_active_incidents,
+        get_incident,
+        check_sudo_required,
+        verify_sudo_password,
+        has_sudo_access,
+        execute_privileged_command,
+    ]);
+    #[cfg(not(feature = "legacy-security"))]
+    let builder = builder.invoke_handler(handler![]);
+
+    builder
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -1808,128 +2060,6 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            // AEGIS Custos: read-only perf DB views (src/perf.rs)
-            perf::perf_sources,
-            perf::devices,
-            perf::arch_model,
-            perf::winners,
-            perf::measurements,
-            perf::kernel_detail,
-            perf::roofline,
-            perf::compare,
-            get_system_info,
-            start_monitoring,
-            start_high_perf_monitoring,
-            stop_monitoring,
-            get_current_metrics,
-            get_high_perf_metrics,
-            start_kernel_monitoring,
-            stop_kernel_monitoring,
-            get_kernel_metrics,
-            get_pci_devices,
-            get_platform_security,
-            // Threat Detection
-            get_threat_statistics,
-            get_recent_threats,
-            get_all_alerts,
-            get_unacknowledged_alerts,
-            acknowledge_alert,
-            add_alert_note,
-            scan_process_for_threats,
-            // API Key Management
-            set_api_key,
-            get_api_key,
-            delete_api_key,
-            has_api_key,
-            get_configured_api_keys,
-            // Network Security
-            get_network_connections,
-            get_top_talkers,
-            get_connection_stats,
-            analyze_dns_query,
-            classify_ip,
-            get_segment_policies,
-            update_segment_policy,
-            lookup_ip_info,
-            preview_isolation_action,
-            execute_isolation_action,
-            rollback_isolation,
-            get_isolation_history,
-            // Vulnerability Scanning
-            get_scan_progress,
-            start_quick_scan,
-            scan_vulnerabilities,
-            get_vulnerability_statistics,
-            get_prioritized_vulnerabilities,
-            get_fix_now_list,
-            get_vulnerabilities_by_package,
-            scan_misconfigurations,
-            get_exploitable_exposed,
-            // Comprehensive System Scanner
-            start_comprehensive_scan,
-            get_comprehensive_progress,
-            // AI Analysis
-            analyze_vulnerabilities_with_ai,
-            analyze_vulnerability_ai,
-            analyze_security_posture,
-            generate_remediation_plan,
-            // Security Reports
-            generate_security_report,
-            export_report_html,
-            export_report_markdown,
-            export_report_json,
-            // Hardware Detection & Tier System
-            detect_hardware,
-            get_eligible_tiers,
-            check_ollama_status,
-            list_ollama_models,
-            pull_ollama_model,
-            test_ollama_model,
-            analyze_vulnerability_ollama,
-            // Malware Protection
-            init_malware_protection,
-            start_malware_protection,
-            stop_malware_protection,
-            get_malware_protection_status,
-            scan_file_for_malware,
-            quarantine_file,
-            // Sandbox
-            init_sandbox_engine,
-            execute_in_sandbox,
-            get_sandbox_result,
-            get_sandbox_stats,
-            terminate_sandbox,
-            // Ransomware Protection
-            init_ransomware_protection,
-            deploy_ransomware_decoys,
-            add_protected_directory,
-            get_ransomware_stats,
-            // Rootkit Detection
-            init_rootkit_detector,
-            scan_for_rootkits,
-            // Credential Theft Detection
-            init_credential_detector,
-            detect_lsass_access,
-            // Memory Scanner
-            init_memory_scanner,
-            scan_process_memory,
-            // Behavioral Engine
-            init_behavioral_engine,
-            track_process_behavior,
-            // Threat Intelligence
-            init_threat_intel,
-            check_ioc,
-            // Incident Response
-            init_incident_response,
-            get_active_incidents,
-            get_incident,
-            // Sudo Authentication
-            check_sudo_required,
-            verify_sudo_password,
-            has_sudo_access,
-            execute_privileged_command
-        ])
         .on_window_event(|_window, _event| {})
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
