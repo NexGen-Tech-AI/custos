@@ -230,7 +230,7 @@ pub struct Compare {
 
 // device, arch, impl, dtype, m, n, k. Keyed by impl, not kernel_id: a code
 // change that alters the config serialization gives the same impl a new
-// kernel_id (Core 6dacc55, "smem":"pad8" -> "xor"), and build-over-build is
+// kernel_id (Core 16d33ec, "smem":"pad8" -> "xor"), and build-over-build is
 // exactly that case.
 type Key = (String, i64, String, String, i64, i64, i64);
 

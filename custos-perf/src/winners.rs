@@ -95,7 +95,14 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
     let pick = w.kernel.impl_.clone();
     let role = |r: &str| w.paired.iter().find(|p| p.role.as_deref() == Some(r));
 
-    let lt = role("cublaslt_best");
+    // The pick's own test against cublaslt_best (Core 4adfb62 pairs the
+    // runner-up too when it can be dispatched); DBs tuned before that have
+    // only the fastest config's.
+    let lt = w
+        .paired
+        .iter()
+        .find(|p| p.role.as_deref() == Some("cublaslt_best") && p.a_impl == pick)
+        .or_else(|| role("cublaslt_best"));
     let lt_ci = w.lt_ratio_ci.map(|ci| Ci::new(lt.map(|p| p.ratio_median), ci, lt.and_then(|p| p.pairs)));
     let verdict = lt_ci.as_ref().map(|c| if c.contains_one { "tie" } else if c.lo > 1.0 { "faster" } else { "slower" });
 
@@ -121,7 +128,7 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
             pct_of_cublaslt_best: w.pct_of_cublaslt_best,
             ci: lt_ci,
             verdict,
-            tested_impl: lt.map(|p| p.a_impl.clone()),
+            tested_impl: w.lt_ratio_ci.and(lt.map(|p| p.a_impl.clone())),
         },
         tie: Tie {
             method: w.tie_method,
@@ -159,4 +166,80 @@ pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> 
             from_view(w, r)
         })
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn paired(a: &str, role: &str, median: f64) -> view::Paired {
+        view::Paired {
+            run_id: "r".into(),
+            a_impl: a.into(),
+            b_impl: if role == "runner_up" { "other".into() } else { "cublaslt_best".into() },
+            role: Some(role.into()),
+            pairs: Some(30),
+            ratio_median: median,
+            ratio_ci_lo: median - 0.01,
+            ratio_ci_hi: median + 0.01,
+            tied: false,
+        }
+    }
+
+    fn winner(lt_ci: Option<(f64, f64)>, paired: Vec<view::Paired>) -> view::Winner {
+        view::Winner {
+            sm_arch: 121,
+            op: "gemm".into(),
+            dtype: "f16f32f16".into(),
+            shape_bucket: "64x64x64".into(),
+            m: 64,
+            n: 64,
+            k: 64,
+            kernel: view::Kernel {
+                kernel_id: "kp".into(),
+                op: "gemm".into(),
+                impl_: "pick".into(),
+                config_json: "{}".into(),
+                regs: Some(64),
+                smem_bytes: Some(0),
+                local_bytes: Some(0),
+                ptx_hash: None,
+                sass_path: None,
+            },
+            run_id: "r".into(),
+            git_sha: None,
+            median_us: 10.0,
+            warm_median_us: None,
+            pct_of_cublas: None,
+            pct_of_cublaslt_best: Some(88.0),
+            tied: true,
+            tie_set: vec!["fast".into(), "pick".into()],
+            pick_reason: Some("tie-break".into()),
+            protocol_version: 2,
+            tie_method: Some("paired".into()),
+            ratio_ci: Some((0.99, 1.01)),
+            lt_ratio_ci: lt_ci,
+            paired,
+        }
+    }
+
+    /// With both configs of a tie paired against cublaslt_best, the pick's
+    /// row is used, whatever the row order.
+    #[test]
+    fn baseline_row_is_the_picks() {
+        let rows = vec![paired("fast", "cublaslt_best", 0.90), paired("pick", "cublaslt_best", 0.88)];
+        let w = from_view(winner(Some((0.87, 0.89)), rows), None);
+        let ci = w.vs_cublaslt_best.ci.unwrap();
+        assert_eq!(ci.ratio_median, Some(0.88));
+        assert_eq!(w.vs_cublaslt_best.tested_impl.as_deref(), Some("pick"));
+    }
+
+    /// No CI for the pick: no verdict, and no config named as "tested".
+    #[test]
+    fn no_ci_names_no_config() {
+        let w = from_view(winner(None, vec![paired("fast", "cublaslt_best", 0.90)]), None);
+        assert!(w.vs_cublaslt_best.ci.is_none() && w.vs_cublaslt_best.verdict.is_none());
+        assert!(w.vs_cublaslt_best.tested_impl.is_none());
+        assert_eq!(w.vs_cublaslt_best.pct_of_cublaslt_best, Some(88.0));
+    }
 }

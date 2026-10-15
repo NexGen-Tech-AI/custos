@@ -60,9 +60,12 @@ fn arch_model_links_values_to_source_runs() {
     assert!(close(mma.tflops, 125.597));
     assert_eq!(mma.source.run_id, "eb3e197afc8e");
     let l2 = a.l2_latency.as_ref().unwrap();
-    assert!(close(l2.ns, 132.292));
-    assert_eq!(l2.sources.len(), 3);
-    assert!(close(a.dram_latency.as_ref().unwrap().ns, 381.25));
+    // Core baa3d0f: latencies from the one non-superseded ptr_chase run.
+    assert!(close(l2.ns, 139.37150000000003));
+    assert_eq!(l2.sources.len(), 1);
+    assert_eq!(l2.sources[0].run_id, "a825f4e557a3");
+    assert!(l2.sources.iter().all(|s| s.superseded_rows == 0), "arch file cites no superseded rows");
+    assert!(close(a.dram_latency.as_ref().unwrap().ns, 397.47249999999997));
     assert!(close(a.roofs.copy_bw_gbps, 236.696) && close(a.roofs.peak_tflops, 125.597));
     assert!(a.power.is_none(), "no power controls in the arch file yet: not measured");
     // Rule 7: the probe summary counts current rows only.
