@@ -44,6 +44,10 @@ export interface SourceRun {
   device_id: string | null;
   git_sha: string | null;
   started_at: string | null;
+  /** null: the run did not record whether its clocks were locked. */
+  clocks_locked: boolean | null;
+  /** "replaced": a later run re-measured this probe (history, not an error). */
+  status: 'current' | 'replaced';
   superseded_rows: number;
   superseded_by: string[];
 }
@@ -63,15 +67,29 @@ export interface MmaPeak {
   source: SourceRun;
 }
 
+/** Arch schema 2: cycles are primary; ns is stated at a reference clock. */
 export interface Latency {
-  ns: number;
-  cycles: number | null;
-  ns_min: number | null;
-  ns_max: number | null;
+  cycles: number;
+  cycles_min: number | null;
+  cycles_max: number | null;
+  ref_clock_mhz: number;
+  ns_at_ref: number;
+  /** null when the runs' clocks differ by > 2% (ns not averaged across clocks). */
+  ns_measured: { median: number; min: number | null; max: number | null } | null;
+  clock_spread_pct: number | null;
+  combine: string | null;
   points: number | null;
   working_sets: string | null;
   method: string | null;
-  sources: SourceRun[];
+  runs: LatencyRun[];
+}
+
+export interface LatencyRun {
+  source: SourceRun;
+  sm_clock_mhz: number | null;
+  cycles: number | null;
+  ns: number | null;
+  points: number | null;
 }
 
 export interface ArchRoofs {
@@ -106,7 +124,6 @@ export interface ArchModel {
   mma_peak: MmaPeak | null;
   l2_latency: Latency | null;
   dram_latency: Latency | null;
-  sm_clock_mhz: [string, number | null][];
   power: unknown | null;
   probes: ProbeSummary[];
 }

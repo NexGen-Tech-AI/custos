@@ -113,8 +113,13 @@ pub struct SourceRun {
     pub device_id: Option<String>,
     pub git_sha: Option<String>,
     pub started_at: Option<String>,
-    /// Rows of this probe in this run that a later run has since superseded:
-    /// the arch file is then older than the current measurements.
+    /// Whether the run's clocks were locked (runs.clocks_locked); None when the
+    /// run did not record it.
+    pub clocks_locked: Option<bool>,
+    /// "current", or "replaced": a later run re-measured this probe (Core
+    /// marks every older row superseded on ingest). History, not an error.
+    pub status: &'static str,
+    /// Rows of this probe in this run marked superseded, and by which runs.
     pub superseded_rows: usize,
     pub superseded_by: Vec<String>,
 }
@@ -136,16 +141,43 @@ pub struct MmaPeak {
     pub source: SourceRun,
 }
 
+/// A pointer-chase latency (arch schema 2). Cycles are primary: they do not
+/// depend on the clock. ns is stated at a reference clock (the highest
+/// source-run clock), and each source run keeps its own clock and ns.
 #[derive(Clone, Debug, Serialize)]
 pub struct Latency {
-    pub ns: f64,
-    pub cycles: Option<f64>,
-    pub ns_min: Option<f64>,
-    pub ns_max: Option<f64>,
+    pub cycles: f64,
+    pub cycles_min: Option<f64>,
+    pub cycles_max: Option<f64>,
+    pub ref_clock_mhz: f64,
+    pub ns_at_ref: f64,
+    /// Measured ns across runs; None when the runs' clocks differ by > 2%
+    /// (Core does not average ns measured at different clocks).
+    pub ns_measured: Option<NsMeasured>,
+    pub clock_spread_pct: Option<f64>,
+    /// How Core combined the runs (e.g. "clocks within 2%: ...").
+    pub combine: Option<String>,
     pub points: Option<i64>,
     pub working_sets: Option<String>,
     pub method: Option<String>,
-    pub sources: Vec<SourceRun>,
+    pub runs: Vec<LatencyRun>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NsMeasured {
+    pub median: f64,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+}
+
+/// One source run of a latency: its own cycles, ns and SM clock.
+#[derive(Clone, Debug, Serialize)]
+pub struct LatencyRun {
+    pub source: SourceRun,
+    pub sm_clock_mhz: Option<f64>,
+    pub cycles: Option<f64>,
+    pub ns: Option<f64>,
+    pub points: Option<i64>,
 }
 
 /// Current (non-superseded) rows per microbench probe.
@@ -174,8 +206,6 @@ pub struct ArchModel {
     pub mma_peak: Option<MmaPeak>,
     pub l2_latency: Option<Latency>,
     pub dram_latency: Option<Latency>,
-    /// SM clock per pointer-chase run (MHz), as the arch file records it.
-    pub sm_clock_mhz: Vec<(String, Option<f64>)>,
     /// Power controls, when the arch file carries them (not yet).
     pub power: Option<Value>,
     pub probes: Vec<ProbeSummary>,
@@ -201,6 +231,8 @@ impl Ctx<'_> {
             device_id: run.map(|r| r.device_id.clone()),
             git_sha: run.and_then(|r| r.git_sha.clone()),
             started_at: run.map(|r| r.started_at.clone()),
+            clocks_locked: run.and_then(|r| r.clocks_locked).map(|v| v != 0),
+            status: if sup.is_empty() { "current" } else { "replaced" },
             superseded_rows: sup.len(),
             superseded_by: by,
         }
@@ -216,25 +248,52 @@ impl Ctx<'_> {
         })
     }
 
-    fn latency(&self, v: &Value) -> Option<Latency> {
-        let val = v.get("value")?;
-        let src = v.get("source")?;
-        let probe = src.get("probe")?.as_str()?;
-        let sources = src
-            .get("runs")?
-            .as_array()?
-            .iter()
-            .filter_map(|r| Some(self.source(r.get("run_id")?.as_str()?, probe, s(r.get("layout")))))
-            .collect();
+    /// `typed` is Core's own reading of the entry (aegis_perf::params): the
+    /// headline numbers come from it, so a schema change breaks here at
+    /// compile time; per-run detail comes from the same JSON entry.
+    fn latency(&self, typed: Option<aegis_perf::params::Latency>, v: Option<&Value>) -> Option<Latency> {
+        let t = typed?;
+        let v = v?;
+        let f = |k: &str| v.get(k).and_then(Value::as_f64);
+        let probe = v.get("probe").and_then(Value::as_str).unwrap_or("ptr_chase_latency");
+        let runs = v
+            .get("runs")
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|r| {
+                        let g = |k: &str| r.get(k).and_then(Value::as_f64);
+                        Some(LatencyRun {
+                            source: self.source(r.get("run_id")?.as_str()?, probe, s(r.get("layout"))),
+                            sm_clock_mhz: g("sm_clock_mhz"),
+                            cycles: g("cycles"),
+                            ns: g("ns"),
+                            points: r.get("points").and_then(Value::as_i64),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let ns_measured = v.get("ns_measured").and_then(|n| {
+            Some(NsMeasured {
+                median: n.get("median")?.as_f64()?,
+                min: n.get("min").and_then(Value::as_f64),
+                max: n.get("max").and_then(Value::as_f64),
+            })
+        });
         Some(Latency {
-            ns: val.get("ns")?.as_f64()?,
-            cycles: val.get("cycles").and_then(Value::as_f64),
-            ns_min: val.get("ns_min").and_then(Value::as_f64),
-            ns_max: val.get("ns_max").and_then(Value::as_f64),
-            points: val.get("points").and_then(Value::as_i64),
-            working_sets: s(val.get("working_sets")),
-            method: s(val.get("method")),
-            sources,
+            cycles: t.cycles,
+            cycles_min: f("cycles_min"),
+            cycles_max: f("cycles_max"),
+            ref_clock_mhz: t.ref_clock_mhz,
+            ns_at_ref: t.ns_at_ref,
+            ns_measured,
+            clock_spread_pct: f("clock_spread_pct"),
+            combine: s(v.get("combine")),
+            points: v.get("points").and_then(Value::as_i64),
+            working_sets: s(v.get("working_sets")),
+            method: s(v.get("method")),
+            runs,
         })
     }
 }
@@ -262,16 +321,6 @@ pub fn arch_model(src: &Sources, con: &Connection, sm: i64) -> Result<Option<Arc
             source: ctx.source(src.get("run_id")?.as_str()?, src.get("probe")?.as_str()?, None),
         })
     });
-    let sm_clock_mhz = doc
-        .pointer("/l2_latency/source/clocks")
-        .and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(|c| Some((c.get("run_id")?.as_str()?.to_string(), c.get("sm_clock_mhz").and_then(Value::as_f64))))
-                .collect()
-        })
-        .unwrap_or_default();
-
     // Current probes only (rule 7).
     let mut probes: BTreeMap<String, ProbeSummary> = BTreeMap::new();
     for m in micro_all.iter().filter(|m| !m.superseded) {
@@ -302,9 +351,8 @@ pub fn arch_model(src: &Sources, con: &Connection, sm: i64) -> Result<Option<Arc
         copy_bw: doc.get("copy_bw_gbps").and_then(|v| ctx.bandwidth(v)),
         read_bw: doc.get("read_bw_gbps").and_then(|v| ctx.bandwidth(v)),
         mma_peak,
-        l2_latency: doc.get("l2_latency").and_then(|v| ctx.latency(v)),
-        dram_latency: doc.get("dram_latency").and_then(|v| ctx.latency(v)),
-        sm_clock_mhz,
+        l2_latency: ctx.latency(params.l2_latency, doc.get("l2_latency")),
+        dram_latency: ctx.latency(params.dram_latency, doc.get("dram_latency")),
         power: doc.get("power").cloned(),
         probes: probes.into_values().collect(),
     }))
@@ -324,4 +372,34 @@ pub fn measured_archs(src: &Sources) -> Vec<i64> {
         .collect();
     v.sort();
     v
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mb(run: &str, superseded_by: Option<&str>) -> view::Microbench {
+        view::Microbench {
+            run_id: run.into(),
+            probe: "ptr_chase_latency".into(),
+            param_json: "{}".into(),
+            value: Some(1.0),
+            unit: "cycles".into(),
+            superseded: superseded_by.is_some(),
+            superseded_by: superseded_by.map(str::to_string),
+        }
+    }
+
+    /// A cited run whose rows a later run re-measured is "replaced" (history),
+    /// with the replacing run named; an untouched one is "current".
+    #[test]
+    fn replaced_runs_are_history() {
+        let micro = [mb("old", Some("new")), mb("old", Some("new")), mb("new", None)];
+        let ctx = Ctx { runs: HashMap::new(), micro_all: &micro };
+        let old = ctx.source("old", "ptr_chase_latency", None);
+        assert_eq!((old.status, old.superseded_rows, old.superseded_by.clone()), ("replaced", 2, vec!["new".to_string()]));
+        let new = ctx.source("new", "ptr_chase_latency", None);
+        assert_eq!((new.status, new.superseded_rows), ("current", 0));
+        assert_eq!(new.clocks_locked, None);
+    }
 }

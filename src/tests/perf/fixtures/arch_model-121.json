@@ -4,7 +4,7 @@
   "device": "NVIDIA GB10",
   "sm_count": 48,
   "l2_bytes": 25165824,
-  "generated_by": "aegis-perf emit-arch on spark-5822, 2026-10-14 20:14 UTC",
+  "generated_by": "aegis-perf emit-arch on spark-5822, 2026-10-15 00:30 UTC",
   "roof_rule": "memory roof: read_bw_gbps for GEMV and decode shapes (M <= 16), copy_bw_gbps elsewhere",
   "roofs": {
     "sm": 121,
@@ -33,6 +33,8 @@
       "device_id": "spark-5822",
       "git_sha": "3b46bf9",
       "started_at": "2026-10-14T20:13:25.303600+00:00",
+      "clocks_locked": null,
+      "status": "current",
       "superseded_rows": 0,
       "superseded_by": []
     }
@@ -54,6 +56,8 @@
       "device_id": "spark-5822",
       "git_sha": "3b46bf9",
       "started_at": "2026-10-14T20:13:25.303600+00:00",
+      "clocks_locked": null,
+      "status": "current",
       "superseded_rows": 0,
       "superseded_by": []
     }
@@ -74,114 +78,86 @@
       "device_id": "spark-5822",
       "git_sha": "dcdb29b",
       "started_at": "2026-10-14T19:20:06.112466+00:00",
+      "clocks_locked": null,
+      "status": "current",
       "superseded_rows": 0,
       "superseded_by": []
     }
   },
   "l2_latency": {
-    "ns": 132.292,
-    "cycles": 337.9465,
-    "ns_min": 132.115,
-    "ns_max": 139.376,
-    "points": 30,
+    "cycles": 335.437,
+    "cycles_min": 335.379,
+    "cycles_max": 335.448,
+    "ref_clock_mhz": 2406.78,
+    "ns_at_ref": 139.3716916377899,
+    "ns_measured": {
+      "median": 139.37150000000003,
+      "min": 139.347,
+      "max": 139.376
+    },
+    "clock_spread_pct": 0.0,
+    "combine": "clocks within 2%: cycles and measured ns both combined",
+    "points": 12,
     "working_sets": "256 KiB - 8 MiB",
-    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; the value is the median across points and runs",
-    "sources": [
+    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; cycles = median across points and runs; ns_at_ref = cycles / ref_clock_mhz, ref = the highest source-run SM clock",
+    "runs": [
       {
-        "run_id": "6141123bbcc4",
-        "probe": "ptr_chase_latency",
-        "detail": "both",
-        "device_id": "spark-5822",
-        "git_sha": "318b023",
-        "started_at": "2026-10-14T18:51:59.436096+00:00",
-        "superseded_rows": 144,
-        "superseded_by": [
-          "f1925d6a0fa4"
-        ]
-      },
-      {
-        "run_id": "f1925d6a0fa4",
-        "probe": "ptr_chase_latency",
-        "detail": "cross_page",
-        "device_id": "spark-5822",
-        "git_sha": "f7ec84c",
-        "started_at": "2026-10-14T19:01:11.757251+00:00",
-        "superseded_rows": 144,
-        "superseded_by": [
-          "a825f4e557a3"
-        ]
-      },
-      {
-        "run_id": "a825f4e557a3",
-        "probe": "ptr_chase_latency",
-        "detail": "both",
-        "device_id": "spark-5822",
-        "git_sha": "f7ec84c",
-        "started_at": "2026-10-14T19:02:00.964368+00:00",
-        "superseded_rows": 0,
-        "superseded_by": []
+        "source": {
+          "run_id": "a825f4e557a3",
+          "probe": "ptr_chase_latency",
+          "detail": "both",
+          "device_id": "spark-5822",
+          "git_sha": "f7ec84c",
+          "started_at": "2026-10-14T19:02:00.964368+00:00",
+          "clocks_locked": null,
+          "status": "current",
+          "superseded_rows": 0,
+          "superseded_by": []
+        },
+        "sm_clock_mhz": 2406.78,
+        "cycles": 335.437,
+        "ns": 139.37150000000003,
+        "points": 12
       }
     ]
   },
   "dram_latency": {
-    "ns": 381.25,
-    "cycles": 960.66,
-    "ns_min": 370.439,
-    "ns_max": 400.853,
-    "points": 25,
+    "cycles": 956.6305,
+    "cycles_min": 952.092,
+    "cycles_max": 964.767,
+    "ref_clock_mhz": 2406.78,
+    "ns_at_ref": 397.4731799333549,
+    "ns_measured": {
+      "median": 397.4725,
+      "min": 395.587,
+      "max": 400.853
+    },
+    "clock_spread_pct": 0.0,
+    "combine": "clocks within 2%: cycles and measured ns both combined",
+    "points": 10,
     "working_sets": ">= 32 MiB",
-    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; the value is the median across points and runs",
-    "sources": [
+    "method": "dependent-load pointer chase, one thread, 128 B node stride, median of 5 repeats per point; cycles = median across points and runs; ns_at_ref = cycles / ref_clock_mhz, ref = the highest source-run SM clock",
+    "runs": [
       {
-        "run_id": "6141123bbcc4",
-        "probe": "ptr_chase_latency",
-        "detail": "both",
-        "device_id": "spark-5822",
-        "git_sha": "318b023",
-        "started_at": "2026-10-14T18:51:59.436096+00:00",
-        "superseded_rows": 144,
-        "superseded_by": [
-          "f1925d6a0fa4"
-        ]
-      },
-      {
-        "run_id": "f1925d6a0fa4",
-        "probe": "ptr_chase_latency",
-        "detail": "cross_page",
-        "device_id": "spark-5822",
-        "git_sha": "f7ec84c",
-        "started_at": "2026-10-14T19:01:11.757251+00:00",
-        "superseded_rows": 144,
-        "superseded_by": [
-          "a825f4e557a3"
-        ]
-      },
-      {
-        "run_id": "a825f4e557a3",
-        "probe": "ptr_chase_latency",
-        "detail": "both",
-        "device_id": "spark-5822",
-        "git_sha": "f7ec84c",
-        "started_at": "2026-10-14T19:02:00.964368+00:00",
-        "superseded_rows": 0,
-        "superseded_by": []
+        "source": {
+          "run_id": "a825f4e557a3",
+          "probe": "ptr_chase_latency",
+          "detail": "both",
+          "device_id": "spark-5822",
+          "git_sha": "f7ec84c",
+          "started_at": "2026-10-14T19:02:00.964368+00:00",
+          "clocks_locked": null,
+          "status": "current",
+          "superseded_rows": 0,
+          "superseded_by": []
+        },
+        "sm_clock_mhz": 2406.78,
+        "cycles": 956.6305,
+        "ns": 397.4725,
+        "points": 10
       }
     ]
   },
-  "sm_clock_mhz": [
-    [
-      "6141123bbcc4",
-      2557.22
-    ],
-    [
-      "f1925d6a0fa4",
-      2558.06
-    ],
-    [
-      "a825f4e557a3",
-      2406.78
-    ]
-  ],
   "power": null,
   "probes": [
     {

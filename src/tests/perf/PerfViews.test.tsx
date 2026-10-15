@@ -58,6 +58,25 @@ describe('DeviceSection', () => {
     expect(within(power).getByText('not measured')).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('arch_model', { sm: 121 });
   });
+
+  it('shows latency in cycles and ns at the stated clock, with each run\'s clock and lock state', async () => {
+    render(<DeviceSection />);
+    expect(await screen.findByText('335.4 cycles · 139.4 ns at 2407 MHz')).toBeInTheDocument();
+    expect(screen.getByText('956.6 cycles · 397.5 ns at 2407 MHz')).toBeInTheDocument();
+    const l2 = screen.getByText('L2 latency').closest('tr')!;
+    expect(within(l2).getByText(/SM 2407 MHz, clock lock not recorded · 335\.4 cycles = 139\.4 ns/)).toBeInTheDocument();
+  });
+
+  it('shows a replaced source run as history, not as a warning', async () => {
+    const model = structuredClone(archModel) as typeof archModel;
+    Object.assign(model.copy_bw!.source, { status: 'replaced', superseded_rows: 6, superseded_by: ['newer01'] });
+    responses.arch_model = model;
+    const { container } = render(<DeviceSection />);
+    expect(await screen.findByText('history: replaced by newer01 (6 rows)')).toBeInTheDocument();
+    expect(container.textContent).not.toContain('⚠');
+    expect(screen.queryByRole('status')).toBeNull();
+    responses.arch_model = archModel;
+  });
 });
 
 describe('RooflineSection', () => {

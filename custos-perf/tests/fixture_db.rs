@@ -2,8 +2,8 @@
 //! Core tree (another session changes it at will):
 //! - the perf DB: ~/custos-fixtures/aegis_perf.db (AEGIS_PERFDB)
 //! - Core files: ~/custos-fixtures/core (AEGIS_FIXTURE_CORE): the arch file,
-//!   manifest, artifacts/sass and artifacts/ncu, as of the DB copy (2026-10-14;
-//!   arch file generated 20:14 UTC).
+//!   manifest, artifacts/sass and artifacts/ncu, as of the DB copy (2026-10-14);
+//!   the arch file is the one at the pinned Core rev (core/SOURCE).
 //!
 //! Re-snapshotting changes the expected values: update the numbers here, and
 //! regenerate tests/fixtures/roofline-sm121.txt with
@@ -68,12 +68,19 @@ fn arch_model_links_values_to_source_runs() {
     assert!(close(mma.tflops, 125.597));
     assert_eq!(mma.source.run_id, "eb3e197afc8e");
     let l2 = a.l2_latency.as_ref().unwrap();
-    assert!(close(l2.ns, 132.292));
-    // Three ptr_chase runs; two of them have since been superseded by the
-    // third, which the view reports per source run (the UI warns on it).
-    let sup: Vec<(&str, usize)> = l2.sources.iter().map(|s| (s.run_id.as_str(), s.superseded_rows)).collect();
-    assert_eq!(sup, [("6141123bbcc4", 144), ("f1925d6a0fa4", 144), ("a825f4e557a3", 0)]);
-    assert!(close(a.dram_latency.as_ref().unwrap().ns, 381.25));
+    // Arch schema 2 (Core 733f1b3): cycles primary, ns at the reference clock,
+    // one current ptr_chase run with its own SM clock.
+    assert!(close(l2.cycles, 335.437));
+    assert!(close(l2.ref_clock_mhz, 2406.78));
+    assert!(close(l2.ns_at_ref, 335.437 / 2406.78 * 1e3));
+    assert_eq!(l2.runs.len(), 1);
+    let run = &l2.runs[0];
+    assert_eq!(run.source.run_id, "a825f4e557a3");
+    assert_eq!(run.sm_clock_mhz, Some(2406.78));
+    assert_eq!(run.source.status, "current");
+    assert_eq!(run.source.clocks_locked, None, "the run did not record its clock lock state");
+    let dram = a.dram_latency.as_ref().unwrap();
+    assert!(close(dram.cycles, 956.6305) && close(dram.ns_at_ref, 956.6305 / 2406.78 * 1e3));
     assert!(close(a.roofs.copy_bw_gbps, 236.696) && close(a.roofs.peak_tflops, 125.597));
     assert!(a.power.is_none(), "no power controls in the arch file yet: not measured");
     // Rule 7: the probe summary counts current rows only.

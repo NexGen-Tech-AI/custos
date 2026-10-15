@@ -3,32 +3,60 @@
 // that measured it. Superseded probe rows are excluded (rule 7).
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
-import type { ArchModel, Device, SourceRun } from '../../../perf/types';
+import type { ArchModel, Device, Latency, SourceRun } from '../../../perf/types';
 import { NotMeasured, V, bytes, cudaVersion, date, num } from '../../../perf/format';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
 const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4';
 const td = 'py-2 pr-4 align-top';
 
-function Sources({ runs }: { runs: SourceRun[] }) {
+type Src = { run: SourceRun; extra?: string };
+
+export function clockLock(locked: boolean | null): string {
+  return locked === null ? 'clock lock not recorded' : locked ? 'clocks locked' : 'clocks not locked';
+}
+
+function Sources({ runs }: { runs: Src[] }) {
   return (
     <ul className="space-y-1">
-      {runs.map((r) => (
+      {runs.map(({ run: r, extra }) => (
         <li key={`${r.run_id}-${r.detail ?? ''}`} className="text-xs text-gray-600 dark:text-gray-400">
           <span className="font-mono">{r.run_id}</span>
           {r.detail && <span> · {r.detail}</span>}
           {r.git_sha && <span> · <span className="font-mono">{r.git_sha}</span></span>}
           {r.started_at && <span> · {date(r.started_at)}</span>}
-          {r.superseded_rows > 0 && (
-            <span className="ml-1 text-amber-700 dark:text-amber-400" role="status">
-              ⚠ {r.superseded_rows} {r.probe} rows of this run are marked superseded by{' '}
-              {r.superseded_by.join(', ')}
+          {extra && <span> · {extra}</span>}
+          {r.status === 'replaced' && (
+            // History: a later run re-measured this probe. Not an error.
+            <span className="block text-gray-500 dark:text-gray-500">
+              history: replaced by {r.superseded_by.join(', ')} ({r.superseded_rows} rows)
             </span>
           )}
         </li>
       ))}
     </ul>
   );
+}
+
+/** "335.4 cycles · 139.4 ns at 2407 MHz": cycles first, ns at the stated clock. */
+export function latencyText(l: Latency | null): string | null {
+  if (!l) return null;
+  return `${l.cycles.toFixed(1)} cycles · ${l.ns_at_ref.toFixed(1)} ns at ${l.ref_clock_mhz.toFixed(0)} MHz`;
+}
+
+function latencyHow(l: Latency | null): string | null {
+  if (!l) return null;
+  const spread = l.clock_spread_pct === null ? '' : `; run clocks spread ${l.clock_spread_pct.toFixed(1)}%`;
+  return `${l.working_sets ?? ''}, ${l.points ?? '?'} points${spread}. ${l.combine ?? ''}. ${l.method ?? ''}`;
+}
+
+function latencySources(l: Latency | null): Src[] {
+  return (l?.runs ?? []).map((r) => ({
+    run: r.source,
+    extra:
+      `SM ${r.sm_clock_mhz === null ? 'clock not measured' : `${r.sm_clock_mhz.toFixed(0)} MHz`}, ${clockLock(r.source.clocks_locked)}` +
+      (r.cycles !== null && r.ns !== null ? ` · ${r.cycles.toFixed(1)} cycles = ${r.ns.toFixed(1)} ns` : ''),
+  }));
 }
 
 function Fact({ label, value }: { label: string; value: string | null }) {
@@ -79,9 +107,9 @@ function DeviceFacts({ d }: { d: Device }) {
 
 function HardwareModel({ a }: { a: ArchModel }) {
   const r = a.roofs;
-  const rows: { q: string; v: string | null; how: string | null; src: SourceRun[] }[] = [
-    { q: 'Copy bandwidth (roof, M > 16)', v: num(a.copy_bw?.gbps, 1, 'GB/s'), how: a.copy_bw?.method ?? null, src: a.copy_bw ? [a.copy_bw.source] : [] },
-    { q: 'Read bandwidth (roof, M ≤ 16)', v: num(a.read_bw?.gbps, 1, 'GB/s'), how: a.read_bw?.method ?? null, src: a.read_bw ? [a.read_bw.source] : [] },
+  const rows: { q: string; v: string | null; how: string | null; src: Src[] }[] = [
+    { q: 'Copy bandwidth (roof, M > 16)', v: num(a.copy_bw?.gbps, 1, 'GB/s'), how: a.copy_bw?.method ?? null, src: a.copy_bw ? [{ run: a.copy_bw.source }] : [] },
+    { q: 'Read bandwidth (roof, M ≤ 16)', v: num(a.read_bw?.gbps, 1, 'GB/s'), how: a.read_bw?.method ?? null, src: a.read_bw ? [{ run: a.read_bw.source }] : [] },
     {
       q: 'mma.sync peak (compute roof)',
       v: a.mma_peak
@@ -89,20 +117,10 @@ function HardwareModel({ a }: { a: ArchModel }) {
           (a.mma_peak.hmma_per_clk_per_sm !== null ? ` · ${a.mma_peak.hmma_per_clk_per_sm.toFixed(3)} HMMA/clk/SM` : '')
         : null,
       how: a.mma_peak?.instruction ?? null,
-      src: a.mma_peak ? [a.mma_peak.source] : [],
+      src: a.mma_peak ? [{ run: a.mma_peak.source }] : [],
     },
-    {
-      q: 'L2 latency',
-      v: a.l2_latency ? `${a.l2_latency.ns.toFixed(1)} ns · ${num(a.l2_latency.cycles, 0, 'cycles') ?? 'cycles not measured'}` : null,
-      how: a.l2_latency ? `${a.l2_latency.working_sets ?? ''}, ${a.l2_latency.points ?? '?'} points; ${a.l2_latency.method ?? ''}` : null,
-      src: a.l2_latency?.sources ?? [],
-    },
-    {
-      q: 'DRAM latency',
-      v: a.dram_latency ? `${a.dram_latency.ns.toFixed(1)} ns · ${num(a.dram_latency.cycles, 0, 'cycles') ?? 'cycles not measured'}` : null,
-      how: a.dram_latency ? `${a.dram_latency.working_sets ?? ''}, ${a.dram_latency.points ?? '?'} points; ${a.dram_latency.method ?? ''}` : null,
-      src: a.dram_latency?.sources ?? [],
-    },
+    { q: 'L2 latency', v: latencyText(a.l2_latency), how: latencyHow(a.l2_latency), src: latencySources(a.l2_latency) },
+    { q: 'DRAM latency', v: latencyText(a.dram_latency), how: latencyHow(a.dram_latency), src: latencySources(a.dram_latency) },
     { q: 'Power controls', v: a.power ? JSON.stringify(a.power) : null, how: null, src: [] },
   ];
   return (
@@ -142,12 +160,6 @@ function HardwareModel({ a }: { a: ArchModel }) {
           </tbody>
         </table>
       </div>
-      {a.sm_clock_mhz.length > 0 && (
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          SM clock during the latency runs:{' '}
-          {a.sm_clock_mhz.map(([run, mhz]) => `${run} ${mhz === null ? 'not measured' : `${mhz.toFixed(0)} MHz`}`).join(' · ')}
-        </p>
-      )}
       <h4 className="text-sm font-semibold mt-5 mb-2">Current microbench probes</h4>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Rows a later run re-measured (superseded) are excluded.</p>
       <div className="flex flex-wrap gap-2">
