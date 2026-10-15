@@ -11,13 +11,6 @@ import { RooflineSection } from '../../components/sections/perf/RooflineSection'
 import { ci, cudaVersion, num, tieText, vsBaseline } from '../../perf/format';
 import type { Roofline } from '../../perf/types';
 
-// jsdom has no ResizeObserver; recharts' ResponsiveContainer needs one.
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} as unknown as typeof ResizeObserver;
-
 const invoke = vi.fn();
 vi.mock('@tauri-apps/api/core', () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 

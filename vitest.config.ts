@@ -22,6 +22,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@legacy': path.resolve(__dirname, './src/legacy/disabled.tsx'),
     },
   },
 });

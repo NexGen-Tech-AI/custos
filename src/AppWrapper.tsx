@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Sidebar } from './components/Sidebar';
-import { DashboardSection } from './components/sections/DashboardSection';
 import { MonitoringSection } from './components/sections/MonitoringSection';
 import { PlaceholderSection } from './components/sections/PlaceholderSection';
-import ThreatDetectionSection from './components/sections/ThreatDetectionSection';
-import NetworkSecuritySection from './components/sections/network-security/NetworkSecuritySection';
-import VulnerabilitiesSection from './components/sections/vulnerabilities/VulnerabilitiesSection';
-import AIAnalysisSection from './components/AIAnalysisSection';
-import ReportsSection from './components/sections/ReportsSection';
 import { DeviceSection } from './components/sections/perf/DeviceSection';
 import { RooflineSection } from './components/sections/perf/RooflineSection';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { ScanProvider, useScan } from './contexts/ScanContext';
 import { ThemeToggle } from './components/ThemeToggle';
-import ScanProgressIndicator from './components/ScanProgressIndicator';
 import { SystemInfo, SystemMetrics } from './types';
-import { Shield, Network, Search, Sparkles, FileText, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
+// Legacy security UI: an empty registry unless built with VITE_LEGACY_SECURITY=1.
+import legacy from '@legacy';
 
 import './App.css';
 
@@ -28,10 +22,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('perf-device');
 
   // Use scan context instead of local state
-  const { scanProgress, showFloatingIndicator, setShowFloatingIndicator } = useScan();
 
   useEffect(() => {
     const init = async () => {
@@ -99,14 +92,6 @@ function App() {
     init();
   }, []);
 
-  const handleExpandScan = () => {
-    setActiveSection('vulnerabilities');
-  };
-
-  const handleDismissScan = () => {
-    setShowFloatingIndicator(false);
-  };
-
   const toggleMonitoring = async () => {
     try {
       if (isMonitoring) {
@@ -124,28 +109,16 @@ function App() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard':
-        return <DashboardSection />;
       case 'monitoring':
         return <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
       case 'perf-device':
         return <DeviceSection />;
       case 'perf-roofline':
         return <RooflineSection />;
-      case 'threats':
-        return <ThreatDetectionSection />;
-      case 'network':
-        return <NetworkSecuritySection />;
-      case 'vulnerabilities':
-        return <VulnerabilitiesSection />;
-      case 'ai-analysis':
-        return <AIAnalysisSection />;
-      case 'reports':
-        return <ReportsSection />;
       case 'settings':
         return <PlaceholderSection title="Settings" description="Configure your security preferences" icon={Settings} comingSoon={false} />;
       default:
-        return <DashboardSection />;
+        return legacy.sections.find((s) => s.id === activeSection)?.render() ?? <DeviceSection />;
     }
   };
 
@@ -169,6 +142,7 @@ function App() {
               onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
+              extraItems={legacy.sections}
             />
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -216,14 +190,7 @@ function App() {
           </div>
         )}
 
-      {/* Floating scan progress indicator */}
-      {showFloatingIndicator && activeSection !== 'vulnerabilities' && (
-        <ScanProgressIndicator
-          progress={scanProgress}
-          onExpand={handleExpandScan}
-          onDismiss={handleDismissScan}
-        />
-      )}
+      <legacy.Overlay activeSection={activeSection} onOpenSection={setActiveSection} />
     </div>
   );
 }
@@ -232,9 +199,9 @@ function App() {
 export default function AppWrapper() {
   return (
     <ThemeProvider>
-      <ScanProvider>
+      <legacy.Provider>
         <App />
-      </ScanProvider>
+      </legacy.Provider>
     </ThemeProvider>
   );
 }

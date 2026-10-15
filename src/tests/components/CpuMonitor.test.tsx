@@ -43,13 +43,13 @@ describe('CpuMonitor', () => {
     
     expect(screen.getByText('CPU Usage')).toBeInTheDocument();
     expect(screen.getByText('45.5%')).toBeInTheDocument();
-    expect(screen.getByText('3.2 GHz')).toBeInTheDocument();
+    expect(screen.getByText('3.20 GHz')).toBeInTheDocument();
   });
 
   it('displays load average', () => {
     render(<CpuMonitor metrics={mockCpuMetrics} />);
     
-    expect(screen.getByText('Load Average')).toBeInTheDocument();
+    expect(screen.getByText('Load Average (1min, 5min, 15min)')).toBeInTheDocument();
     expect(screen.getByText('1.50, 1.20, 0.90')).toBeInTheDocument();
   });
 
@@ -60,13 +60,13 @@ describe('CpuMonitor', () => {
     expect(screen.getByText('5 / 250')).toBeInTheDocument();
   });
 
-  it('renders per-core usage', () => {
+  it('renders per-thread usage', () => {
     render(<CpuMonitor metrics={mockCpuMetrics} />);
     
-    expect(screen.getByText('Per Core Usage')).toBeInTheDocument();
-    expect(screen.getByText('Core 0')).toBeInTheDocument();
-    expect(screen.getByText('Core 1')).toBeInTheDocument();
-    expect(screen.getByText('Core 2')).toBeInTheDocument();
-    expect(screen.getByText('Core 3')).toBeInTheDocument();
+    expect(screen.getByText('Per Thread Usage (4 threads)')).toBeInTheDocument();
+    expect(screen.getByText('T1')).toBeInTheDocument();
+    expect(screen.getByText('T2')).toBeInTheDocument();
+    expect(screen.getByText('T3')).toBeInTheDocument();
+    expect(screen.getByText('T4')).toBeInTheDocument();
   });
 });

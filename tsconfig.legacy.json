@@ -1,0 +1,13 @@
+{
+  // Type-checks the legacy security UI too (pnpm typecheck:legacy). Not part of
+  // the default checks: the legacy views are kept, not maintained.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@legacy": ["./src/legacy/security.tsx"]
+    }
+  },
+  "include": ["src"],
+  "exclude": []
+}

@@ -18,8 +18,9 @@ Custos reads Core's data and never writes it.
 | `src/` (TS) | React 18 + Vite 5 + TypeScript + Tailwind 3 frontend | `src/main.tsx` → `App.tsx` → `AppWrapper.tsx` |
 | `system-monitor/`, `src/ui/`, `src/inference/`, `src-ml/`, root `*.md` status files | stale copies and notes | not built |
 
-Commands: `npm run tauri:dev` (app), `npm run build` (frontend), `npm test`
-(vitest), `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
+Commands (pnpm is the package manager; there is no package-lock.json):
+`pnpm install --frozen-lockfile`, `pnpm tauri:dev` (app), `pnpm typecheck`,
+`pnpm vitest run`, `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
 layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
 Perf views: `src/components/sections/perf/` (Device, Roofline), API and types in
@@ -35,6 +36,12 @@ Legacy code is out of the default build (it is kept, not maintained):
 - root crate feature `legacy-backend`: `src/backend`, `src/services`, their
   tests (`src/tests/*_tests.rs`) and the three `src/bin` tools. It does not
   compile (20 errors in `src/backend`); not fixed on purpose.
+Frontend: the legacy security views (Security Dashboard, threats, network,
+vulnerabilities, AI analysis, reports, scan overlay) load through the `@legacy`
+alias: an empty registry (`src/legacy/disabled.tsx`) unless
+`VITE_LEGACY_SECURITY=1` (`src/legacy/security.tsx`). `tsconfig.json`
+excludes them; `pnpm typecheck:legacy` checks them (not expected to pass).
+The default app lands on the Device view.
 Default builds compile with zero errors and their tests never hang; a test
 needing the network or root is `#[ignore = "<reason>"]` or feature-gated.
 
@@ -108,8 +115,14 @@ Custos shows numbers Core has disowned.
 6. **Ties are statistical.** Show the paired ratio and its 95% CI from
    `winners`. A shape is tied when the CI contains 1.0. Never show a single
    median as a win.
-7. **Superseded rows stay hidden.** Microbench rows marked superseded stay in
-   the DB for history but are excluded from the hardware-model view.
+7. **Only invalidated rows are hidden.** Each microbench row has a status:
+   `valid` (current), `replaced` (a newer run of the same probe exists; still
+   valid history) or `invalidated` (known bad, with a required reason).
+   `aegis_perf::view::microbench` never returns invalidated rows; show
+   replaced rows as history, labelled replaced (with `replaced_by`). The
+   hardware model (arch file) uses the newest valid run per probe
+   (`aegis_perf::db::current_run`; the newest replaced run only if no valid
+   one exists).
 8. **Two kinds of data, never mixed.** Continuous telemetry (NVML on the
    Spark; sysfs and tegrastats on Jetson) is separate from profiled kernel
    metrics (Nsight). Never imply that NVML provides hardware counters.

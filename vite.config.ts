@@ -11,6 +11,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Legacy security UI only with VITE_LEGACY_SECURITY=1 (and the src-tauri
+      // feature "legacy-security"); otherwise an empty registry.
+      '@legacy': path.resolve(
+        __dirname,
+        process.env.VITE_LEGACY_SECURITY === '1' ? './src/legacy/security.tsx' : './src/legacy/disabled.tsx',
+      ),
     },
   },
   clearScreen: false,

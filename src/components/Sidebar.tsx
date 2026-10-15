@@ -1,12 +1,6 @@
 import React from 'react';
 import {
-  LayoutDashboard,
   Activity,
-  Shield,
-  Network,
-  Search,
-  Sparkles,
-  FileText,
   Settings,
   ChevronLeft,
   Cpu,
@@ -14,33 +8,32 @@ import {
   ChevronRight
 } from 'lucide-react';
 import logo from '../assets/logo.png';
+import type { ExtraSection } from '../legacy/types';
 
 interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
   activeSection: string;
   onSectionChange: (section: string) => void;
+  /** Sections registered at build time (the legacy security UI), before Settings. */
+  extraItems?: Pick<ExtraSection, 'id' | 'label' | 'icon'>[];
 }
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'monitoring', label: 'System Monitoring', icon: Activity },
   { id: 'perf-device', label: 'Device (AEGIS)', icon: Cpu },
   { id: 'perf-roofline', label: 'Roofline (AEGIS)', icon: LineChart },
-  { id: 'threats', label: 'Threat Detection', icon: Shield },
-  { id: 'network', label: 'Network Security', icon: Network },
-  { id: 'vulnerabilities', label: 'Vulnerability Scan', icon: Search },
-  { id: 'ai-analysis', label: 'AI Analysis', icon: Sparkles },
-  { id: 'reports', label: 'Reports', icon: FileText },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ];
+const settingsItem = { id: 'settings', label: 'Settings', icon: Settings };
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggle,
   activeSection,
-  onSectionChange
+  onSectionChange,
+  extraItems = [],
 }) => {
+  const items = [...menuItems, ...extraItems, settingsItem];
   return (
     <aside
       className={`
@@ -75,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {menuItems.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
 

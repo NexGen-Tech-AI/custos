@@ -20,9 +20,21 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@legacy": ["./src/legacy/disabled.tsx"]
     }
   },
   "include": ["src"],
+  "exclude": [
+    "src/legacy/security.tsx",
+    "src/components/sections/DashboardSection.tsx",
+    "src/components/sections/ThreatDetectionSection.tsx",
+    "src/components/sections/network-security",
+    "src/components/sections/vulnerabilities",
+    "src/components/sections/ReportsSection.tsx",
+    "src/components/AIAnalysisSection.tsx",
+    "src/components/ScanProgressIndicator.tsx",
+    "src/contexts/ScanContext.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

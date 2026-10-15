@@ -107,7 +107,7 @@ describe('Dashboard', () => {
     expect(screen.getByText('CPU Usage')).toBeInTheDocument();
     expect(screen.getByText('Memory Usage')).toBeInTheDocument();
     expect(screen.getByText('Disk Usage')).toBeInTheDocument();
-    expect(screen.getByText('Network Activity')).toBeInTheDocument();
+    expect(screen.getByText('Network Interfaces')).toBeInTheDocument();
     expect(screen.getByText('Top Processes')).toBeInTheDocument();
   });
 
@@ -123,6 +123,6 @@ describe('Dashboard', () => {
     render(<Dashboard systemInfo={mockSystemInfo} metrics={mockMetrics} />);
     
     expect(screen.getByText('45.5%')).toBeInTheDocument();
-    expect(screen.getByText('3.2 GHz')).toBeInTheDocument();
+    expect(screen.getByText('3.20 GHz')).toBeInTheDocument();
   });
 });

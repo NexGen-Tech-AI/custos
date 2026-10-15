@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "license": "UNLICENSED",
   "type": "module",
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -15,7 +16,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:rust": "cargo test",
-    "test:all": "npm run test:rust && npm run test"
+    "test:all": "pnpm test:rust && pnpm test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:legacy": "tsc --noEmit -p tsconfig.legacy.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
