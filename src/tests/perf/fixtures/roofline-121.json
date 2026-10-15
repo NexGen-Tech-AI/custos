@@ -2,7 +2,7 @@
   "sm": 121,
   "roofs": {
     "sm": 121,
-    "arch_file": "/home/riffe007/Documents/projects/aegis/include/aegis/arch/sm_121.json",
+    "arch_file": "/home/riffe007/custos-fixtures/core/include/aegis/arch/sm_121.json",
     "copy_bw_gbps": 236.696,
     "read_bw_gbps": 257.841,
     "peak_tflops": 125.597,

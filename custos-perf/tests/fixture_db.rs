@@ -1,15 +1,23 @@
-//! custos-perf against the fixture perf DB (CLAUDE.md rule 16):
-//! `cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/`.
-//! Expected values are from that copy (2026-10-14) and the arch file
-//! include/aegis/arch/sm_121.json of the Core repo. Re-copying the DB or
-//! regenerating the arch file changes them: update the numbers here, and
+//! custos-perf against fixture snapshots (CLAUDE.md rule 16), never the live
+//! Core tree (another session changes it at will):
+//! - the perf DB: ~/custos-fixtures/aegis_perf.db (AEGIS_PERFDB)
+//! - Core files: ~/custos-fixtures/core (AEGIS_FIXTURE_CORE): the arch file,
+//!   manifest, artifacts/sass and artifacts/ncu, as of the DB copy (2026-10-14;
+//!   arch file generated 20:14 UTC).
+//!
+//! Re-snapshotting changes the expected values: update the numbers here, and
 //! regenerate tests/fixtures/roofline-sm121.txt with
 //! `aegis-perf --db <copy> roofline --arch 121` (run on a scratch copy: the
 //! CLI's connect migrates the DB).
 use custos_perf::{Filter, Sources};
 
 fn src() -> Sources {
-    let s = Sources::from_env();
+    let home = std::path::PathBuf::from(std::env::var_os("HOME").unwrap_or_default());
+    let s = Sources {
+        core: std::env::var_os("AEGIS_FIXTURE_CORE").map(Into::into).unwrap_or(home.join("custos-fixtures/core")),
+        ..Sources::from_env()
+    };
+    assert!(s.arch_file(121).exists(), "fixture Core snapshot {} missing", s.core.display());
     assert!(
         s.db.exists(),
         "fixture DB {} missing; cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/",
@@ -60,12 +68,12 @@ fn arch_model_links_values_to_source_runs() {
     assert!(close(mma.tflops, 125.597));
     assert_eq!(mma.source.run_id, "eb3e197afc8e");
     let l2 = a.l2_latency.as_ref().unwrap();
-    // Core baa3d0f: latencies from the one non-superseded ptr_chase run.
-    assert!(close(l2.ns, 139.37150000000003));
-    assert_eq!(l2.sources.len(), 1);
-    assert_eq!(l2.sources[0].run_id, "a825f4e557a3");
-    assert!(l2.sources.iter().all(|s| s.superseded_rows == 0), "arch file cites no superseded rows");
-    assert!(close(a.dram_latency.as_ref().unwrap().ns, 397.47249999999997));
+    assert!(close(l2.ns, 132.292));
+    // Three ptr_chase runs; two of them have since been superseded by the
+    // third, which the view reports per source run (the UI warns on it).
+    let sup: Vec<(&str, usize)> = l2.sources.iter().map(|s| (s.run_id.as_str(), s.superseded_rows)).collect();
+    assert_eq!(sup, [("6141123bbcc4", 144), ("f1925d6a0fa4", 144), ("a825f4e557a3", 0)]);
+    assert!(close(a.dram_latency.as_ref().unwrap().ns, 381.25));
     assert!(close(a.roofs.copy_bw_gbps, 236.696) && close(a.roofs.peak_tflops, 125.597));
     assert!(a.power.is_none(), "no power controls in the arch file yet: not measured");
     // Rule 7: the probe summary counts current rows only.

@@ -24,8 +24,9 @@ layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
 Perf views: `src/components/sections/perf/` (Device, Roofline), API and types in
 `src/perf/`. Their tests (`src/tests/perf/`) run on real command output;
-refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump --
-devices | arch_model 121 | roofline 121` into `src/tests/perf/fixtures/`.
+refresh it with `AEGIS_CORE=~/custos-fixtures/core cargo run --manifest-path
+custos-perf/Cargo.toml --example dump -- devices | arch_model 121 | roofline 121`
+into `src/tests/perf/fixtures/`.
 
 `cargo test` in `src-tauri` does **not** compile today: pre-existing errors in
 the security modules (`tempfile` missing in `malware/quarantine.rs` and
@@ -128,6 +129,11 @@ Custos shows numbers Core has disowned.
     goes into aegis-perf as its own Core commit, with Core's tests passing.
 15. **Design for many archs.** All data is sm_121 today; every command and
     view takes the arch as a parameter (sm_87 arrives with the Jetson port).
-16. **Development uses a fixture copy** of the DB:
-    `~/custos-fixtures/aegis_perf.db` (`cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/`).
-    Override with `AEGIS_PERFDB`; the Core root with `AEGIS_CORE`.
+16. **Development and tests use fixture snapshots, never live Core data.**
+    The DB: `~/custos-fixtures/aegis_perf.db` (`cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/`;
+    override with `AEGIS_PERFDB`). The Core files Custos reads (arch file,
+    manifest, `artifacts/sass`, `artifacts/ncu`), from the same moment:
+    `~/custos-fixtures/core` (tests: `AEGIS_FIXTURE_CORE`). The app reads the
+    live Core repo (`AEGIS_CORE`), which other sessions change at any time.
+17. **Never run git in Core's main working tree.** Another session works
+    there. Changes to aegis-perf go through a separate `git worktree add`.
