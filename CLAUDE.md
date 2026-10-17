@@ -31,7 +31,8 @@ refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump
 
 AEGIS is a default feature: `src-tauri` feature `aegis` (custos-perf, the perf
 commands, `perf_status`) and, on the frontend, the `@aegis` alias
-(`src/aegis/enabled.tsx`, the AEGIS sections and the DB status banner; with
+(`src/aegis/enabled.tsx`, the AEGIS sections, each behind `PerfGate`: an unusable
+perf DB shows only its state; with
 `VITE_AEGIS=0`, `src/aegis/disabled.tsx`). `--no-default-features` plus
 `VITE_AEGIS=0` (`pnpm tauri:dev:monitor`) is the original system monitor. The
 default app lands on the first AEGIS section (Device), else System Monitoring.

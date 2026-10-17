@@ -13,7 +13,6 @@ import aegis from '@aegis';
 import legacy from '@legacy';
 
 const extraSections = [...aegis.sections, ...legacy.sections];
-const aegisIds = new Set(aegis.sections.map((s) => s.id));
 
 import './App.css';
 
@@ -183,7 +182,6 @@ function App() {
                   </div>
                 )}
 
-                {aegisIds.has(activeSection) && <aegis.Banner />}
                 {renderSection()}
               </main>
             </div>
