@@ -38,26 +38,43 @@ describe('format', () => {
 });
 
 describe('DeviceSection', () => {
-  it('shows manifest facts and the measured model with source runs', async () => {
+  it('shows the measured model, each value with what measured it', async () => {
     render(<DeviceSection />);
     expect(await screen.findByText('Measured hardware model, sm_121')).toBeInTheDocument();
-    expect(screen.getByText('48')).toBeInTheDocument(); // SMs, from the manifest
-    expect(screen.getByText('236.7 GB/s')).toBeInTheDocument(); // copy roof, arch file
-    expect(screen.getByText('257.8 GB/s')).toBeInTheDocument(); // read roof
-    expect(screen.getByText(/125\.6 TFLOPS/)).toBeInTheDocument();
-    expect(screen.getAllByText('941ff9215564').length).toBe(2); // both bandwidths' source run
-    // No power controls in the arch file: "not measured", not a number.
-    const power = screen.getByText('Power controls').closest('tr')!;
-    expect(within(power).getByText('not measured')).toBeInTheDocument();
+    const model = screen.getByText('Measured hardware model, sm_121').closest('div')!;
+    const row = (q: string) => within(model).getByText(q).closest('tr')!;
+    expect(within(row('SMs')).getByText('48')).toBeInTheDocument();
+    expect(within(row('SMs')).getByText('arch file')).toBeInTheDocument();
+    expect(within(row('Memory')).getByText('121.7 GiB')).toBeInTheDocument();
+    expect(within(row('Memory')).getByText(/manifest tests\/fixtures\/manifest-spark-5822\.json/)).toBeInTheDocument();
+    expect(within(row('L2')).getByText('24 MiB')).toBeInTheDocument();
+    expect(within(row('Copy bandwidth (roof, M > 16)')).getByText('236.7 GB/s')).toBeInTheDocument();
+    expect(within(row('Copy bandwidth (roof, M > 16)')).getByText('run 941ff9215564')).toBeInTheDocument();
+    expect(within(row('Read bandwidth (roof, M ≤ 16)')).getByText('257.8 GB/s')).toBeInTheDocument();
+    expect(within(row('mma.sync peak (compute roof)')).getByText(/125\.6 TFLOPS/)).toBeInTheDocument();
+    expect(within(row('mma.sync peak (compute roof)')).getByText('run eb3e197afc8e')).toBeInTheDocument();
+    expect(within(row('Toolchain')).getByText('CUDA 13.0, driver API 13.0')).toBeInTheDocument();
+    // No power controls in the arch file, no power mode on any run: "not measured".
+    expect(within(row('Power controls')).getByText('not measured')).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith('arch_model', { sm: 121 });
   });
 
-  it('shows latency in cycles and ns at the stated clock, with each run\'s clock and lock state', async () => {
+  it('shows latency as cycles = ns at the clock, with the lock state', async () => {
     render(<DeviceSection />);
-    expect(await screen.findByText('335.4 cycles · 139.4 ns at 2407 MHz')).toBeInTheDocument();
-    expect(screen.getByText('956.6 cycles · 397.5 ns at 2407 MHz')).toBeInTheDocument();
+    expect(await screen.findByText('335.4 cycles = 139.4 ns at 2407 MHz (clocks not locked)')).toBeInTheDocument();
+    expect(screen.getByText('956.6 cycles = 397.5 ns at 2407 MHz (clocks not locked)')).toBeInTheDocument();
     const l2 = screen.getByText('L2 latency').closest('tr')!;
     expect(within(l2).getByText(/SM 2407 MHz, clock lock not recorded · 335\.4 cycles = 139\.4 ns/)).toBeInTheDocument();
+  });
+
+  it('lists replaced runs as history, not as a warning', async () => {
+    const { container } = render(<DeviceSection />);
+    const l2 = (await screen.findByText('L2 latency')).closest('tr')!;
+    expect(within(l2).getByText('history: 4 earlier runs replaced')).toBeInTheDocument();
+    const first = within(l2).getAllByRole('listitem').find((li) => li.textContent!.includes('55945fd9cbef'))!;
+    expect(first).toHaveTextContent('run 55945fd9cbef · 5509991 · 2026-10-14 05:35 UTC · replaced by fb77bc085d64 (36 rows)');
+    expect(container.textContent).not.toContain('⚠');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('shows a replaced source run as history, not as a warning', async () => {

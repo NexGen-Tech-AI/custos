@@ -58,7 +58,22 @@ export interface SourceRun {
   clocks_locked: boolean | null;
   /** The run's rows of this probe: "valid" (current) or "replaced" (a newer run
    *  re-measured the probe: history, not an error). */
+  /** The run's toolchain and power mode; null: not recorded. */
+  cuda_ver: number | null;
+  driver_ver: number | null;
+  power_mode: string | null;
+  /** The idle guard during the run; null: not watched. */
+  disturbed: boolean | null;
   status: 'valid' | 'replaced';
+  replaced_rows: number;
+  replaced_by: string[];
+}
+
+/** An earlier run of a value's probe, replaced by a newer one (history). */
+export interface HistoryRun {
+  run_id: string;
+  git_sha: string | null;
+  started_at: string | null;
   replaced_rows: number;
   replaced_by: string[];
 }
@@ -68,6 +83,7 @@ export interface Bandwidth {
   reps: number[];
   method: string | null;
   source: SourceRun;
+  history: HistoryRun[];
 }
 
 export interface MmaPeak {
@@ -76,6 +92,7 @@ export interface MmaPeak {
   instruction: string | null;
   at: unknown;
   source: SourceRun;
+  history: HistoryRun[];
 }
 
 /** Cycles are stored; ns is derived by aegis-perf at the reference clock. */
@@ -94,6 +111,7 @@ export interface Latency {
   working_sets: string | null;
   method: string | null;
   runs: LatencyRun[];
+  history: HistoryRun[];
 }
 
 export interface LatencyRun {
@@ -133,8 +151,12 @@ export interface ArchModel {
   sm: number;
   arch_file: string;
   device: string | null;
+  /** From the arch file. */
   sm_count: number | null;
   l2_bytes: number | null;
+  /** From the arch's device manifest (path in `manifest`). */
+  global_mem_bytes: number | null;
+  manifest: string | null;
   generated_by: string | null;
   roof_rule: string | null;
   roofs: ArchRoofs;
