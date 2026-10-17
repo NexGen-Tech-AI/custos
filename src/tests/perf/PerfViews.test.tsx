@@ -111,8 +111,8 @@ describe('RooflineSection', () => {
       expect(row.textContent).toContain(m <= 16 ? 'read (257.8 GB/s)' : 'copy (236.7 GB/s)');
     }
     const tied = rows.find((row) => row.textContent!.startsWith('16x4864x896'))!;
-    expect(tied.textContent).toContain('tied vs mma_pipe_64x128x32_2x4_s4, runner-up/pick CI [0.997, 1.001]');
-    expect(tied.textContent).toContain('99.4% of cublaslt_best, ratio CI [0.990, 0.992]: slower');
+    expect(tied.textContent).toContain('tied vs mma_pipe_64x128x32_2x4_s4, runner-up/pick CI [0.992, 1.002]');
+    expect(tied.textContent).toContain('99.2% of cublaslt_best, ratio CI [1.001, 1.004]: faster');
     expect(invoke).toHaveBeenCalledWith('roofline', { sm: 121 });
   });
 
@@ -150,12 +150,12 @@ describe('Roofline data and hover', () => {
 
   it('hover: config, % of cublaslt_best with the paired CI, dispatch target', () => {
     const r = roofline as unknown as Roofline;
-    const p = r.points.find((x) => x.label === '4096x4096x4096 mma_pipe_256x128x32_4x2_s4')!;
+    const p = r.points.find((x) => x.label === '4096x4096x4096 mma_pipe_128x128x32_2x4_s3')!;
     render(<Hover active payload={[{ payload: { kind: 'point', x: p.roof.ai, y: p.roof.tflops, p } }]} />);
-    expect(screen.getByText(/70\.2% of cublaslt_best, ratio CI \[0\.701, 0\.708\]: slower/)).toBeInTheDocument();
-    expect(screen.getByText(/BM=256/)).toBeInTheDocument();
+    expect(screen.getByText(/72\.2% of cublaslt_best, ratio CI \[0\.720, 0\.724\]: slower/)).toBeInTheDocument();
+    expect(screen.getByText(/BM=128/)).toBeInTheDocument();
     expect(screen.getByText(/dispatch: cuBLASLt \(provisional\)/)).toBeInTheDocument();
-    expect(screen.getByText(/paired CI upper bound 0\.708 < 80% floor/)).toBeInTheDocument();
+    expect(screen.getByText(/paired CI upper bound 0\.724 < 80% floor/)).toBeInTheDocument();
   });
 
   it('table: the dispatch target per shape', async () => {

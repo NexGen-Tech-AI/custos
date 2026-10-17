@@ -52,8 +52,13 @@ fn fixture_covers_the_contract_cases() {
     assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Valid));
     assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Replaced));
     let pr = view::paired_results(&con, &PairedResultFilter::default()).unwrap();
-    assert_eq!(pr.len(), 10);
+    assert_eq!(pr.len(), 18);
     assert!(pr.iter().any(|p| p.disturbed == Some(true)), "a disturbed paired result");
+    // The stored cuBLASLt algorithm (schema v4 lt_algo), as Core renders it:
+    // 4096^3 dispatches to cuBLASLt algo 67 (tile 412, stages 35, custom 31).
+    let (header, n) = aegis_perf::tune::header_text(&con, 121, "fixture").unwrap();
+    assert_eq!(n, 14);
+    assert!(header.contains("{4096, 4096, 4096, \"mma_pipe_128x128x32_2x4_s3\", aegis::detail::Dispatch::Cublaslt, 72.2, 0.7198, 0.7244, {67, 412, 35, 1, 0, 0, 31, 0, 0}}"));
 }
 
 #[test]
@@ -65,7 +70,7 @@ fn devices_lists_the_spark_with_manifest() {
     let spark = &d[0];
     assert_eq!((spark.device_id.as_str(), spark.sm_arch), ("spark-5822", 121));
     assert_eq!(spark.gpu_name.as_deref(), Some("NVIDIA GB10"));
-    assert_eq!(spark.runs, 30);
+    assert_eq!(spark.runs, 31);
     let m = spark.manifest.as_ref().expect("manifest-spark-5822.json");
     assert_eq!((m.sm_count, m.l2_bytes, m.integrated), (Some(48), Some(25165824), Some(true)));
     assert_eq!(m.global_mem_bytes, Some(130663591936));
@@ -131,34 +136,39 @@ fn winners_carry_ci_tie_call_and_roof() {
     assert_eq!(w.len(), 14);
     let get = |b: &str| w.iter().find(|x| x.shape_bucket == b).unwrap();
 
-    // 16x4864x896: runner-up CI [0.99727, 1.00114] contains 1.0 -> tied.
+    // 16x4864x896: runner-up CI [0.99234, 1.00174] contains 1.0 -> tied;
+    // against cublaslt_best the CI [1.00121, 1.00384] lies above 1: faster.
     let t = get("16x4864x896");
     assert!(t.tie.tied && t.tie.ci.as_ref().unwrap().contains_one);
     assert_eq!(t.tie.method.as_deref(), Some("paired"));
     assert_eq!(t.tie.contender.as_deref(), Some("mma_pipe_64x128x32_2x4_s4"));
+    assert_eq!(t.vs_cublaslt_best.verdict, Some("faster"));
     assert!(t.decode);
     assert_eq!(t.roof.as_ref().unwrap().roof, "read");
 
-    // 256^3: runner-up CI [1.03158, 1.03349] -> a clear win over the
-    // runner-up; against cublaslt_best the paired CI [0.89849, 0.90183] says
-    // slower, whatever the unpaired medians (98.2%) say.
+    // 256^3: runner-up CI [1.02543, 1.02718] -> a clear win over the
+    // runner-up; against cublaslt_best the paired CI [0.88687, 0.88967]:
+    // slower (unpaired medians: 88.66%).
     let c = get("256x256x256");
     assert!(!c.tie.tied);
     assert_eq!(c.impl_, "mma_pipe_64x64x32_2x2_s4");
+    assert_eq!(c.run_id, "7e94c009266f");
     assert_eq!(c.tie.contender.as_deref(), Some("mma_pipe_64x64x32_2x2_s3"));
-    assert!((c.tie.runner_up_gap_pct.unwrap() - 3.319).abs() < 1e-9);
+    assert!((c.tie.runner_up_gap_pct.unwrap() - 2.697).abs() < 1e-9);
     let lt = &c.vs_cublaslt_best;
     assert_eq!(lt.verdict, Some("slower"));
-    assert!(close(lt.ci.as_ref().unwrap().lo, 0.89849));
-    assert!((lt.pct_of_cublaslt_best.unwrap() - 98.2412).abs() < 1e-3);
+    assert!(close(lt.ci.as_ref().unwrap().lo, 0.88687));
+    assert!((lt.pct_of_cublaslt_best.unwrap() - 88.6629).abs() < 1e-3);
     assert_eq!(c.roof.as_ref().unwrap().roof, "copy");
     assert!(!c.decode);
     assert_eq!(c.regs, Some(74));
 
-    // paired_swap: the CI is stored inverted, so no gap is derived from it.
-    let swap = get("512x896x4864");
-    assert_eq!(swap.tie.method.as_deref(), Some("paired_swap"));
-    assert!(swap.tie.runner_up_gap_pct.is_none());
+    // A tie the tie-break settled: 4096^3 picks the s3 config over the
+    // runner-up (CI [0.99554, 1.00021]); a gap below zero is inside the CI.
+    let big = get("4096x4096x4096");
+    assert!(big.tie.tied);
+    assert_eq!(big.impl_, "mma_pipe_128x128x32_2x4_s3");
+    assert!(big.tie.runner_up_gap_pct.unwrap() < 0.0);
 }
 
 #[test]
@@ -166,14 +176,15 @@ fn measurements_default_to_v2_cold_clean() {
     let s = src();
     let con = s.open().unwrap();
     let rows = custos_perf::measurements(&s, &con, &Filter::default()).unwrap();
-    // The two clean tune runs' cold rows; the disturbed run's are excluded.
-    assert_eq!(rows.len(), 378 + 81);
+    // The three clean tune runs' cold rows (7e94c009266f, 41cc8ffb03fd: 378
+    // each; 9fd0eab14f18: 81); the disturbed run's are excluded.
+    assert_eq!(rows.len(), 378 + 378 + 81);
     assert!(rows.iter().all(|r| r.protocol_version == 2 && r.cache_mode.as_deref() == Some("cold") && !r.allow_busy));
     assert!(rows.iter().all(|r| r.run_id != "60959720261a"));
     assert!(rows.iter().all(|r| !r.history && r.roof.is_some()));
 
     let busy = custos_perf::measurements(&s, &con, &Filter { include_busy: true, ..Default::default() }).unwrap();
-    assert_eq!(busy.len(), 378 + 81 + 81, "on request, the disturbed run's rows too");
+    assert_eq!(busy.len(), 378 + 378 + 81 + 81, "on request, the disturbed run's rows too");
 
     let v1 = custos_perf::measurements(&s, &con, &Filter { protocol: Some(1), ..Default::default() }).unwrap();
     assert_eq!(v1.len(), 9);
@@ -267,35 +278,27 @@ fn compare_flags_build_over_build() {
     assert!(x.not_comparable.iter().all(|n| n.only_in == "b"));
 }
 
-/// The provisional dispatch (core_fallbacks: Core's d80d03f rule) gives what
-/// Core main's own winners header records for the same winners
-/// (tests/fixtures/winners/sm_121.main-eccf61f.h, generated from this DB's
-/// tune): `aegis::detail::Dispatch::Aegis` or `::Cublaslt` per shape.
+/// The dispatch Custos shows is what the pinned tag's own winners header
+/// records for these winners (tests/fixtures/winners/sm_121.h, parsed by
+/// aegis-perf's regress::header_dispatch), for every shape.
 #[test]
-fn provisional_dispatch_matches_core_mains_header() {
+fn dispatch_matches_the_tags_header() {
     let s = src();
     let con = s.open().unwrap();
     let w = custos_perf::winners(&s, &con, 121).unwrap();
-    let header = include_str!("../../tests/fixtures/winners/sm_121.main-eccf61f.h");
-    let mut n = 0;
-    for line in header.lines().map(str::trim).filter(|l| l.starts_with('{')) {
-        let body = line.trim_start_matches('{').split('}').next().unwrap();
-        let f: Vec<&str> = body.split(',').map(str::trim).collect();
-        let bucket = format!("{}x{}x{}", f[0], f[1], f[2]);
-        let target = match f[4] {
-            "aegis::detail::Dispatch::Aegis" => "aegis",
-            "aegis::detail::Dispatch::Cublaslt" => "cublaslt",
-            other => panic!("{other}"),
-        };
+    let header = include_str!("../../tests/fixtures/winners/sm_121.h");
+    let rows = aegis_perf::regress::header_dispatch(header);
+    assert_eq!(rows.len(), 14);
+    for ((m, n, k), target) in &rows {
+        let bucket = format!("{m}x{n}x{k}");
         let got = w.iter().find(|x| x.shape_bucket == bucket).unwrap_or_else(|| panic!("{bucket}"));
-        assert_eq!(got.impl_, f[3].trim_matches('"'), "{bucket}");
         assert_eq!(got.dispatch.target, target, "{bucket}");
-        assert!(got.dispatch.provisional);
-        n += 1;
     }
-    assert_eq!(n, 14);
-    let routed: Vec<&str> = w.iter().filter(|x| x.dispatch.target == "cublaslt").map(|x| x.shape_bucket.as_str()).collect();
-    assert_eq!(routed, ["4096x4096x4096", "1x896x4864", "16x896x4864"]);
+    let impls = aegis_perf::regress::header_winners(header);
+    for (m, n, k, impl_) in &impls {
+        let got = w.iter().find(|x| (x.m, x.n, x.k) == (*m, *n, *k)).unwrap();
+        assert_eq!(&got.impl_, impl_);
+    }
 }
 
 /// Roofline hover: the shape's config, % of cublaslt_best with the paired CI,
@@ -310,9 +313,9 @@ fn roofline_hover_carries_dispatch() {
     for p in &big {
         let d = p.hover.dispatch.as_ref().unwrap();
         assert_eq!((d.target, d.pct_of_cublaslt_best, d.basis), ("cublaslt", None, "paired"));
-        assert_eq!(p.hover.config.as_ref().unwrap()["BM"], 256);
+        assert_eq!(p.hover.config.as_ref().unwrap()["BM"], 128);
         let lt = p.hover.vs_cublaslt_best.as_ref().unwrap();
-        assert!(close(lt.ci.as_ref().unwrap().hi, 0.70828));
+        assert!(close(lt.ci.as_ref().unwrap().hi, 0.72437));
     }
     // A decode shape on the read roof, dispatched to the kernel.
     let dec = r.points.iter().find(|p| p.label == "1x4864x896 mma_pipe_64x64x32_2x2_s4").unwrap();

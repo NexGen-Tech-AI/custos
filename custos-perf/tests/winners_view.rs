@@ -99,7 +99,7 @@ fn matches_the_golden_report() {
 fn cublaslt_dispatch_never_shows_the_kernel_pct() {
     let w = winners();
     let routed: Vec<&Winner> = w.iter().filter(|x| x.dispatch.target == "cublaslt").collect();
-    assert_eq!(routed.len(), 3);
+    assert_eq!(routed.len(), 4);
     for x in routed {
         let kernel = x.vs_cublaslt_best.pct_of_cublaslt_best;
         assert!(kernel.is_some(), "{}: the kernel's own % stays beside it", x.shape_bucket);
@@ -134,40 +134,32 @@ fn production_bars() {
             ("1x4864x896", "decode", "fail", "clear"),
             ("1x896x4864", "decode", "fail", "clear"),
             ("16x896x896", "decode", "fail", "clear"),
-            ("16x4864x896", "decode", "fail", "clear"),
+            // CI [1.00121, 1.00384] vs cublaslt_best: a win, meets the decode bar.
+            ("16x4864x896", "decode", "pass", "clear"),
             ("16x896x4864", "decode", "fail", "clear"),
             ("512x896x896", "other", "pass", "clear"),
-            // CI [0.7924, 0.8002] straddles the 80% floor: not below it.
-            ("512x4864x896", "other", "pass", "within CI"),
+            // CI [0.78509, 0.79031] entirely below the 80% floor.
+            ("512x4864x896", "other", "fail", "clear"),
             ("512x896x4864", "other", "pass", "clear"),
         ]
     );
-    assert!(w.iter().all(|x| x.bars.provisional && x.bars.basis == "paired"));
+    assert!(w.iter().all(|x| x.bars.basis == "paired"));
     let decode = w.iter().find(|x| x.shape_bucket == "1x896x896").unwrap();
     assert_eq!((decode.bars.bar, decode.bars.floor), (1.0, 0.8));
 }
 
-/// The tag's own header (tests/fixtures/winners/sm_121.h, generated
-/// 2026-10-15) names the same config for every shape. Its numbers match for
-/// the 11 shapes whose winner comes from the 2026-10-14 tune (41cc8ffb03fd);
-/// the 3 shapes re-tuned on 2026-10-17 (9fd0eab14f18) differ, as they should.
+/// The fixture's winners are the ones the pinned tag's own header was
+/// generated from: the golden emit-header (the tag's CLI on the fixture) has
+/// the same rows as tests/fixtures/winners/sm_121.h.
 #[test]
-fn relates_to_the_tags_header() {
-    let w = winners();
-    let rows = header_rows(include_str!("../../tests/fixtures/winners/sm_121.h"));
-    assert_eq!(rows.len(), 14);
-    let mut retuned = Vec::new();
-    for h in &rows {
-        let x = w.iter().find(|x| x.shape_bucket == h.bucket).unwrap();
-        assert_eq!(x.impl_, h.impl_, "{}", h.bucket);
-        let same = format!("{:.1}", x.vs_cublaslt_best.pct_of_cublaslt_best.unwrap()) == h.pct_lt;
-        if x.run_id == "41cc8ffb03fd" {
-            assert!(same, "{}: winner from the tune the tag's header was made from", h.bucket);
-        } else {
-            assert_eq!(x.run_id, "9fd0eab14f18", "{}", h.bucket);
-            assert!(!same, "{}", h.bucket);
-            retuned.push(h.bucket.as_str());
-        }
+fn matches_the_tags_header() {
+    let golden = header_rows(include_str!("../../tests/fixtures/golden/emit-header-sm_121.h"));
+    let tag = header_rows(include_str!("../../tests/fixtures/winners/sm_121.h"));
+    assert_eq!(tag.len(), 14);
+    for (g, t) in golden.iter().zip(&tag) {
+        assert_eq!(
+            (&g.bucket, &g.impl_, &g.pct_cublas, &g.pct_lt, &g.ci, &g.tied_with),
+            (&t.bucket, &t.impl_, &t.pct_cublas, &t.pct_lt, &t.ci, &t.tied_with)
+        );
     }
-    assert_eq!(retuned, ["512x896x896", "512x896x4864", "4096x4096x4096"]);
 }

@@ -47,16 +47,16 @@ describe('WinnersSection', () => {
   it('a cuBLASLt-dispatched shape never shows a dispatch % as the kernel %', async () => {
     const rs = await rows();
     const routed = rs.filter((r) => cell(r, 'dispatch').startsWith('dispatch: cuBLASLt'));
-    expect(routed.map((r) => r.dataset.shape)).toEqual(['4096x4096x4096', '1x896x4864', '16x896x4864']);
+    expect(routed.map((r) => r.dataset.shape)).toEqual(['4096x4096x4096', '1x896x4864', '16x896x4864', '512x4864x896']);
     for (const r of routed) {
       expect(cell(r, 'dispatch-pct')).toBe('cuBLASLt path: not measured');
       expect(cell(r, 'dispatch-pct')).not.toContain(cell(r, 'kernel-pct'));
       expect(cell(r, 'kernel-pct')).toMatch(/^\d+\.\d%$/);
     }
     const big = byShape(rs, '4096x4096x4096');
-    expect(cell(big, 'kernel-pct')).toBe('70.2%');
+    expect(cell(big, 'kernel-pct')).toBe('72.2%');
     expect(cell(big, 'dispatch')).toContain('(provisional)');
-    expect(cell(big, 'dispatch')).toContain('paired CI upper bound 0.708 < 80% floor');
+    expect(cell(big, 'dispatch')).toContain('paired CI upper bound 0.724 < 80% floor');
     // A kernel route: the dispatch % is the kernel's own.
     const k = byShape(rs, '1024x1024x1024');
     expect(cell(k, 'dispatch-pct')).toBe(cell(k, 'kernel-pct'));
@@ -65,16 +65,16 @@ describe('WinnersSection', () => {
   it('paired ratio and CI, tie call, runner-up gap, production bar', async () => {
     const rs = await rows();
     const c = byShape(rs, '256x256x256');
-    expect(cell(c, 'paired')).toBe('0.900 [0.898, 0.902]');
-    expect(cell(c, 'tied')).toBe('no · [1.032, 1.033] vs mma_pipe_64x64x32_2x2_s3');
-    expect(cell(c, 'gap')).toBe('+3.32%');
+    expect(cell(c, 'paired')).toBe('0.888 [0.887, 0.890]');
+    expect(cell(c, 'tied')).toBe('no · [1.025, 1.027] vs mma_pipe_64x64x32_2x2_s3');
+    expect(cell(c, 'gap')).toBe('+2.70%');
     expect(cell(c, 'bars')).toBe('pass · other bar 80% · clearprovisional');
     const t = byShape(rs, '16x4864x896');
-    expect(cell(t, 'tied')).toBe('tied · [0.997, 1.001] vs mma_pipe_64x128x32_2x4_s4');
-    expect(cell(t, 'bars')).toContain('fail · decode bar 100% · clear');
+    expect(cell(t, 'tied')).toBe('tied · [0.992, 1.002] vs mma_pipe_64x128x32_2x4_s4');
+    expect(cell(t, 'bars')).toContain('pass · decode bar 100% · clear');
     expect(cell(byShape(rs, '2048x2048x2048'), 'bars')).toContain('fail · large bar 90% · clear');
     expect(cell(byShape(rs, '4096x4096x4096'), 'bars')).toContain('fail · large bar 90% · clear; below 80% floor');
-    expect(cell(byShape(rs, '512x4864x896'), 'bars')).toContain('pass · other bar 80% · within CI');
-    expect(cell(byShape(rs, '512x896x4864'), 'gap')).toBe('runner-up faster (paired_swap)');
+    expect(cell(byShape(rs, '512x4864x896'), 'bars')).toContain('fail · other bar 80% · clear; below 80% floor');
+    expect(cell(byShape(rs, '512x896x4864'), 'gap')).toBe('+0.12%');
   });
 });

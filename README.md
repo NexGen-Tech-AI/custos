@@ -27,7 +27,7 @@ Collects comprehensive CPU, memory, GPU, disk, network, and process metrics usin
 The app is becoming AEGIS Custos, a GPU performance-engineering workstation
 over the AEGIS Core perf DB. The perf views (Device, Roofline, Winners,
 Kernel) read Core's data read-only through `aegis-perf`, Core's own library,
-pinned to a release tag (`custos-perf/Cargo.toml`, now `aegis-perf-v0.3.0`).
+pinned to a release tag (`custos-perf/Cargo.toml`, now `aegis-perf-v0.4.0`).
 
 ### Feature flag
 
@@ -48,7 +48,7 @@ pnpm tauri:dev:monitor         # system monitor only: VITE_AEGIS=0 tauri dev -- 
 - Neither set: the committed fixtures in `tests/fixtures/` (what the tests use).
 
 At startup the app checks the DB's schema version against the range
-aegis-perf supports (perf DB schema v3 for v0.3.0) and shows "Incompatible
+aegis-perf supports (perf DB schema v4 for v0.4.0) and shows "Incompatible
 perf DB: DB schema vN, Custos supports vA" instead of the views when it is
 outside it.
 
@@ -90,7 +90,7 @@ it rewrites the `aegis-perf` entry in `Cargo.lock` (do not commit that).
 Remove it (or rename the file) to build from the pinned tag again; tests
 and CI always use the pin.
 `cargo tree -i aegis-perf --manifest-path custos-perf/Cargo.toml` shows which
-one is in use (a path, or `?tag=aegis-perf-v0.3.0#9157a34d`).
+one is in use (a path, or `?tag=aegis-perf-v0.4.0#7e433cf9`).
 
 ---
 
