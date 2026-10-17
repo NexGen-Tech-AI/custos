@@ -154,7 +154,7 @@ describe('Roofline data and hover', () => {
     render(<Hover active payload={[{ payload: { kind: 'point', x: p.roof.ai, y: p.roof.tflops, p } }]} />);
     expect(screen.getByText(/72\.2% of cublaslt_best, ratio CI \[0\.720, 0\.724\]: slower/)).toBeInTheDocument();
     expect(screen.getByText(/BM=128/)).toBeInTheDocument();
-    expect(screen.getByText(/dispatch: cuBLASLt \(provisional\)/)).toBeInTheDocument();
+    expect(screen.getByText(/dispatch: cuBLASLt/)).toBeInTheDocument();
     expect(screen.getByText(/paired CI upper bound 0\.724 < 80% floor/)).toBeInTheDocument();
   });
 
@@ -166,8 +166,8 @@ describe('Roofline data and hover', () => {
     );
     const table = (await screen.findByText('Points')).parentElement!.querySelector('table')!;
     const row = within(table).getAllByRole('row').find((x) => x.textContent!.startsWith('4096x4096x4096'))!;
-    expect(row).toHaveTextContent('dispatch: cuBLASLt (provisional)');
+    expect(row).toHaveTextContent('dispatch: cuBLASLt');
     const dec = within(table).getAllByRole('row').find((x) => x.textContent!.startsWith('1x4864x896'))!;
-    expect(dec).toHaveTextContent('dispatch: AEGIS kernel (provisional)');
+    expect(dec).toHaveTextContent('dispatch: AEGIS kernel');
   });
 });

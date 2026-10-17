@@ -1,7 +1,7 @@
 //! Winners and ties: per shape, the dispatched config, % of cublaslt_best
 //! (rule 5) with its paired 95% CI, and the statistical tie call (rule 6).
 use aegis_perf::rusqlite::Connection;
-use aegis_perf::view;
+use aegis_perf::{tune, view};
 use anyhow::Result;
 use serde::Serialize;
 use serde_json::Value;
@@ -57,35 +57,40 @@ pub struct Tie {
 }
 
 /// Where `aegis::matmul` sends the shape, and what that path achieves
-/// (contract rule 10: kernel % and dispatch % are separate numbers).
-/// Provisional: aegis-perf v0.3.0 has no dispatch; the rule and its floor
-/// come from core_fallbacks (Core's d80d03f rule, restated).
+/// (contract rule 10: kernel % and dispatch % are separate numbers), by Core's
+/// own rule and floor (`aegis_perf::tune::dispatch`, `tune::DISPATCH_FLOOR`),
+/// the same call `emit-header` makes for the winners header.
 #[derive(Clone, Debug, Serialize)]
 pub struct Dispatch {
     /// "aegis" (the tuned kernel) or "cublaslt" (the dispatch floor).
     pub target: &'static str,
     /// % of cublaslt_best of what is dispatched. "aegis": the kernel's own
-    /// %. "cublaslt": None. aegis::matmul's cuBLASLt path (the heuristic's
-    /// first algorithm) is not what cublaslt_best times (the fastest of up to
-    /// 8), and no row measures it.
+    /// %. "cublaslt": None: aegis::matmul runs cublaslt_best's stored
+    /// algorithm, but no measurement row times that path (Core measures it as
+    /// `db::DISPATCH_IMPL` in nightly sweeps; none in the DB yet).
     pub pct_of_cublaslt_best: Option<f64>,
     /// The ratio (cublaslt_best / kernel time) the decision used, and its
     /// basis: "paired" (the CI's upper bound), "unpaired" (medians), "none".
     pub decided_on: Option<f64>,
     pub basis: &'static str,
     pub floor: f64,
-    pub provisional: bool,
 }
 
 fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dispatch {
-    let (to_lt, decided_on, basis) = core_fallbacks::dispatch_to_cublaslt(lt_ci, pct_of_cublaslt_best);
+    let to_lt = tune::dispatch(lt_ci, pct_of_cublaslt_best) == tune::Dispatch::Cublaslt;
+    // What the decision looked at, as tune::dispatch documents it: the paired
+    // CI's upper bound, else the unpaired median ratio.
+    let (decided_on, basis) = match (lt_ci, pct_of_cublaslt_best) {
+        (Some((_, hi)), _) => (Some(hi), "paired"),
+        (None, Some(p)) => (Some(p / 100.0), "unpaired"),
+        (None, None) => (None, "none"),
+    };
     Dispatch {
         target: if to_lt { "cublaslt" } else { "aegis" },
         pct_of_cublaslt_best: if to_lt { None } else { pct_of_cublaslt_best },
         decided_on,
         basis,
-        floor: core_fallbacks::DISPATCH_FLOOR,
-        provisional: true,
+        floor: tune::DISPATCH_FLOOR,
     }
 }
 
@@ -94,7 +99,8 @@ fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dis
 /// cublaslt_best / kernel time lies entirely below it (upper bound < bar), so
 /// a statistical tie with the bar meets it ("decode: a tie or a win").
 /// Without a paired CI, the unpaired median ratio. Provisional: the bars and
-/// the large-shape definition are core_fallbacks constants.
+/// the large-shape definition are core_fallbacks constants; the floor is
+/// Core's (`tune::DISPATCH_FLOOR`).
 #[derive(Clone, Debug, Serialize)]
 pub struct Bars {
     /// "decode" (M <= DECODE_MAX_M), "large" (every dim >= 1024) or "other".
@@ -114,7 +120,7 @@ pub struct Bars {
 }
 
 fn bars(m: i64, n: i64, k: i64, lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Bars {
-    let floor = core_fallbacks::DISPATCH_FLOOR;
+    let floor = tune::DISPATCH_FLOOR;
     let (class, bar) = if m as f64 <= aegis_perf::params::DECODE_MAX_M {
         ("decode", core_fallbacks::DECODE_BAR)
     } else if m.min(n).min(k) >= core_fallbacks::LARGE_SHAPE_MIN_DIM {

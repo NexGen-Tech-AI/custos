@@ -44,8 +44,7 @@
       "pct_of_cublaslt_best": 88.66285714285715,
       "decided_on": 0.88967,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "other",
@@ -143,8 +142,7 @@
       "pct_of_cublaslt_best": 86.87318690426855,
       "decided_on": 0.87132,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "other",
@@ -242,8 +240,7 @@
       "pct_of_cublaslt_best": 98.18500238815476,
       "decided_on": 0.98693,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "large",
@@ -341,8 +338,7 @@
       "pct_of_cublaslt_best": 83.62507563426253,
       "decided_on": 0.84272,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "large",
@@ -440,8 +436,7 @@
       "pct_of_cublaslt_best": null,
       "decided_on": 0.72437,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "large",
@@ -540,8 +535,7 @@
       "pct_of_cublaslt_best": 86.63495197917601,
       "decided_on": 0.86373,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -639,8 +633,7 @@
       "pct_of_cublaslt_best": 99.59658983944276,
       "decided_on": 0.98421,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -738,8 +731,7 @@
       "pct_of_cublaslt_best": null,
       "decided_on": 0.78275,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -837,8 +829,7 @@
       "pct_of_cublaslt_best": 98.3410138248848,
       "decided_on": 0.98014,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -936,8 +927,7 @@
       "pct_of_cublaslt_best": 99.1755804852596,
       "decided_on": 1.00384,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -1036,8 +1026,7 @@
       "pct_of_cublaslt_best": null,
       "decided_on": 0.76264,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "decode",
@@ -1135,8 +1124,7 @@
       "pct_of_cublaslt_best": 92.51553101272063,
       "decided_on": 0.92788,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "other",
@@ -1234,8 +1222,7 @@
       "pct_of_cublaslt_best": null,
       "decided_on": 0.79031,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "other",
@@ -1333,8 +1320,7 @@
       "pct_of_cublaslt_best": 82.38173829649618,
       "decided_on": 0.82749,
       "basis": "paired",
-      "floor": 0.8,
-      "provisional": true
+      "floor": 0.8
     },
     "bars": {
       "class": "other",

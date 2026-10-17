@@ -55,7 +55,7 @@ describe('WinnersSection', () => {
     }
     const big = byShape(rs, '4096x4096x4096');
     expect(cell(big, 'kernel-pct')).toBe('72.2%');
-    expect(cell(big, 'dispatch')).toContain('(provisional)');
+    expect(cell(big, 'dispatch')).not.toContain('provisional');
     expect(cell(big, 'dispatch')).toContain('paired CI upper bound 0.724 < 80% floor');
     // A kernel route: the dispatch % is the kernel's own.
     const k = byShape(rs, '1024x1024x1024');

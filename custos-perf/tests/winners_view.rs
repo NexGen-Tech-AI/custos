@@ -144,6 +144,9 @@ fn production_bars() {
         ]
     );
     assert!(w.iter().all(|x| x.bars.basis == "paired"));
+    // The class bars are still Custos fallbacks (aegis-perf v0.4.0 has none);
+    // the floor is Core's.
+    assert!(w.iter().all(|x| x.bars.provisional && x.bars.floor == aegis_perf::tune::DISPATCH_FLOOR));
     let decode = w.iter().find(|x| x.shape_bucket == "1x896x896").unwrap();
     assert_eq!((decode.bars.bar, decode.bars.floor), (1.0, 0.8));
 }
@@ -188,4 +191,23 @@ fn stored_cublaslt_algorithm() {
     assert_eq!((a.algo_id, a.tile_id, a.stages_id, a.splitk, a.custom), (67, 412, 35, 1, 31));
     let a = get("1x896x4864").lt_algo.unwrap();
     assert_eq!((a.algo_id, a.splitk, a.reduction), (13, 16, 2), "a split-K algorithm");
+}
+
+/// Dispatch is Core's own decision (v0.4.0: tune::dispatch and
+/// tune::DISPATCH_FLOOR), no longer a Custos restatement.
+#[test]
+fn dispatch_is_cores() {
+    use aegis_perf::tune;
+    let s = Sources::repo_fixtures();
+    let con = s.open().unwrap();
+    let raw = aegis_perf::view::winners(&con, Some(121)).unwrap();
+    let w = winners();
+    for (r, x) in raw.iter().zip(&w) {
+        let core = match tune::dispatch(r.lt_ratio_ci, r.pct_of_cublaslt_best) {
+            tune::Dispatch::Aegis => "aegis",
+            tune::Dispatch::Cublaslt => "cublaslt",
+        };
+        assert_eq!(x.dispatch.target, core, "{}", x.shape_bucket);
+        assert_eq!(x.dispatch.floor, tune::DISPATCH_FLOOR);
+    }
 }

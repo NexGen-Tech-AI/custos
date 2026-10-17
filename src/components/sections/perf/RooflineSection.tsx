@@ -4,7 +4,7 @@
 // every point and table row names its roof. Roof metrics are computed by
 // custos-perf on each call, never stored (rule 3). The hover and the table
 // give the config, % of cublaslt_best with its paired CI, and the dispatch
-// target (provisional: Core's 80% floor, not in aegis-perf v0.3.0).
+// target (Core's rule and 80% floor, aegis-perf tune::dispatch).
 import { useEffect, useMemo, useState } from 'react';
 import {
   CartesianGrid,

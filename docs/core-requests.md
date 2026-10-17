@@ -126,10 +126,23 @@ itself (`SQLITE_OPEN_READ_ONLY`, no writes, no migration) and calls
 
 ## 4. Dispatch and the production bars in aegis-perf (and in the perf DB)
 
-**Status:** open, 2026-10-17. Fallback in use: `custos-perf/src/core_fallbacks.rs`
-(`DISPATCH_FLOOR`, `dispatch_to_cublaslt`, `LARGE_SHAPE_MIN_DIM`,
-`LARGE_BAR`, `DECODE_BAR`); every value derived from them is labeled
-"provisional" in the UI.
+**Status:** partly resolved by aegis-perf-v0.4.0 (2026-10-17).
+
+- Item 1 (dispatch): **resolved.** v0.4.0 exports `tune::DISPATCH_FLOOR` and
+  `tune::dispatch`; Custos calls them on `view::Winner`'s CI and % (the same
+  call `emit-header` makes) and no longer labels dispatch provisional. The
+  `winners` table and `view::Winner` still carry no dispatch column (nice to
+  have, not needed).
+- Item 2 (the dispatched path's measurement): **partly.** v0.4.0 names it
+  (`db::DISPATCH_IMPL` = `aegis_matmul`), measures it in the nightly sweep
+  and paired-ab, and `regress::ShapeCheck::dispatch_pct` reports it per
+  regression run. The perf DB has no `aegis_matmul` measurement rows yet, so
+  a cuBLASLt route's dispatch % stays "not measured". When rows exist,
+  Custos can read them with `view::measurements` (impl `aegis_matmul`).
+- Item 3 (production bars): **open.** Fallback in use:
+  `custos-perf/src/core_fallbacks.rs` (`LARGE_SHAPE_MIN_DIM`, `LARGE_BAR`,
+  `DECODE_BAR`); the floor is Core's `tune::DISPATCH_FLOOR`. The bars are
+  labeled "provisional" in the UI.
 
 ### What Custos needs
 
@@ -163,11 +176,13 @@ Custos showing stale verdicts with no compile error.
 
 ### Custos code waiting on it
 
-- `custos-perf/src/core_fallbacks.rs` (delete the constants and the rule).
-- `custos-perf/src/winners.rs` (`dispatch()`, `bars()`): read Core's.
-- Tests: `provisional_dispatch_matches_core_mains_header` (fixture_db.rs)
-  compares the restated rule with Core main's header
-  (`tests/fixtures/winners/sm_121.main-eccf61f.h`).
+- Done (v0.4.0): `winners.rs::dispatch()` calls `tune::dispatch`; the
+  restated rule and floor are gone from `core_fallbacks.rs`. Tests:
+  `dispatch_is_cores` (winners_view.rs), `dispatch_matches_the_tags_header`
+  (fixture_db.rs).
+- Waiting: `core_fallbacks.rs` (`LARGE_SHAPE_MIN_DIM`, `LARGE_BAR`,
+  `DECODE_BAR`) and `winners.rs::bars()`; a cuBLASLt route's dispatch %
+  (`Dispatch::pct_of_cublaslt_best`) once `aegis_matmul` rows exist.
 
 ---
 

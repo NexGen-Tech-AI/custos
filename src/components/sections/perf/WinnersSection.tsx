@@ -2,8 +2,9 @@
 // cublaslt_best (rule 5) and, separately, where aegis::matmul dispatches the
 // shape and what that path achieves (rule 10); the paired ratio and its 95%
 // CI (rule 6); the tie call and the runner-up gap; the production bars.
-// Dispatch and bars are provisional: aegis-perf v0.3.0 has neither, so
-// custos-perf applies Core's rule and constants (core_fallbacks.rs).
+// Dispatch is Core's own rule (aegis-perf tune::dispatch). The production
+// bars are provisional: aegis-perf v0.4.0 has no bar constants, so
+// custos-perf applies Core's documented bars (core_fallbacks.rs).
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import type { Bars, Winner } from '../../../perf/types';
@@ -179,10 +180,11 @@ export function WinnersSection() {
             </div>
             <p className={`${muted} mt-3`}>
               Kernel %: cublaslt_best median / kernel median (Core&apos;s report). Paired ratio: cublaslt_best / kernel time, 30
-              alternating windows, 95% bootstrap CI; tied means the runner-up CI contains 1.0. Dispatch and production bars are
-              provisional: aegis-perf v0.3.0 has neither, so Custos applies Core&apos;s 80% dispatch floor and its bars (large:
-              every dim ≥ 1024, ≥ 90%; decode M ≤ 16, ≥ 100%; floor 80%), a shape failing a bar when its CI lies entirely below it.
-              A cuBLASLt route&apos;s dispatch % is not measured: no row times aegis::matmul&apos;s cuBLASLt path.
+              alternating windows, 95% bootstrap CI; tied means the runner-up CI contains 1.0. Dispatch: Core&apos;s rule and 80% floor (aegis-perf). Production
+              bars are provisional: aegis-perf v0.4.0 has no bar constants, so Custos applies Core&apos;s documented bars
+              (large: every dim ≥ 1024, ≥ 90%; decode M ≤ 16, ≥ 100%; floor 80%, Core&apos;s), a shape failing a bar when
+              its CI lies entirely below it.
+              A cuBLASLt route&apos;s dispatch % is not measured: no row times aegis::matmul&apos;s cuBLASLt path yet.
               cublaslt_best algorithm: the cuBLASLt algorithm Core stored for the shape (perf DB schema v4); a shape
               dispatched to cuBLASLt runs that algorithm.
             </p>

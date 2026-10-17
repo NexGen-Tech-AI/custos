@@ -233,8 +233,8 @@ export interface Roofline {
   points: RooflinePoint[];
 }
 
-/** Where aegis::matmul sends a shape (contract rule 10). Provisional:
- *  aegis-perf v0.3.0 has no dispatch; custos-perf applies Core's 80% floor. */
+/** Where aegis::matmul sends a shape (contract rule 10): Core's own rule and
+ *  floor (aegis_perf::tune::dispatch, tune::DISPATCH_FLOOR). */
 export interface Dispatch {
   target: 'aegis' | 'cublaslt';
   /** % of cublaslt_best of what is dispatched: the kernel's own % for
@@ -244,10 +244,10 @@ export interface Dispatch {
   decided_on: number | null;
   basis: 'paired' | 'unpaired' | 'none';
   floor: number;
-  provisional: boolean;
 }
 
-/** The kernel against the production bars (provisional). */
+/** The kernel against the production bars: class bars provisional (Custos
+ *  fallbacks), floor from Core. */
 export interface Bars {
   class: 'decode' | 'large' | 'other';
   bar: number;

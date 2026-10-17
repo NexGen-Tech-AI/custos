@@ -68,11 +68,11 @@ export function pct(v: number | null | undefined, digits = 1): string | null {
   return s === null ? null : `${s}%`;
 }
 
-/** "dispatch: cuBLASLt (provisional)" / "dispatch: AEGIS kernel (provisional)". */
+/** "dispatch: cuBLASLt" / "dispatch: AEGIS kernel". */
 export function dispatchTarget(d: Dispatch | null): string {
   if (!d) return NOT_MEASURED;
   const t = d.target === 'cublaslt' ? 'cuBLASLt' : 'AEGIS kernel';
-  return `dispatch: ${t}${d.provisional ? ' (provisional)' : ''}`;
+  return `dispatch: ${t}`;
 }
 
 /** Why: "paired CI upper bound 0.708 < 80% floor". */
