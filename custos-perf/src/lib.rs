@@ -8,24 +8,74 @@ use std::path::{Path, PathBuf};
 pub use aegis_perf::rusqlite::Connection;
 use anyhow::Result;
 
-/// Where Custos reads Core's data from.
+/// Where Custos reads Core's data from: the perf DB and the files Core
+/// generates (arch files, manifests, SASS and Nsight artifacts).
 #[derive(Clone, Debug)]
 pub struct Sources {
     /// The perf DB (opened read-only).
     pub db: PathBuf,
-    /// The AEGIS Core repo root: arch files, manifests, artifacts, docs.
-    pub core: PathBuf,
+    /// Describes the source on screen: the Core repo root, or the fixture dir.
+    pub root: PathBuf,
+    /// `sm_<arch>.json` arch files.
+    pub arch_dir: PathBuf,
+    /// `manifest-<device>.json` (aegis_manifest).
+    pub manifest_dir: PathBuf,
+    /// `sm_<arch>/` SASS directories.
+    pub sass_dir: PathBuf,
+    /// Nsight Compute reports (`*.ncu-rep`).
+    pub ncu_dir: PathBuf,
 }
 
 impl Sources {
-    /// `AEGIS_PERFDB` (default `~/custos-fixtures/aegis_perf.db`) and
-    /// `AEGIS_CORE` (default `~/Documents/projects/aegis`).
-    pub fn from_env() -> Self {
-        let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
-        let var = |k: &str, default: PathBuf| std::env::var_os(k).map(PathBuf::from).unwrap_or(default);
+    /// A Core checkout: `include/aegis/arch`, `results/`, `artifacts/`.
+    pub fn core(core: impl Into<PathBuf>, db: impl Into<PathBuf>) -> Self {
+        let core = core.into();
         Sources {
-            db: var("AEGIS_PERFDB", home.join("custos-fixtures/aegis_perf.db")),
-            core: var("AEGIS_CORE", home.join("Documents/projects/aegis")),
+            db: db.into(),
+            arch_dir: core.join("include/aegis/arch"),
+            manifest_dir: core.join("results"),
+            sass_dir: core.join("artifacts/sass"),
+            ncu_dir: core.join("artifacts/ncu"),
+            root: core,
+        }
+    }
+
+    /// The committed fixtures (tests/fixtures/, flat; see its README).
+    pub fn fixtures(dir: impl Into<PathBuf>) -> Self {
+        let dir = dir.into();
+        Sources {
+            db: dir.join("aegis_perf.db"),
+            arch_dir: dir.clone(),
+            manifest_dir: dir.clone(),
+            sass_dir: dir.join("sass"),
+            ncu_dir: dir.join("ncu"),
+            root: dir,
+        }
+    }
+
+    /// This repo's tests/fixtures/ (resolved at compile time).
+    pub fn repo_fixtures() -> Self {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures");
+        Self::fixtures(dir.canonicalize().unwrap_or(dir))
+    }
+
+    /// `AEGIS_CORE` (a Core checkout) with `AEGIS_PERFDB` (default: its
+    /// `results/aegis_perf.db`). Without `AEGIS_CORE`, the repo fixtures
+    /// (`AEGIS_PERFDB` still overrides the DB).
+    pub fn from_env() -> Self {
+        let db = std::env::var_os("AEGIS_PERFDB").map(PathBuf::from);
+        match std::env::var_os("AEGIS_CORE").map(PathBuf::from) {
+            Some(core) => {
+                let db = db.unwrap_or_else(|| core.join("results/aegis_perf.db"));
+                Self::core(core, db)
+            }
+            None => {
+                let mut s = Self::repo_fixtures();
+                if let Some(db) = db {
+                    s.db = db;
+                }
+                s
+            }
         }
     }
 
@@ -34,11 +84,8 @@ impl Sources {
     }
 
     pub fn arch_file(&self, sm: i64) -> PathBuf {
-        self.core.join(aegis_perf::params::arch_file(sm))
-    }
-
-    pub fn core_path(&self, rel: impl AsRef<Path>) -> PathBuf {
-        self.core.join(rel)
+        let name = aegis_perf::params::arch_file(sm);
+        self.arch_dir.join(name.file_name().expect("arch_file names a file"))
     }
 }
 

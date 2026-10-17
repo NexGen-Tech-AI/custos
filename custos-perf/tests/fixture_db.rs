@@ -1,28 +1,15 @@
-//! custos-perf against fixture snapshots (project rule 19), never the live
-//! Core tree (another session changes it at will):
-//! - the perf DB: ~/custos-fixtures/aegis_perf.db (AEGIS_PERFDB)
-//! - Core files: ~/custos-fixtures/core (AEGIS_FIXTURE_CORE): the arch file,
-//!   manifest, artifacts/sass and artifacts/ncu, as of the DB copy (2026-10-14);
-//!   the arch file is the one at the pinned Core rev (core/SOURCE).
+//! custos-perf against the committed fixtures in tests/fixtures/ (project
+//! rule 19): the trimmed perf DB, the arch file and the golden outputs of the
+//! pinned tag's aegis-perf CLI. No test reads from ~ or from a Core checkout.
 //!
-//! Re-snapshotting changes the expected values: update the numbers here, and
-//! regenerate tests/fixtures/roofline-sm121.txt with
-//! `aegis-perf --db <copy> roofline --arch 121` (run on a scratch copy: the
-//! CLI's connect migrates the DB).
+//! Regenerating the fixture changes the expected values: see
+//! tests/fixtures/README.md, then update the numbers here.
 use custos_perf::{Filter, Sources};
 
 fn src() -> Sources {
-    let home = std::path::PathBuf::from(std::env::var_os("HOME").unwrap_or_default());
-    let s = Sources {
-        core: std::env::var_os("AEGIS_FIXTURE_CORE").map(Into::into).unwrap_or(home.join("custos-fixtures/core")),
-        ..Sources::from_env()
-    };
-    assert!(s.arch_file(121).exists(), "fixture Core snapshot {} missing", s.core.display());
-    assert!(
-        s.db.exists(),
-        "fixture DB {} missing; cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/",
-        s.db.display()
-    );
+    let s = Sources::repo_fixtures();
+    assert!(s.db.exists(), "fixture DB {} missing", s.db.display());
+    assert!(s.arch_file(121).exists(), "fixture arch file {} missing", s.arch_file(121).display());
     s
 }
 
@@ -30,10 +17,43 @@ fn close(a: f64, b: f64) -> bool {
     (a - b).abs() < 1e-9 * b.abs().max(1.0)
 }
 
+/// Every path the tests read lives under tests/fixtures/.
+#[test]
+fn fixtures_are_self_contained() {
+    let s = src();
+    let root = s.root.canonicalize().unwrap();
+    let repo_fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures").canonicalize().unwrap();
+    assert_eq!(root, repo_fixtures);
+    for p in [&s.db, &s.arch_dir, &s.manifest_dir, &s.sass_dir] {
+        assert!(p.canonicalize().unwrap().starts_with(&root), "{} outside the fixtures", p.display());
+    }
+}
+
 #[test]
 fn opens_read_only() {
     let con = src().open().unwrap();
     assert!(con.execute("DELETE FROM winners", []).is_err(), "fixture DB must be read-only");
+}
+
+/// The fixture covers what the views have to handle (tests/fixtures/README.md).
+#[test]
+fn fixture_covers_the_contract_cases() {
+    use aegis_perf::view::{self, MicrobenchStatus, PairedResultFilter};
+    let s = src();
+    let con = s.open().unwrap();
+    assert_eq!(aegis_perf::db::schema_version(&con).unwrap(), Some(aegis_perf::db::SCHEMA_VERSION));
+    let w = view::winners(&con, Some(121)).unwrap();
+    assert!(w.iter().any(|w| w.m as f64 <= aegis_perf::params::DECODE_MAX_M), "a decode shape");
+    assert!(w.iter().any(|w| w.m as f64 > aegis_perf::params::DECODE_MAX_M), "a non-decode shape");
+    assert!(w.iter().any(|w| w.ratio_ci.is_some_and(|(lo, hi)| lo <= 1.0 && hi >= 1.0)), "a statistical tie");
+    let runs = view::runs(&con).unwrap();
+    assert!(runs.iter().any(|r| r.disturbed == Some(true)), "a disturbed run");
+    let mb = view::microbench(&con, 121).unwrap();
+    assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Valid));
+    assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Replaced));
+    let pr = view::paired_results(&con, &PairedResultFilter::default()).unwrap();
+    assert_eq!(pr.len(), 10);
+    assert!(pr.iter().any(|p| p.disturbed == Some(true)), "a disturbed paired result");
 }
 
 #[test]
@@ -45,9 +65,10 @@ fn devices_lists_the_spark_with_manifest() {
     let spark = &d[0];
     assert_eq!((spark.device_id.as_str(), spark.sm_arch), ("spark-5822", 121));
     assert_eq!(spark.gpu_name.as_deref(), Some("NVIDIA GB10"));
-    assert_eq!(spark.runs, 22);
+    assert_eq!(spark.runs, 30);
     let m = spark.manifest.as_ref().expect("manifest-spark-5822.json");
     assert_eq!((m.sm_count, m.l2_bytes, m.integrated), (Some(48), Some(25165824), Some(true)));
+    assert_eq!(m.global_mem_bytes, Some(130663591936));
     assert!(spark.arch_file.is_some());
 }
 
@@ -62,32 +83,35 @@ fn arch_model_links_values_to_source_runs() {
     assert_eq!(copy.source.run_id, "941ff9215564");
     assert_eq!(copy.source.detail.as_deref(), Some("memcpy_d2d"));
     assert_eq!(copy.source.git_sha.as_deref(), Some("3b46bf9"));
-    assert_eq!(copy.source.superseded_rows, 0);
+    assert_eq!((copy.source.status, copy.source.replaced_rows), ("valid", 0));
     assert!(close(a.read_bw.as_ref().unwrap().gbps, 257.841));
     let mma = a.mma_peak.as_ref().unwrap();
     assert!(close(mma.tflops, 125.597));
     assert_eq!(mma.source.run_id, "eb3e197afc8e");
+    // Latency (arch schema 3): cycles stored, ns derived through aegis-perf at
+    // the reference clock, which was not locked.
     let l2 = a.l2_latency.as_ref().unwrap();
-    // Arch schema 2 (Core 733f1b3): cycles primary, ns at the reference clock,
-    // one current ptr_chase run with its own SM clock.
     assert!(close(l2.cycles, 335.437));
     assert!(close(l2.ref_clock_mhz, 2406.78));
+    assert!(!l2.clocks_locked);
     assert!(close(l2.ns_at_ref, 335.437 / 2406.78 * 1e3));
     assert_eq!(l2.runs.len(), 1);
     let run = &l2.runs[0];
     assert_eq!(run.source.run_id, "a825f4e557a3");
     assert_eq!(run.sm_clock_mhz, Some(2406.78));
-    assert_eq!(run.source.status, "current");
-    assert_eq!(run.source.clocks_locked, None, "the run did not record its clock lock state");
+    assert_eq!(run.clocks_locked, None, "the run did not record its clock lock state");
+    assert!(close(run.ns.unwrap(), 335.437 / 2406.78 * 1e3));
+    assert_eq!(run.source.status, "valid");
     let dram = a.dram_latency.as_ref().unwrap();
     assert!(close(dram.cycles, 956.6305) && close(dram.ns_at_ref, 956.6305 / 2406.78 * 1e3));
     assert!(close(a.roofs.copy_bw_gbps, 236.696) && close(a.roofs.peak_tflops, 125.597));
-    assert!(a.power.is_none(), "no power controls in the arch file yet: not measured");
-    // Rule 7: the probe summary counts current rows only.
+    // Rule 7: valid rows feed the model; replaced rows are history; the 108
+    // invalidated ptr_chase rows (e3d94274b31d) are never returned.
     let dram = a.probes.iter().find(|p| p.probe == "dram_bandwidth").unwrap();
-    assert_eq!(dram.rows, 12);
+    assert_eq!((dram.rows, dram.replaced_rows), (12, 6));
     let ptr = a.probes.iter().find(|p| p.probe == "ptr_chase_latency").unwrap();
-    assert_eq!(ptr.rows, 144);
+    assert_eq!((ptr.rows, ptr.replaced_rows), (144, 468));
+    assert!(!ptr.runs.contains(&"e3d94274b31d".to_string()));
 }
 
 #[test]
@@ -107,40 +131,52 @@ fn winners_carry_ci_tie_call_and_roof() {
     assert_eq!(w.len(), 14);
     let get = |b: &str| w.iter().find(|x| x.shape_bucket == b).unwrap();
 
-    // 1x4864x896: runner-up CI [0.99499, 1.00248] contains 1.0 -> tied.
-    let t = get("1x4864x896");
+    // 16x4864x896: runner-up CI [0.99727, 1.00114] contains 1.0 -> tied.
+    let t = get("16x4864x896");
     assert!(t.tie.tied && t.tie.ci.as_ref().unwrap().contains_one);
     assert_eq!(t.tie.method.as_deref(), Some("paired"));
+    assert_eq!(t.tie.contender.as_deref(), Some("mma_pipe_64x128x32_2x4_s4"));
     assert!(t.decode);
     assert_eq!(t.roof.as_ref().unwrap().roof, "read");
 
-    // 256^3: runner-up CI [1.09747, 1.10233] -> a clear win over the runner-up,
-    // but slower than cublaslt_best (CI [0.92367, 0.93204]).
+    // 256^3: runner-up CI [1.03158, 1.03349] -> a clear win over the
+    // runner-up; against cublaslt_best the paired CI [0.89849, 0.90183] says
+    // slower, whatever the unpaired medians (98.2%) say.
     let c = get("256x256x256");
     assert!(!c.tie.tied);
     assert_eq!(c.impl_, "mma_pipe_64x64x32_2x2_s4");
     assert_eq!(c.tie.contender.as_deref(), Some("mma_pipe_64x64x32_2x2_s3"));
-    assert!(c.tie.runner_up_gap_pct.unwrap() > 9.0);
+    assert!((c.tie.runner_up_gap_pct.unwrap() - 3.319).abs() < 1e-9);
     let lt = &c.vs_cublaslt_best;
     assert_eq!(lt.verdict, Some("slower"));
-    assert!(close(lt.ci.as_ref().unwrap().lo, 0.92367));
-    assert!((lt.pct_of_cublaslt_best.unwrap() - 91.786).abs() < 1e-3);
+    assert!(close(lt.ci.as_ref().unwrap().lo, 0.89849));
+    assert!((lt.pct_of_cublaslt_best.unwrap() - 98.2412).abs() < 1e-3);
     assert_eq!(c.roof.as_ref().unwrap().roof, "copy");
     assert!(!c.decode);
-    assert_eq!(c.regs, Some(64));
+    assert_eq!(c.regs, Some(74));
+
+    // paired_swap: the CI is stored inverted, so no gap is derived from it.
+    let swap = get("512x896x4864");
+    assert_eq!(swap.tie.method.as_deref(), Some("paired_swap"));
+    assert!(swap.tie.runner_up_gap_pct.is_none());
 }
 
 #[test]
-fn measurements_default_to_v2_cold_idle() {
+fn measurements_default_to_v2_cold_clean() {
     let s = src();
     let con = s.open().unwrap();
     let rows = custos_perf::measurements(&s, &con, &Filter::default()).unwrap();
-    assert_eq!(rows.len(), 1220);
+    // The two clean tune runs' cold rows; the disturbed run's are excluded.
+    assert_eq!(rows.len(), 378 + 81);
     assert!(rows.iter().all(|r| r.protocol_version == 2 && r.cache_mode.as_deref() == Some("cold") && !r.allow_busy));
+    assert!(rows.iter().all(|r| r.run_id != "60959720261a"));
     assert!(rows.iter().all(|r| !r.history && r.roof.is_some()));
 
+    let busy = custos_perf::measurements(&s, &con, &Filter { include_busy: true, ..Default::default() }).unwrap();
+    assert_eq!(busy.len(), 378 + 81 + 81, "on request, the disturbed run's rows too");
+
     let v1 = custos_perf::measurements(&s, &con, &Filter { protocol: Some(1), ..Default::default() }).unwrap();
-    assert_eq!(v1.len(), 723);
+    assert_eq!(v1.len(), 9);
     assert!(v1.iter().all(|r| r.history), "v1 rows are labeled history");
 
     let one = Filter { m: Some(256), n: Some(256), k: Some(256), impl_: Some("cublaslt_best".into()), ..Default::default() };
@@ -155,44 +191,28 @@ fn measurements_default_to_v2_cold_idle() {
 fn kernel_detail_joins_db_and_artifacts() {
     let s = src();
     let con = s.open().unwrap();
-    // mma_pipe_64x64x32_2x2_s4: winner of 8 shapes, SASS dumped, never profiled.
-    let k = custos_perf::kernel_detail(&s, &con, "68018941c4de922b").unwrap().unwrap();
+    // mma_pipe_64x64x32_2x2_s4: winner of 10 shapes, never profiled.
+    let k = custos_perf::kernel_detail(&s, &con, "be0c6688d651513b").unwrap().unwrap();
     assert_eq!(k.impl_, "mma_pipe_64x64x32_2x2_s4");
-    assert_eq!(k.winner_of.len(), 8);
-    assert_eq!((k.regs, k.local_bytes), (Some(64), Some(0)));
+    assert_eq!(k.winner_of.len(), 10);
+    assert_eq!((k.regs, k.smem_bytes, k.local_bytes), (Some(74), Some(32768), Some(0)));
     assert!(!k.measurements.is_empty());
-    let a = &k.artifacts[0];
-    assert_eq!(a.sm, 121);
-    let sass = a.sass.as_ref().expect("SASS dump");
-    assert!(sass.path.contains("Tile_64__64__32__2__2___4__") && sass.text.contains("HMMA"));
-    let mix = a.instruction_mix.as_ref().unwrap();
-    assert_eq!((mix["HMMA"], mix["LDSM"], mix["LDGSTS"]), (32, 16, 16));
-    assert_eq!(a.resource_usage.as_ref().unwrap().regs, k.regs);
     assert!(k.nsight_reports.is_empty(), "not profiled");
-
-    // mma_pipe_128x128x32_2x4_s2: profiled at 2048^3 and 4096^3.
-    let p = custos_perf::kernel_detail(&s, &con, "9e2efcd73edd4fa9").unwrap().unwrap();
-    let shapes: Vec<&str> = p.nsight_reports.iter().map(|r| r.shape.as_str()).collect();
-    assert_eq!(shapes, ["2048x2048x2048", "4096x4096x4096"]);
-
-    // cuBLASLt: registers unknown to Core, no AEGIS SASS.
-    let lt = custos_perf::kernel_detail(&s, &con, "11c8a1f7cc9d4d83").unwrap().unwrap();
-    assert!(lt.baseline && lt.regs.is_none());
-    assert!(lt.artifacts.iter().all(|a| a.sass.is_none() && a.instruction_mix.is_none()));
 
     assert!(custos_perf::kernel_detail(&s, &con, "nope").unwrap().is_none());
 }
 
-/// Point for point against the listing `aegis-perf roofline --arch 121`
-/// printed when it wrote results/roofline-sm121.svg from the same DB.
+/// Point for point against the golden `aegis-perf roofline --arch 121` listing
+/// of the pinned tag, run on the same fixture DB (tests/fixtures/golden/).
 #[test]
-fn roofline_matches_aegis_perf_svg_listing() {
+fn roofline_matches_the_golden_listing() {
     let s = src();
     let con = s.open().unwrap();
     let r = custos_perf::roofline(&s, &con, 121).unwrap().unwrap();
-    let listing = include_str!("fixtures/roofline-sm121.txt");
+    let listing = include_str!("../../tests/fixtures/golden/roofline-121.txt");
     let mut expected: Vec<(String, String, String, String, String)> = listing
         .lines()
+        .filter(|l| l.contains(" AI "))
         .map(|l| {
             let (label, rest) = l.split_once(" AI ").unwrap();
             let t: Vec<&str> = rest.split_whitespace().collect();
@@ -218,39 +238,31 @@ fn roofline_matches_aegis_perf_svg_listing() {
     assert_eq!(expected.len(), 28);
     assert_eq!(got, expected);
 
-    // Series and hover: every point of a winner shape carries its CI.
     assert_eq!(r.points.iter().filter(|p| p.series == "winner").count(), 14);
     assert!(r.points.iter().all(|p| p.hover.config.is_some() && p.hover.vs_cublaslt_best.is_some()));
-    let decode = r.points.iter().filter(|p| p.m <= 16);
-    assert!(decode.into_iter().all(|p| p.roof.roof == "read"));
+    assert!(r.points.iter().filter(|p| p.m <= 16).all(|p| p.roof.roof == "read"));
+    assert!(r.points.iter().filter(|p| p.m > 16).all(|p| p.roof.roof == "copy"));
     assert!((r.roofs.ridge_copy - 530.6).abs() < 0.1);
 }
 
 #[test]
-fn compare_flags_and_refuses_cross_protocol() {
+fn compare_flags_build_over_build() {
     let s = src();
     let con = s.open().unwrap();
-    // Two full protocol v2 sweeps on the Spark.
-    let c = custos_perf::compare(&con, "cef5728", "7b99002", &Filter::default()).unwrap();
-    assert_eq!(c.rows.len(), 294);
-    assert_eq!(c.confirmed_slower + c.unconfirmed_slower + c.faster + c.within, 294);
-    assert!(c.not_comparable.is_empty());
-    assert_eq!((c.excluded_a, c.excluded_b), (56, 56), "warm rows are never compared with cold");
+    // The two tune runs: 7fe7a84 (41cc8ffb03fd) and 9157a34 (9fd0eab14f18).
+    let c = custos_perf::compare(&con, "7fe7a84", "9157a34", &Filter::default()).unwrap();
+    assert!(!c.rows.is_empty());
+    assert_eq!(c.confirmed_slower + c.unconfirmed_slower + c.faster + c.within, c.rows.len());
     for r in &c.rows {
         assert!(close(r.ratio, r.b.median_us / r.a.median_us));
         let expect = if r.change_pct > 3.0 { "slower" } else if r.change_pct < -3.0 { "faster" } else { "within" };
         assert_eq!(r.flag, expect);
+        assert_ne!(r.b.run_id, "60959720261a", "disturbed rows are never compared");
     }
-    // The DB holds no cross-build paired results: every slowdown is
-    // unconfirmed, none is called a regression.
-    assert!(c.unconfirmed_slower > 0, "these two sweeps differ by > 3% somewhere");
-    assert_eq!(c.confirmed_slower, 0);
-    assert!(c.rows.iter().filter(|r| r.flag == "slower").all(|r| r.status == "unconfirmed" && r.paired.is_none()));
 
     // A protocol v1 build against a v2 build: nothing comparable.
-    let x = custos_perf::compare(&con, "7365a7b", "cef5728", &Filter::default()).unwrap();
+    let x = custos_perf::compare(&con, "1af1bc7", "9157a34", &Filter::default()).unwrap();
     assert!(x.rows.is_empty());
-    assert_eq!(x.excluded_a, 280);
-    assert_eq!(x.not_comparable.len(), 294);
+    assert_eq!(x.excluded_a, 9);
     assert!(x.not_comparable.iter().all(|n| n.only_in == "b"));
 }

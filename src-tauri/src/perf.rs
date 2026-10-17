@@ -9,7 +9,7 @@ use tauri::State;
 pub struct PerfState(pub Sources);
 
 impl PerfState {
-    /// `AEGIS_PERFDB` / `AEGIS_CORE`, defaulting to the fixture DB and the Core repo.
+    /// `AEGIS_CORE` / `AEGIS_PERFDB`; without them, the repo fixtures (tests/fixtures/).
     pub fn from_env() -> Self {
         PerfState(Sources::from_env())
     }
@@ -42,7 +42,7 @@ pub struct PerfSources {
 pub fn perf_sources(state: State<'_, PerfState>) -> PerfSources {
     PerfSources {
         db: state.0.db.display().to_string(),
-        core: state.0.core.display().to_string(),
+        core: state.0.root.display().to_string(),
         measured_archs: custos_perf::measured_archs(&state.0),
     }
 }

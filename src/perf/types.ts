@@ -46,10 +46,11 @@ export interface SourceRun {
   started_at: string | null;
   /** null: the run did not record whether its clocks were locked. */
   clocks_locked: boolean | null;
-  /** "replaced": a later run re-measured this probe (history, not an error). */
-  status: 'current' | 'replaced';
-  superseded_rows: number;
-  superseded_by: string[];
+  /** The run's rows of this probe: "valid" (current) or "replaced" (a newer run
+   *  re-measured the probe: history, not an error). */
+  status: 'valid' | 'replaced';
+  replaced_rows: number;
+  replaced_by: string[];
 }
 
 export interface Bandwidth {
@@ -67,15 +68,16 @@ export interface MmaPeak {
   source: SourceRun;
 }
 
-/** Arch schema 2: cycles are primary; ns is stated at a reference clock. */
+/** Cycles are stored; ns is derived by aegis-perf at the reference clock. */
 export interface Latency {
   cycles: number;
   cycles_min: number | null;
   cycles_max: number | null;
   ref_clock_mhz: number;
+  ref_clock_rule: string | null;
+  /** Every source run measured at locked clocks. */
+  clocks_locked: boolean;
   ns_at_ref: number;
-  /** null when the runs' clocks differ by > 2% (ns not averaged across clocks). */
-  ns_measured: { median: number; min: number | null; max: number | null } | null;
   clock_spread_pct: number | null;
   combine: string | null;
   points: number | null;
@@ -87,7 +89,11 @@ export interface Latency {
 export interface LatencyRun {
   source: SourceRun;
   sm_clock_mhz: number | null;
+  /** null: the run did not record whether its clocks were locked. */
+  clocks_locked: boolean | null;
+  clock_lock: string | null;
   cycles: number | null;
+  /** cycles at this run's own clock, derived. */
   ns: number | null;
   points: number | null;
 }
@@ -105,7 +111,10 @@ export interface ArchRoofs {
 
 export interface ProbeSummary {
   probe: string;
+  /** Valid rows (the hardware model's). */
   rows: number;
+  /** Replaced rows (history). */
+  replaced_rows: number;
   runs: string[];
   units: string[];
 }

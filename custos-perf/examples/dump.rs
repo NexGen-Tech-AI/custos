@@ -1,6 +1,8 @@
 //! Print a perf command's JSON, as the Tauri app returns it:
 //!     cargo run --example dump -- devices | arch_model SM | roofline SM | winners SM
-//! Used to refresh the frontend test fixtures (src/tests/perf/fixtures/).
+//! Used to refresh the frontend test fixtures (src/tests/perf/fixtures/) from
+//! the repo fixtures (no AEGIS_CORE set). Paths under the repo root are
+//! printed relative to it, so the output does not depend on the checkout.
 use anyhow::{bail, Result};
 use custos_perf::Sources;
 
@@ -16,6 +18,7 @@ fn main() -> Result<()> {
         Some("winners") => serde_json::to_string_pretty(&custos_perf::winners(&src, &con, sm()?)?)?,
         _ => bail!("usage: dump devices | arch_model SM | roofline SM | winners SM"),
     };
-    println!("{json}");
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").canonicalize()?;
+    println!("{}", json.replace(&format!("{}/", repo.display()), ""));
     Ok(())
 }

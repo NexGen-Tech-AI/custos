@@ -25,9 +25,9 @@ layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
 Perf views: `src/components/sections/perf/` (Device, Roofline), API and types in
 `src/perf/`. Their tests (`src/tests/perf/`) run on real command output;
-refresh it with `AEGIS_CORE=~/custos-fixtures/core cargo run --manifest-path
-custos-perf/Cargo.toml --example dump -- devices | arch_model 121 | roofline 121`
-into `src/tests/perf/fixtures/`.
+refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump
+-- devices | arch_model 121 | roofline 121` (no `AEGIS_CORE`: it reads
+`tests/fixtures/`) into `src/tests/perf/fixtures/`.
 
 Legacy code is out of the default build (it is kept, not maintained):
 - `src-tauri` feature `legacy-security`: the security modules (`malware`,
@@ -168,10 +168,13 @@ Custos shows numbers Core has disowned.
     (a query, a column, a fix), write it up in `docs/core-requests.md` (what,
     why, the Custos code waiting on it). If a fallback exists (rule 12), use
     it; otherwise stop that work until Core lands it.
-22. **aegis-perf is a git dependency pinned to a specific rev** of
-    https://github.com/Riffe007/aegis-core (`rev = "<full sha>"` in
-    `custos-perf/Cargo.toml`), never a path or a branch, so a Custos build is
-    reproducible and Core's working tree never leaks into it.
-23. **A pin bump is its own commit.** It changes only the rev (plus what the
+22. **aegis-perf is a git dependency pinned to a release tag** of
+    https://github.com/Riffe007/aegis-core (`tag = "aegis-perf-vX.Y.Z"` in
+    `custos-perf/Cargo.toml`; both Cargo.lock files record its commit), never a
+    path or a branch, so a Custos build is reproducible and Core's working
+    tree never leaks into it. A local `[patch]` in `.cargo/config.toml`
+    (gitignored, README) may point at a separate Core worktree for
+    development; tests and CI always build from the pin.
+23. **A pin bump is its own commit.** It changes only the pin (plus what the
     bump forces in Custos) and its message records the new Core rev, the
     previous one, and the reason for the bump.

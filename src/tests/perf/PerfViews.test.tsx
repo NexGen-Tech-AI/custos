@@ -1,5 +1,5 @@
 // Device and Roofline views over real command output: the fixtures are
-// `cargo run --example dump` (custos-perf) against ~/custos-fixtures/aegis_perf.db.
+// `cargo run --example dump` (custos-perf) against tests/fixtures/ (no AEGIS_CORE).
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import devices from './fixtures/devices.json';
@@ -62,7 +62,7 @@ describe('DeviceSection', () => {
 
   it('shows a replaced source run as history, not as a warning', async () => {
     const model = structuredClone(archModel) as typeof archModel;
-    Object.assign(model.copy_bw!.source, { status: 'replaced', superseded_rows: 6, superseded_by: ['newer01'] });
+    Object.assign(model.copy_bw!.source, { status: 'replaced', replaced_rows: 6, replaced_by: ['newer01'] });
     responses.arch_model = model;
     const { container } = render(<DeviceSection />);
     expect(await screen.findByText('history: replaced by newer01 (6 rows)')).toBeInTheDocument();
@@ -92,9 +92,9 @@ describe('RooflineSection', () => {
       const m = Number(shape.split('x')[0]);
       expect(row.textContent).toContain(m <= 16 ? 'read (257.8 GB/s)' : 'copy (236.7 GB/s)');
     }
-    const tied = rows.find((row) => row.textContent!.startsWith('1x4864x896'))!;
-    expect(tied.textContent).toContain('tied vs mma_pipe_64x128x32_2x4_s4, runner-up/pick CI [0.995, 1.002]');
-    expect(tied.textContent).toContain('86.9% of cublaslt_best, ratio CI [0.872, 0.880]: slower');
+    const tied = rows.find((row) => row.textContent!.startsWith('16x4864x896'))!;
+    expect(tied.textContent).toContain('tied vs mma_pipe_64x128x32_2x4_s4, runner-up/pick CI [0.997, 1.001]');
+    expect(tied.textContent).toContain('99.4% of cublaslt_best, ratio CI [0.990, 0.992]: slower');
     expect(invoke).toHaveBeenCalledWith('roofline', { sm: 121 });
   });
 

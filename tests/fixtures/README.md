@@ -54,9 +54,11 @@ roof; a statistical tie (16x4864x896, paired CI 0.997-1.001); shapes the
 dispatch floor sends to cuBLASLt (1x896x4864, 16x896x4864, 4096x4096x4096);
 disturbed rows (a run, its measurements, two paired results); valid, replaced
 and invalidated microbench rows; 10 paired results; latency rows with SM clock
-data (109 rows, all from run `e3d94274b31d`, clocks locked at 2418 MHz). The
-arch file (from the tag) predates that run: its latencies cite `a825f4e557a3`,
-unlocked.
+data: 108 `ptr_chase_latency` rows of run `e3d94274b31d` (clocks locked at
+2418 MHz, measured 2398.16 MHz), all invalidated ("Firefox started on the GPU
+mid-run"), plus its valid `sm_clock` row. The arch file (from the tag) cites
+`a825f4e557a3` for both latencies: valid rows without a per-row clock; the
+clock (2406.78 MHz, not locked) is in the arch file.
 
 ## Golden outputs
 

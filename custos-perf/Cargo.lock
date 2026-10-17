@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "aegis-perf"
-version = "0.1.0"
-source = "git+https://github.com/Riffe007/aegis-core?rev=733f1b393ad68e276ad56e1f51a0442110dfa1da#733f1b393ad68e276ad56e1f51a0442110dfa1da"
+version = "0.3.0"
+source = "git+https://github.com/Riffe007/aegis-core?tag=aegis-perf-v0.3.0#9157a34d24b5368ef81f7d3add2b31f07de87301"
 dependencies = [
  "anyhow",
  "chrono",

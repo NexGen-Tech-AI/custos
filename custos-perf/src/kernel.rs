@@ -171,7 +171,7 @@ fn resource_usage(dir: &Path, n: &Names) -> Result<Option<ResourceUsage>> {
 }
 
 fn nsight(src: &Sources, impl_: &str) -> Vec<NsightReport> {
-    let dir = src.core_path("artifacts/ncu");
+    let dir = &src.ncu_dir;
     let prefix = format!("{impl_}_");
     let mut out: Vec<NsightReport> = std::fs::read_dir(dir)
         .into_iter()
@@ -204,7 +204,7 @@ pub fn kernel_detail(src: &Sources, con: &Connection, kernel_id: &str) -> Result
     // Artifacts for every arch the kernel was measured on, else every arch with a SASS dump.
     let mut archs: Vec<i64> = measurements.iter().map(|m| m.sm_arch).collect();
     if archs.is_empty() {
-        archs = std::fs::read_dir(src.core_path("artifacts/sass"))
+        archs = std::fs::read_dir(&src.sass_dir)
             .into_iter()
             .flatten()
             .flatten()
@@ -216,7 +216,7 @@ pub fn kernel_detail(src: &Sources, con: &Connection, kernel_id: &str) -> Result
     let names = names(&k.impl_, &config);
     let mut artifacts = Vec::new();
     for sm in archs {
-        let dir = src.core_path(format!("artifacts/sass/sm_{sm}"));
+        let dir = src.sass_dir.join(format!("sm_{sm}"));
         artifacts.push(match &names {
             Some(n) => ArchArtifacts {
                 sm,

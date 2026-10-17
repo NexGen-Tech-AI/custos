@@ -29,7 +29,7 @@ function Sources({ runs }: { runs: Src[] }) {
           {r.status === 'replaced' && (
             // History: a later run re-measured this probe. Not an error.
             <span className="block text-gray-500 dark:text-gray-500">
-              history: replaced by {r.superseded_by.join(', ')} ({r.superseded_rows} rows)
+              history: replaced by {r.replaced_by.join(', ')} ({r.replaced_rows} rows)
             </span>
           )}
         </li>
@@ -54,7 +54,7 @@ function latencySources(l: Latency | null): Src[] {
   return (l?.runs ?? []).map((r) => ({
     run: r.source,
     extra:
-      `SM ${r.sm_clock_mhz === null ? 'clock not measured' : `${r.sm_clock_mhz.toFixed(0)} MHz`}, ${clockLock(r.source.clocks_locked)}` +
+      `SM ${r.sm_clock_mhz === null ? 'clock not measured' : `${r.sm_clock_mhz.toFixed(0)} MHz`}, ${clockLock(r.clocks_locked)}` +
       (r.cycles !== null && r.ns !== null ? ` · ${r.cycles.toFixed(1)} cycles = ${r.ns.toFixed(1)} ns` : ''),
   }));
 }
