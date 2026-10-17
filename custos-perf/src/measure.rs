@@ -140,8 +140,9 @@ pub fn measurements(src: &Sources, con: &Connection, f: &Filter) -> Result<Vec<M
     rows(src, con, &f.to_view()?)
 }
 
-/// Median shifts above this many percent are flagged.
-pub const REGRESSION_PCT: f64 = 3.0;
+/// Median shifts above this many percent are flagged: Core's regression gate
+/// (`aegis_perf::regress::REGRESSION`, 3%), never a Custos number (rule 12).
+pub const REGRESSION_PCT: f64 = aegis_perf::regress::REGRESSION * 100.0;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Side {
@@ -152,15 +153,97 @@ pub struct Side {
     pub p90_us: Option<f64>,
 }
 
-/// A paired result for the same impl and shape across the two builds:
-/// ratio = b time / a time, 95% CI (`aegis-perf paired-ab`).
+/// A stored paired-ab result (`paired_results`, `aegis-perf paired-ab`) for
+/// the same impl and shape across the two builds, oriented as compare() is:
+/// ratio = build b time / build a time, with its 95% CI.
 #[derive(Clone, Debug, Serialize)]
 pub struct PairedEvidence {
+    /// "paired_results #<id>".
     pub source: String,
+    pub id: i64,
+    /// The builds as stored (`-dirty`: built with uncommitted changes).
+    pub sha_a: Option<String>,
+    pub sha_b: Option<String>,
+    /// Stored as (b, a): ratio and CI inverted here.
+    pub inverted: bool,
+    /// A stored build had uncommitted changes (`-dirty`). It is matched on its
+    /// commit: runs.git_sha does not record dirty state either.
+    pub dirty: bool,
     pub pairs: Option<i64>,
     pub ratio_median: f64,
     pub ratio_ci_lo: f64,
     pub ratio_ci_hi: f64,
+    pub started_at: String,
+    /// Older matching results; the newest is the evidence.
+    pub older_matches: usize,
+}
+
+/// Does a stored build (`sha`, maybe `-dirty`) name the commit `want`? Either
+/// may be the shorter prefix (runs keep 7 hex digits, paired_results 12).
+fn same_build(stored: Option<&str>, want: &str) -> bool {
+    let Some(s) = stored else { return false };
+    let s = s.strip_suffix("-dirty").unwrap_or(s);
+    let n = s.len().min(want.len());
+    n >= 7 && s[..n].eq_ignore_ascii_case(&want[..n])
+}
+
+/// The stored paired result backing row `ra` (build a) vs build b: same shape,
+/// the same impl on both sides, the selection's protocol and cache mode, the
+/// two builds in either order. Disturbed or busy results (idle reading above
+/// Core's limit, or unread) are excluded unless `sel.include_busy` (rule 2);
+/// they are counted in the second value.
+fn paired_evidence(
+    results: &[view::PairedResult],
+    sel: &Selection,
+    (sha_a, sha_b): (&str, &str),
+    ra: &view::Measurement,
+) -> (Option<PairedEvidence>, usize) {
+    let mut excluded = 0;
+    let mut hits: Vec<(&view::PairedResult, bool)> = Vec::new();
+    for p in results {
+        let same_row = (p.m, p.n, p.k) == (ra.m, ra.n, ra.k)
+            && p.impl_a == ra.impl_
+            && p.impl_b == ra.impl_
+            && p.protocol_version == sel.protocol
+            && (sel.protocol < 2 || p.cache_mode == sel.cache);
+        if !same_row {
+            continue;
+        }
+        let (sa, sb) = (p.sha_a.as_deref(), p.sha_b.as_deref());
+        let inverted = if same_build(sa, sha_a) && same_build(sb, sha_b) {
+            false
+        } else if same_build(sa, sha_b) && same_build(sb, sha_a) {
+            true
+        } else {
+            continue;
+        };
+        if !sel.include_busy && (p.disturbed == Some(true) || p.busy()) {
+            excluded += 1;
+            continue;
+        }
+        hits.push((p, inverted));
+    }
+    // view::paired_results returns them oldest first: the newest is the evidence.
+    let older = hits.len().saturating_sub(1);
+    let ev = hits.last().map(|&(p, inverted)| {
+        let (ratio, lo, hi) = if inverted { (1.0 / p.ratio, 1.0 / p.ci_hi, 1.0 / p.ci_lo) } else { (p.ratio, p.ci_lo, p.ci_hi) };
+        let dirty = |s: &Option<String>| s.as_deref().is_some_and(|s| s.ends_with("-dirty"));
+        PairedEvidence {
+            source: format!("paired_results #{}", p.id),
+            id: p.id,
+            sha_a: p.sha_a.clone(),
+            sha_b: p.sha_b.clone(),
+            inverted,
+            dirty: dirty(&p.sha_a) || dirty(&p.sha_b),
+            pairs: Some(p.pairs),
+            ratio_median: ratio,
+            ratio_ci_lo: lo,
+            ratio_ci_hi: hi,
+            started_at: p.started_at.clone(),
+            older_matches: older,
+        }
+    });
+    (ev, excluded)
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -188,6 +271,9 @@ pub struct CompareRow {
     /// - "not_confirmed": a paired result exists and does not back the shift
     pub status: &'static str,
     pub paired: Option<PairedEvidence>,
+    /// Paired results for these builds, impl and shape left out because they
+    /// were disturbed or measured on a busy GPU (rule 2; see include_busy).
+    pub paired_excluded: usize,
     /// The two p10-p90 bands overlap: the unpaired shift sits inside the noise.
     pub bands_overlap: Option<bool>,
 }
@@ -224,6 +310,8 @@ pub struct Compare {
     pub confirmed_slower: usize,
     /// Slowdowns > 3% without a paired result: not a regression call yet.
     pub unconfirmed_slower: usize,
+    /// Slowdowns > 3% a paired result does not back (its CI reaches 1.0 or below).
+    pub not_confirmed_slower: usize,
     pub faster: usize,
     pub within: usize,
 }
@@ -261,7 +349,7 @@ pub fn compare_rows(
     sha_b: &str,
     a_rows: Vec<view::Measurement>,
     b_rows: Vec<view::Measurement>,
-    evidence: impl Fn(&view::Measurement, &view::Measurement) -> Option<PairedEvidence>,
+    evidence: impl Fn(&view::Measurement, &view::Measurement) -> (Option<PairedEvidence>, usize),
 ) -> (Vec<CompareRow>, Vec<NotComparable>) {
     let (a, b) = (latest(a_rows), latest(b_rows));
     let mut rows = Vec::new();
@@ -280,7 +368,7 @@ pub fn compare_rows(
         } else {
             "within"
         };
-        let paired = evidence(ra, rb);
+        let (paired, paired_excluded) = evidence(ra, rb);
         let bands_overlap = match (ra.p10_us, ra.p90_us, rb.p10_us, rb.p90_us) {
             (Some(a10), Some(a90), Some(b10), Some(b90)) => Some(a10 <= b90 && b10 <= a90),
             _ => None,
@@ -307,6 +395,7 @@ pub fn compare_rows(
             flag,
             status: status(flag, paired.as_ref()),
             paired,
+            paired_excluded,
             bands_overlap,
         });
     }
@@ -335,9 +424,11 @@ fn count_all(con: &Connection, base: &MeasurementFilter) -> Result<usize> {
 /// Build b against build a: same device, arch, impl, shape, protocol and
 /// cache mode (from `f`; git_sha in `f` is ignored).
 ///
-/// Paired evidence: the perf DB holds paired tests only within one run (tie
-/// tests); cross-build paired results (`aegis-perf paired-ab`) are not
-/// stored, so every > 3% shift is "unconfirmed" until Core records them.
+/// A median shift over the regression threshold is "confirmed" or
+/// "not_confirmed" when a stored paired-ab result matches it (`paired_results`:
+/// same shape, the same impl on both sides, protocol and cache mode, these two
+/// builds in either order; disturbed and busy results only with include_busy);
+/// otherwise it stays "unconfirmed" (contract rule 6).
 pub fn compare(con: &Connection, sha_a: &str, sha_b: &str, f: &Filter) -> Result<Compare> {
     let base = MeasurementFilter { git_sha: None, ..f.to_view()? };
     let get = |sha: &str| -> Result<(Vec<view::Measurement>, usize)> {
@@ -348,9 +439,11 @@ pub fn compare(con: &Connection, sha_a: &str, sha_b: &str, f: &Filter) -> Result
     };
     let (a_rows, excluded_a) = get(sha_a)?;
     let (b_rows, excluded_b) = get(sha_b)?;
-    let (rows, not_comparable) = compare_rows(sha_a, sha_b, a_rows, b_rows, |_, _| None);
-    let count = |flag: &str, status: &str| rows.iter().filter(|r| r.flag == flag && r.status == status).count();
     let sel = base.sel;
+    let stored = view::paired_results(con, &view::PairedResultFilter::default())?;
+    let (rows, not_comparable) =
+        compare_rows(sha_a, sha_b, a_rows, b_rows, |ra, _| paired_evidence(&stored, &sel, (sha_a, sha_b), ra));
+    let count = |flag: &str, status: &str| rows.iter().filter(|r| r.flag == flag && r.status == status).count();
     Ok(Compare {
         sha_a: sha_a.to_string(),
         sha_b: sha_b.to_string(),
@@ -360,6 +453,7 @@ pub fn compare(con: &Connection, sha_a: &str, sha_b: &str, f: &Filter) -> Result
         threshold_pct: REGRESSION_PCT,
         confirmed_slower: count("slower", "confirmed"),
         unconfirmed_slower: count("slower", "unconfirmed"),
+        not_confirmed_slower: count("slower", "not_confirmed"),
         faster: rows.iter().filter(|r| r.flag == "faster").count(),
         within: count("within", "within"),
         rows,
@@ -424,7 +518,20 @@ mod tests {
     }
 
     fn ev(lo: f64, hi: f64) -> PairedEvidence {
-        PairedEvidence { source: "test".into(), pairs: Some(30), ratio_median: (lo + hi) / 2.0, ratio_ci_lo: lo, ratio_ci_hi: hi }
+        PairedEvidence {
+            source: "test".into(),
+            id: 0,
+            sha_a: None,
+            sha_b: None,
+            inverted: false,
+            dirty: false,
+            pairs: Some(30),
+            ratio_median: (lo + hi) / 2.0,
+            ratio_ci_lo: lo,
+            ratio_ci_hi: hi,
+            started_at: String::new(),
+            older_matches: 0,
+        }
     }
 
     /// A 10% slower median is "unconfirmed" without a paired result,
@@ -434,15 +541,15 @@ mod tests {
     fn slowdowns_need_paired_evidence() {
         let a = || vec![row("ra", "k_old", "mma_x", 10.0)];
         let b = || vec![row("rb", "k_old", "mma_x", 11.0)];
-        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| None);
+        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| (None, 0));
         assert_eq!((r[0].flag, r[0].status), ("slower", "unconfirmed"));
         assert!(r[0].paired.is_none());
-        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| Some(ev(1.06, 1.12)));
+        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| (Some(ev(1.06, 1.12)), 0));
         assert_eq!((r[0].flag, r[0].status), ("slower", "confirmed"));
-        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| Some(ev(0.98, 1.04)));
+        let (r, _) = compare_rows("a", "b", a(), b(), |_, _| (Some(ev(0.98, 1.04)), 0));
         assert_eq!((r[0].flag, r[0].status), ("slower", "not_confirmed"));
         // Within 3%: no call either way, evidence or not.
-        let (r, _) = compare_rows("a", "b", a(), vec![row("rb", "k_old", "mma_x", 10.2)], |_, _| None);
+        let (r, _) = compare_rows("a", "b", a(), vec![row("rb", "k_old", "mma_x", 10.2)], |_, _| (None, 0));
         assert_eq!((r[0].flag, r[0].status), ("within", "within"));
     }
 
@@ -455,7 +562,7 @@ mod tests {
             "b",
             vec![row("ra", "k_pad8", "mma_x", 10.0)],
             vec![row("rb", "k_xor", "mma_x", 9.0)],
-            |_, _| None,
+            |_, _| (None, 0),
         );
         assert!(nc.is_empty());
         assert_eq!((r[0].a.kernel_id.as_str(), r[0].b.kernel_id.as_str()), ("k_pad8", "k_xor"));

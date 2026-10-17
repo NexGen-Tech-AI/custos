@@ -168,3 +168,42 @@ Custos showing stale verdicts with no compile error.
 - Tests: `provisional_dispatch_matches_core_mains_header` (fixture_db.rs)
   compares the restated rule with Core main's header
   (`tests/fixtures/winners/sm_121.main-eccf61f.h`).
+
+---
+
+## 5. `paired_results`: device, arch, dtype, and a build identity that matches `runs`
+
+**Status:** open, 2026-10-17. Custos works around it (below) and says so on
+every piece of evidence.
+
+### What Custos needs
+
+compare() matches a median shift to a stored paired-ab result on shape, the
+same impl on both sides, protocol, cache mode and the two builds
+(`custos-perf/src/measure.rs::paired_evidence`). Three gaps:
+
+1. **No `device_id`, `sm_arch` or `dtype`** in `paired_results` /
+   `view::PairedResult`. A result from another device or arch (sm_87 after
+   the Jetson port) would match an sm_121 shift today. Requested: those three
+   columns, filled by `paired-ab`, and in `PairedResultFilter`.
+2. **Build identity differs between tables.** `runs.git_sha` keeps 7 hex
+   digits and no dirty marker; `paired_results.sha_a/sha_b` keep 12 and a
+   `-dirty` suffix. Custos matches on the common prefix and ignores
+   `-dirty`, labeling the evidence `dirty`, since it cannot tell whether the
+   measured runs were dirty either. Requested: the same identity in both
+   (full SHA plus a dirty flag, e.g. `runs.git_dirty`).
+3. **paired-ab's protocol and cache mode** are taken as stored; fine. But
+   `idle_reading` NULL makes `PairedResult::busy()` true, so results without
+   a reading never count as evidence by default (correct per Core's rule;
+   noted because every pre-guard result is affected).
+
+### Why
+
+Contract rule 6: a shift is called only on paired evidence for exactly
+those builds, that device and that shape.
+
+### Custos code waiting on it
+
+- `custos-perf/src/measure.rs`: `same_build` (prefix match) and
+  `paired_evidence` (add device/arch/dtype to the match).
+- Tests: `custos-perf/tests/compare_paired.rs`.
