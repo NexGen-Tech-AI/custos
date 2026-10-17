@@ -1,0 +1,16 @@
+{
+  "device_id": "spark-5822",
+  "gpu_name": "NVIDIA GB10",
+  "sm_arch": 121,
+  "sm_count": 48,
+  "integrated": true,
+  "global_mem_bytes": 130663591936,
+  "l2_bytes": 25165824,
+  "smem_per_block_optin_bytes": 101376,
+  "smem_per_sm_bytes": 102400,
+  "regs_per_sm": 65536,
+  "max_threads_per_sm": 1536,
+  "measured_d2d_bw_gbps": 234.2,
+  "cuda_runtime": 13000,
+  "cuda_driver": 13000
+}

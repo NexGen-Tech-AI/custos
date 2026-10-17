@@ -1,2 +1,8 @@
 target/
 node_modules
+
+# Full perf DB snapshots (sqlite3 .backup); only the trimmed fixture is committed
+tests/fixtures/aegis_perf_full*.db
+tests/fixtures/*.db.tmp
+# Local aegis-perf override (see README)
+.cargo/config.toml
