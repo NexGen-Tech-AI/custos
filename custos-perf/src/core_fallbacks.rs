@@ -39,3 +39,13 @@ pub fn dispatch_to_cublaslt(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Opt
         (None, None) => (false, None, "none"),
     }
 }
+
+/// Production bar 3 (Core CLAUDE.md, "Production bar"): shapes >= 1024 in
+/// every dimension are "large". Not in aegis-perf. docs/core-requests.md #4.
+pub const LARGE_SHAPE_MIN_DIM: i64 = 1024;
+/// Large shapes: >= 90% of cublaslt_best. docs/core-requests.md #4.
+pub const LARGE_BAR: f64 = 0.90;
+/// Decode shapes (M <= aegis_perf::params::DECODE_MAX_M, which is Core's):
+/// >= 100% of cublaslt_best, "a tie or a win". docs/core-requests.md #4.
+pub const DECODE_BAR: f64 = 1.00;
+// Every shape: not below the floor (DISPATCH_FLOOR above).

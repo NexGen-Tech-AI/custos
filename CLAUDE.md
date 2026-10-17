@@ -23,10 +23,10 @@ Commands (pnpm is the package manager; there is no package-lock.json):
 `pnpm vitest run`, `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
 layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
-Perf views: `src/components/sections/perf/` (Device, Roofline), API and types in
+Perf views: `src/components/sections/perf/` (Device, Roofline, Winners), API and types in
 `src/perf/`. Their tests (`src/tests/perf/`) run on real command output;
 refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump
--- devices | arch_model 121 | roofline 121` (no `AEGIS_CORE`: it reads
+-- devices | arch_model 121 | roofline 121 | winners 121` (no `AEGIS_CORE`: it reads
 `tests/fixtures/`) into `src/tests/perf/fixtures/`.
 
 AEGIS is a default feature: `src-tauri` feature `aegis` (custos-perf, the perf

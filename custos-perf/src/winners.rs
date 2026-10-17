@@ -88,6 +88,49 @@ fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dis
     }
 }
 
+/// The kernel against the production bars (Core's Production bar 3), on the
+/// paired CI like Core's dispatch test: below a bar when the CI of
+/// cublaslt_best / kernel time lies entirely below it (upper bound < bar), so
+/// a statistical tie with the bar meets it ("decode: a tie or a win").
+/// Without a paired CI, the unpaired median ratio. Provisional: the bars and
+/// the large-shape definition are core_fallbacks constants.
+#[derive(Clone, Debug, Serialize)]
+pub struct Bars {
+    /// "decode" (M <= DECODE_MAX_M), "large" (every dim >= 1024) or "other".
+    pub class: &'static str,
+    /// The class's bar as a fraction of cublaslt_best (other: the floor).
+    pub bar: f64,
+    pub floor: f64,
+    /// "pass" or "fail" against the class bar; None without any measurement.
+    pub verdict: Option<&'static str>,
+    /// "clear" (the whole CI on the verdict's side) or "within CI" (the CI
+    /// straddles the bar).
+    pub margin: Option<&'static str>,
+    /// The kernel is below the 80% floor (and so dispatched to cuBLASLt).
+    pub below_floor: Option<bool>,
+    pub basis: &'static str,
+    pub provisional: bool,
+}
+
+fn bars(m: i64, n: i64, k: i64, lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Bars {
+    let floor = core_fallbacks::DISPATCH_FLOOR;
+    let (class, bar) = if m as f64 <= aegis_perf::params::DECODE_MAX_M {
+        ("decode", core_fallbacks::DECODE_BAR)
+    } else if m.min(n).min(k) >= core_fallbacks::LARGE_SHAPE_MIN_DIM {
+        ("large", core_fallbacks::LARGE_BAR)
+    } else {
+        ("other", floor)
+    };
+    let (range, basis) = match (lt_ci, pct_of_cublaslt_best) {
+        (Some(ci), _) => (Some(ci), "paired"),
+        (None, Some(p)) => (Some((p / 100.0, p / 100.0)), "unpaired"),
+        (None, None) => (None, "none"),
+    };
+    let verdict = range.map(|(_, hi)| if hi >= bar { "pass" } else { "fail" });
+    let margin = range.map(|(lo, hi)| if hi < bar || lo >= bar { "clear" } else { "within CI" });
+    Bars { class, bar, floor, verdict, margin, below_floor: range.map(|(_, hi)| hi < floor), basis, provisional: true }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Winner {
     pub sm_arch: i64,
@@ -115,6 +158,7 @@ pub struct Winner {
     /// unpaired medians, as Core's report) and the paired CI.
     pub vs_cublaslt_best: VsBaseline,
     pub dispatch: Dispatch,
+    pub bars: Bars,
     /// % of default cuBLAS: context only, never the headline (rule 5).
     pub pct_of_cublas: Option<f64>,
     pub tie: Tie,
@@ -161,6 +205,7 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
         smem_bytes: measured(w.kernel.smem_bytes),
         local_bytes: measured(w.kernel.local_bytes),
         dispatch: dispatch(w.lt_ratio_ci, w.pct_of_cublaslt_best),
+        bars: bars(w.m, w.n, w.k, w.lt_ratio_ci, w.pct_of_cublaslt_best),
         vs_cublaslt_best: VsBaseline {
             pct_of_cublaslt_best: w.pct_of_cublaslt_best,
             ci: lt_ci,

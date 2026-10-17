@@ -1,0 +1,1235 @@
+[
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "256x256x256",
+    "m": 256,
+    "n": 256,
+    "k": 256,
+    "decode": false,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 4.378,
+    "warm_median_us": 3.803,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 98.24120603015075,
+      "ci": {
+        "ratio_median": 0.9002,
+        "lo": 0.89849,
+        "hi": 0.90183,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 98.24120603015075,
+      "decided_on": 0.90183,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "other",
+      "bar": 0.8,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 103.10644129739607,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.03319,
+        "lo": 1.03158,
+        "hi": 1.03349,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 3.3190000000000053,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 85.33333333333333,
+      "tflops": 7.664328917313842,
+      "gbps": 89.81635449977158,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 6.102318460881902,
+      "pct_bw": 37.945869173865034,
+      "pct_roof": 37.945869173865034,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "512x512x512",
+    "m": 512,
+    "n": 512,
+    "k": 512,
+    "decode": false,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 9.474,
+    "warm_median_us": 8.206,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 87.53430441207514,
+      "ci": {
+        "ratio_median": 0.87167,
+        "lo": 0.87051,
+        "hi": 0.87336,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 87.53430441207514,
+      "decided_on": 0.87336,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "other",
+      "bar": 0.8,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 88.26261346843994,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.02299,
+        "lo": 1.02198,
+        "hi": 1.02425,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 2.2990000000000066,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 170.66666666666666,
+      "tflops": 28.33390922524805,
+      "gbps": 166.01899936668778,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 22.559383763344705,
+      "pct_bw": 70.14017954113622,
+      "pct_roof": 70.14017954113623,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "1024x1024x1024",
+    "m": 1024,
+    "n": 1024,
+    "k": 1024,
+    "decode": false,
+    "kernel_id": "3a1de4a04af5d621",
+    "impl": "mma_pipe_128x64x32_2x2_s2",
+    "config": {
+      "BK": 32,
+      "BM": 128,
+      "BN": 64,
+      "STAGES": 2,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 126,
+    "smem_bytes": 24576,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 36.96,
+    "warm_median_us": 33.264,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 98.82034632034632,
+      "ci": {
+        "ratio_median": 0.98322,
+        "lo": 0.97987,
+        "hi": 0.98495,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_128x64x32_2x2_s2"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 98.82034632034632,
+      "decided_on": 0.98495,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "large",
+      "bar": 0.9,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 98.7608225108225,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_128x64x32_2x2_s2"
+      ],
+      "contender": "mma_pipe_64x128x32_2x4_s2",
+      "ci": {
+        "ratio_median": 1.02423,
+        "lo": 1.02235,
+        "hi": 1.02629,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 2.4229999999999974,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 341.3333333333333,
+      "tflops": 58.10291255411256,
+      "gbps": 170.22337662337662,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 46.26138566535232,
+      "pct_bw": 71.91645681522992,
+      "pct_roof": 71.91645681522994,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "2048x2048x2048",
+    "m": 2048,
+    "n": 2048,
+    "k": 2048,
+    "decode": false,
+    "kernel_id": "ca2b8a7de83fc9df",
+    "impl": "mma_pipe_128x128x32_2x4_s3",
+    "config": {
+      "BK": 32,
+      "BM": 128,
+      "BN": 128,
+      "STAGES": 3,
+      "WARPS_M": 2,
+      "WARPS_N": 4,
+      "smem": "xor"
+    },
+    "regs": 120,
+    "smem_bytes": 49152,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 232.848,
+    "warm_median_us": 223.587,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 83.55450766165052,
+      "ci": {
+        "ratio_median": 0.84255,
+        "lo": 0.84008,
+        "hi": 0.84491,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_128x128x32_2x4_s3"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 83.55450766165052,
+      "decided_on": 0.84491,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "large",
+      "bar": 0.9,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 88.49249295677866,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_128x128x32_2x4_s3"
+      ],
+      "contender": "mma_pipe_128x64x32_2x2_s2",
+      "ci": {
+        "ratio_median": 1.04705,
+        "lo": 1.04147,
+        "hi": 1.05812,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 4.705000000000004,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 682.6666666666666,
+      "tflops": 73.78147625919054,
+      "gbps": 108.07833436404866,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 58.744616717907704,
+      "pct_bw": 45.66124242236821,
+      "pct_roof": 58.744616717907704,
+      "bound": "compute"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "4096x4096x4096",
+    "m": 4096,
+    "n": 4096,
+    "k": 4096,
+    "decode": false,
+    "kernel_id": "3e979aba0d764796",
+    "impl": "mma_pipe_256x128x32_4x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 256,
+      "BN": 128,
+      "STAGES": 4,
+      "WARPS_M": 4,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 206,
+    "smem_bytes": 98304,
+    "local_bytes": 0,
+    "run_id": "9fd0eab14f18",
+    "git_sha": "9157a34",
+    "protocol_version": 2,
+    "median_us": 2020.896,
+    "warm_median_us": 1955.104,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 70.18352255633144,
+      "ci": {
+        "ratio_median": 0.70578,
+        "lo": 0.70148,
+        "hi": 0.70828,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_256x128x32_4x2_s4"
+    },
+    "dispatch": {
+      "target": "cublaslt",
+      "pct_of_cublaslt_best": null,
+      "decided_on": 0.70828,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "large",
+      "bar": 0.9,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": true,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 74.01944484030845,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_256x128x32_4x2_s4"
+      ],
+      "contender": "mma_pipe_128x128x32_2x4_s3",
+      "ci": {
+        "ratio_median": 1.00999,
+        "lo": 1.00673,
+        "hi": 1.01329,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 0.9989999999999943,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 1365.3333333333333,
+      "tflops": 68.00891954459804,
+      "gbps": 49.81122036957864,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 54.14852229320608,
+      "pct_bw": 21.04438620406709,
+      "pct_roof": 54.14852229320608,
+      "bound": "compute"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "1x896x896",
+    "m": 1,
+    "n": 896,
+    "k": 896,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 11.151,
+    "warm_median_us": 9.685,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 84.0283382656264,
+      "ci": {
+        "ratio_median": 0.86506,
+        "lo": 0.86347,
+        "hi": 0.86636,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 84.0283382656264,
+      "decided_on": 0.86636,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 84.01040265447045,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.15889,
+        "lo": 1.15699,
+        "hi": 1.16081,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 15.888999999999998,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 0.9977728285077951,
+      "tflops": 0.1439899560577527,
+      "gbps": 144.3113622096673,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 0.11464442308156461,
+      "pct_bw": 55.969129118203576,
+      "pct_roof": 55.9691291182036,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "1x4864x896",
+    "m": 1,
+    "n": 4864,
+    "k": 896,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 35.658,
+    "warm_median_us": 12.702,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 99.04930169947839,
+      "ci": {
+        "ratio_median": 0.98936,
+        "lo": 0.98824,
+        "hi": 0.99108,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 99.04930169947839,
+      "decided_on": 0.99108,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 100.06450165460765,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x128x32_2x4_s4",
+      "ci": {
+        "ratio_median": 1.01021,
+        "lo": 1.00784,
+        "hi": 1.01234,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 1.0210000000000052,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 0.9986800809550348,
+      "tflops": 0.24444130349430704,
+      "gbps": 244.76437265129846,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 0.19462352085981913,
+      "pct_bw": 94.92841427519225,
+      "pct_roof": 94.92841427519225,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "1x896x4864",
+    "m": 1,
+    "n": 896,
+    "k": 4864,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 50.157,
+    "warm_median_us": 47.395,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 74.94666746416254,
+      "ci": {
+        "ratio_median": 0.74953,
+        "lo": 0.74889,
+        "hi": 0.75043,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "cublaslt",
+      "pct_of_cublaslt_best": null,
+      "decided_on": 0.75043,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": true,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 75.9116374583807,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.18237,
+        "lo": 1.18076,
+        "hi": 1.18367,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 18.23699999999999,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 0.9986800809550348,
+      "tflops": 0.17378009051578044,
+      "gbps": 174.00976932432167,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 0.13836324953285545,
+      "pct_bw": 67.48723799718496,
+      "pct_roof": 67.48723799718495,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "16x896x896",
+    "m": 16,
+    "n": 896,
+    "k": 896,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 10.924,
+    "warm_median_us": 9.707,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 96.21017942145734,
+      "ci": {
+        "ratio_median": 0.96349,
+        "lo": 0.96267,
+        "hi": 0.96432,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 96.21017942145734,
+      "decided_on": 0.96432,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 96.21017942145734,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.15364,
+        "lo": 1.1517,
+        "hi": 1.15463,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 15.364,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 15.448275862068966,
+      "tflops": 2.3517129256682536,
+      "gbps": 152.23141706334678,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 1.8724276261919106,
+      "pct_bw": 59.040810834330756,
+      "pct_roof": 59.040810834330756,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "16x4864x896",
+    "m": 16,
+    "n": 4864,
+    "k": 896,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 36.508,
+    "warm_median_us": 12.734,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 99.44395748876957,
+      "ci": {
+        "ratio_median": 0.99124,
+        "lo": 0.98953,
+        "hi": 0.99211,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 99.44395748876957,
+      "decided_on": 0.99211,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 113.22723786567327,
+    "tie": {
+      "method": "paired",
+      "tied": true,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4",
+        "mma_pipe_64x128x32_2x4_s4"
+      ],
+      "contender": "mma_pipe_64x128x32_2x4_s4",
+      "ci": {
+        "ratio_median": 1.00007,
+        "lo": 0.99727,
+        "hi": 1.00114,
+        "pairs": 30,
+        "contains_one": true
+      },
+      "runner_up_gap_pct": 0.0070000000000014495,
+      "pick_reason": "tie-break: neighbors (1 of 2 neighboring shapes)"
+    },
+    "roof": {
+      "ai": 15.668660837551771,
+      "tflops": 3.820001314780322,
+      "gbps": 243.79883861071542,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 3.0414749673800503,
+      "pct_bw": 94.55394549769642,
+      "pct_roof": 94.55394549769642,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "16x896x4864",
+    "m": 16,
+    "n": 896,
+    "k": 4864,
+    "decode": true,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 50.91,
+    "warm_median_us": 48.1,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 72.71459438224318,
+      "ci": {
+        "ratio_median": 0.72909,
+        "lo": 0.72776,
+        "hi": 0.7296,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "cublaslt",
+      "pct_of_cublaslt_best": null,
+      "decided_on": 0.7296,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "decode",
+      "bar": 1.0,
+      "floor": 0.8,
+      "verdict": "fail",
+      "margin": "clear",
+      "below_floor": true,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 73.01512472991554,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.14116,
+        "lo": 1.13885,
+        "hi": 1.14298,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 14.115999999999996,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 15.668660837551771,
+      "tflops": 2.7393558829306626,
+      "gbps": 174.83024945983112,
+      "roof": "read",
+      "roof_gbps": 257.841,
+      "pct_peak": 2.181067925930287,
+      "pct_bw": 67.805449660772,
+      "pct_roof": 67.80544966077198,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "512x896x896",
+    "m": 512,
+    "n": 896,
+    "k": 896,
+    "decode": false,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "9fd0eab14f18",
+    "git_sha": "9157a34",
+    "protocol_version": 2,
+    "median_us": 20.378,
+    "warm_median_us": 18.181,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 92.17783884581411,
+      "ci": {
+        "ratio_median": 0.92568,
+        "lo": 0.92242,
+        "hi": 0.92692,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 92.17783884581411,
+      "decided_on": 0.92692,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "other",
+      "bar": 0.8,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 92.40847973304544,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": 1.00675,
+        "lo": 1.00238,
+        "hi": 1.00845,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 0.6750000000000034,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 238.93333333333334,
+      "tflops": 40.34172067916381,
+      "gbps": 168.84090686033957,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 32.119971559164476,
+      "pct_bw": 71.3323870535791,
+      "pct_roof": 71.33238705357911,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "512x4864x896",
+    "m": 512,
+    "n": 4864,
+    "k": 896,
+    "decode": false,
+    "kernel_id": "3a1de4a04af5d621",
+    "impl": "mma_pipe_128x64x32_2x2_s2",
+    "config": {
+      "BK": 32,
+      "BM": 128,
+      "BN": 64,
+      "STAGES": 2,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 126,
+    "smem_bytes": 24576,
+    "local_bytes": 0,
+    "run_id": "41cc8ffb03fd",
+    "git_sha": "7fe7a84",
+    "protocol_version": 2,
+    "median_us": 97.089,
+    "warm_median_us": 74.655,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 79.3488448742906,
+      "ci": {
+        "ratio_median": 0.79823,
+        "lo": 0.79244,
+        "hi": 0.80019,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_128x64x32_2x2_s2"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 79.3488448742906,
+      "decided_on": 0.80019,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "other",
+      "bar": 0.8,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "within CI",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 84.50802871592045,
+    "tie": {
+      "method": "paired",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_128x64x32_2x2_s2"
+      ],
+      "contender": "mma_pipe_128x128x32_2x4_s3",
+      "ci": {
+        "ratio_median": 1.0203,
+        "lo": 1.0181,
+        "hi": 1.02271,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": 2.0299999999999985,
+      "pick_reason": "fastest"
+    },
+    "roof": {
+      "ai": 305.36322869955154,
+      "tflops": 45.965448773805484,
+      "gbps": 150.52712459701925,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 36.597569029360166,
+      "pct_bw": 63.59512818003652,
+      "pct_roof": 63.59512818003653,
+      "bound": "memory"
+    }
+  },
+  {
+    "sm_arch": 121,
+    "op": "gemm",
+    "dtype": "f16f32f16",
+    "shape_bucket": "512x896x4864",
+    "m": 512,
+    "n": 896,
+    "k": 4864,
+    "decode": false,
+    "kernel_id": "be0c6688d651513b",
+    "impl": "mma_pipe_64x64x32_2x2_s4",
+    "config": {
+      "BK": 32,
+      "BM": 64,
+      "BN": 64,
+      "STAGES": 4,
+      "WARPS_M": 2,
+      "WARPS_N": 2,
+      "smem": "xor"
+    },
+    "regs": 74,
+    "smem_bytes": 32768,
+    "local_bytes": 0,
+    "run_id": "9fd0eab14f18",
+    "git_sha": "9157a34",
+    "protocol_version": 2,
+    "median_us": 89.341,
+    "warm_median_us": 88.469,
+    "vs_cublaslt_best": {
+      "pct_of_cublaslt_best": 80.44235009682005,
+      "ci": {
+        "ratio_median": 0.85475,
+        "lo": 0.8531,
+        "hi": 0.8576,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "verdict": "slower",
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+    },
+    "dispatch": {
+      "target": "aegis",
+      "pct_of_cublaslt_best": 80.44235009682005,
+      "decided_on": 0.8576,
+      "basis": "paired",
+      "floor": 0.8,
+      "provisional": true
+    },
+    "bars": {
+      "class": "other",
+      "bar": 0.8,
+      "floor": 0.8,
+      "verdict": "pass",
+      "margin": "clear",
+      "below_floor": false,
+      "basis": "paired",
+      "provisional": true
+    },
+    "pct_of_cublas": 98.23373367211025,
+    "tie": {
+      "method": "paired_swap",
+      "tied": false,
+      "tie_set": [
+        "mma_pipe_64x64x32_2x2_s4"
+      ],
+      "contender": "mma_pipe_64x64x32_2x2_s3",
+      "ci": {
+        "ratio_median": null,
+        "lo": 1.001662760181902,
+        "hi": 1.008135654733701,
+        "pairs": 30,
+        "contains_one": false
+      },
+      "runner_up_gap_pct": null,
+      "pick_reason": "fastest in the paired test (lower unpaired median: the runner-up)"
+    },
+    "roof": {
+      "ai": 305.36322869955154,
+      "tflops": 49.95175178249629,
+      "gbps": 163.5814239822702,
+      "roof": "copy",
+      "roof_gbps": 236.696,
+      "pct_peak": 39.77145296662841,
+      "pct_bw": 69.1103457524716,
+      "pct_roof": 69.11034575247163,
+      "bound": "memory"
+    }
+  }
+]

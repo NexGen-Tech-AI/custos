@@ -246,3 +246,45 @@ export interface Dispatch {
   floor: number;
   provisional: boolean;
 }
+
+/** The kernel against the production bars (provisional). */
+export interface Bars {
+  class: 'decode' | 'large' | 'other';
+  bar: number;
+  floor: number;
+  verdict: 'pass' | 'fail' | null;
+  margin: 'clear' | 'within CI' | null;
+  below_floor: boolean | null;
+  basis: 'paired' | 'unpaired' | 'none';
+  provisional: boolean;
+}
+
+/** One winner (custos-perf winners.rs). */
+export interface Winner {
+  sm_arch: number;
+  op: string;
+  dtype: string;
+  shape_bucket: string;
+  m: number;
+  n: number;
+  k: number;
+  decode: boolean;
+  kernel_id: string;
+  impl: string;
+  config: Record<string, unknown> | string;
+  regs: number | null;
+  smem_bytes: number | null;
+  local_bytes: number | null;
+  run_id: string;
+  git_sha: string | null;
+  protocol_version: number;
+  median_us: number;
+  warm_median_us: number | null;
+  /** Kernel %: pct_of_cublaslt_best; the paired CI vs cublaslt_best. */
+  vs_cublaslt_best: VsBaseline;
+  dispatch: Dispatch;
+  bars: Bars;
+  pct_of_cublas: number | null;
+  tie: Tie;
+  roof: RoofMetrics | null;
+}
