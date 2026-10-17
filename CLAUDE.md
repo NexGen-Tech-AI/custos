@@ -29,6 +29,13 @@ refresh it with `cargo run --manifest-path custos-perf/Cargo.toml --example dump
 -- devices | arch_model 121 | roofline 121` (no `AEGIS_CORE`: it reads
 `tests/fixtures/`) into `src/tests/perf/fixtures/`.
 
+AEGIS is a default feature: `src-tauri` feature `aegis` (custos-perf, the perf
+commands, `perf_status`) and, on the frontend, the `@aegis` alias
+(`src/aegis/enabled.tsx`, the AEGIS sections and the DB status banner; with
+`VITE_AEGIS=0`, `src/aegis/disabled.tsx`). `--no-default-features` plus
+`VITE_AEGIS=0` (`pnpm tauri:dev:monitor`) is the original system monitor. The
+default app lands on the first AEGIS section (Device), else System Monitoring.
+
 Legacy code is out of the default build (it is kept, not maintained):
 - `src-tauri` feature `legacy-security`: the security modules (`malware`,
   `threat_detection`, `vulnerability`, `network`, `sensors`, `ai_analysis`,
@@ -41,7 +48,6 @@ vulnerabilities, AI analysis, reports, scan overlay) load through the `@legacy`
 alias: an empty registry (`src/legacy/disabled.tsx`) unless
 `VITE_LEGACY_SECURITY=1` (`src/legacy/security.tsx`). `tsconfig.json`
 excludes them; `pnpm typecheck:legacy` checks them (not expected to pass).
-The default app lands on the Device view.
 Default builds compile with zero errors and their tests never hang; a test
 needing the network or root is `#[ignore = "<reason>"]` or feature-gated.
 

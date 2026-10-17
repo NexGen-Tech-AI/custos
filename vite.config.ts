@@ -11,6 +11,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // AEGIS Custos perf views unless VITE_AEGIS=0 (build src-tauri with
+      // --no-default-features to match): then the original system monitor.
+      '@aegis': path.resolve(
+        __dirname,
+        process.env.VITE_AEGIS === '0' ? './src/aegis/disabled.tsx' : './src/aegis/enabled.tsx',
+      ),
       // Legacy security UI only with VITE_LEGACY_SECURITY=1 (and the src-tauri
       // feature "legacy-security"); otherwise an empty registry.
       '@legacy': path.resolve(

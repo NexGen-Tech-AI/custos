@@ -88,3 +88,11 @@ pub async fn compare(
     let filter = filter.unwrap_or_default();
     run(&state, move |_, c| custos_perf::compare(c, &sha_a, &sha_b, &filter)).await
 }
+
+/// Startup check: can this build read the perf DB? Never fails: an
+/// incompatible or missing DB is a state the UI shows.
+#[tauri::command]
+pub async fn perf_status(state: State<'_, PerfState>) -> Result<custos_perf::DbStatus, String> {
+    let src = state.0.clone();
+    tauri::async_runtime::spawn_blocking(move || custos_perf::db_status(&src)).await.map_err(|e| e.to_string())
+}

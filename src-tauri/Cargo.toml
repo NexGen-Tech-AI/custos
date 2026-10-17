@@ -54,15 +54,19 @@ log = "0.4"  # Logging
 # YARA alternative - using regex-based pattern matching (no system deps required)
 # yara = "0.29"  # Requires libyara-dev system package
 
-# AEGIS Custos: read-only perf DB views over AEGIS Core (aegis-perf)
-custos-perf = { path = "../custos-perf" }
+# AEGIS Custos: read-only perf DB views over AEGIS Core (aegis-perf); feature "aegis".
+# Optional, but Cargo still resolves its git dependency (aegis-core) without it.
+custos-perf = { path = "../custos-perf", optional = true }
 anyhow = "1.0"  # EbpfMonitor (eBPF and stub) error type
 
 [dev-dependencies]
 tempfile = "3"
 
 [features]
-default = []
+default = ["aegis"]
+# AEGIS Custos: the perf DB views (Device, Roofline, Winners, Kernel). Without it
+# (--no-default-features) the app is the original system monitor.
+aegis = ["dep:custos-perf"]
 # The pre-Custos security platform (threat detection, malware, network,
 # vulnerability, AI analysis, reports, sudo, keychain): out of the default build.
 legacy-security = []

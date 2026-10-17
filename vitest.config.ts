@@ -22,6 +22,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@aegis': path.resolve(__dirname, './src/aegis/enabled.tsx'),
       '@legacy': path.resolve(__dirname, './src/legacy/disabled.tsx'),
     },
   },

@@ -89,15 +89,18 @@ impl Sources {
     }
 }
 
+pub mod core_fallbacks;
 pub mod device;
 pub mod kernel;
 pub mod measure;
 pub mod roof;
 pub mod roofline;
+pub mod status;
 pub mod winners;
 
 pub use device::{arch_model, devices, measured_archs};
 pub use kernel::kernel_detail;
 pub use measure::{compare, measurements, Filter};
 pub use roofline::roofline;
+pub use status::{db_status, DbStatus};
 pub use winners::winners;

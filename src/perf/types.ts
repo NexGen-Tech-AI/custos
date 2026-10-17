@@ -7,6 +7,16 @@ export interface PerfSources {
   measured_archs: number[];
 }
 
+/** perf_status: can this build read the perf DB? (custos-perf status.rs) */
+export interface DbStatus {
+  state: 'ok' | 'missing' | 'incompatible' | 'unreadable';
+  db: string;
+  db_schema: number | null;
+  /** Oldest and newest schema this build reads, from aegis-perf. */
+  supported: [number, number];
+  message: string | null;
+}
+
 export interface Manifest {
   path: string;
   gpu_name: string | null;

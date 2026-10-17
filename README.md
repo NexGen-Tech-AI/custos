@@ -22,6 +22,78 @@ Collects comprehensive CPU, memory, GPU, disk, network, and process metrics usin
 
 ---
 
+## AEGIS Custos (GPU performance views)
+
+The app is becoming AEGIS Custos, a GPU performance-engineering workstation
+over the AEGIS Core perf DB. The perf views (Device, Roofline, Winners,
+Kernel) read Core's data read-only through `aegis-perf`, Core's own library,
+pinned to a release tag (`custos-perf/Cargo.toml`, now `aegis-perf-v0.3.0`).
+
+### Feature flag
+
+| Build | Rust | Frontend |
+|---|---|---|
+| Custos (default) | feature `aegis` (default) | default |
+| Original system monitor | `--no-default-features` | `VITE_AEGIS=0` |
+
+```bash
+pnpm tauri:dev                 # Custos
+pnpm tauri:dev:monitor         # system monitor only: VITE_AEGIS=0 tauri dev -- --no-default-features
+```
+
+### Data sources
+
+- `AEGIS_CORE`: a Core checkout (arch files, manifests, SASS and Nsight
+  artifacts); `AEGIS_PERFDB`: the perf DB (default `$AEGIS_CORE/results/aegis_perf.db`).
+- Neither set: the committed fixtures in `tests/fixtures/` (what the tests use).
+
+At startup the app checks the DB's schema version against the range
+aegis-perf supports (perf DB schema v3 for v0.3.0) and shows "Incompatible
+perf DB: DB schema vN, Custos supports vA" instead of the views when it is
+outside it.
+
+### Building on a fresh machine
+
+- Rust (stable), Node 18+, pnpm 10 (`corepack enable`; `packageManager` in
+  `package.json`), and the Tauri 2 system packages (webkit2gtk etc.).
+- **Git access to https://github.com/Riffe007/aegis-core**, also for
+  `--no-default-features`: Cargo resolves optional git dependencies when it
+  loads the lockfile, so it fetches aegis-core even when the `aegis` feature is
+  off (checked: offline, without a git checkout of aegis-core,
+  `cargo metadata --no-default-features` fails with "failed to get `aegis-perf`").
+  The repository is public (GitHub API, 2026-10-17: `"visibility": "public"`),
+  so no credentials are needed.
+- No GPU and no CUDA: aegis-perf is pure Rust and the views read files.
+
+```bash
+pnpm install --frozen-lockfile
+cargo test --manifest-path custos-perf/Cargo.toml    # data layer, on tests/fixtures/
+cargo test --manifest-path src-tauri/Cargo.toml      # app (add --no-default-features for the monitor)
+pnpm typecheck && pnpm vitest run
+```
+
+### Local aegis-perf override (development only)
+
+To build against a local aegis-perf, for example while a Core change is in
+review, add a `[patch]` in `.cargo/config.toml` at the repo root (gitignored).
+Point it at a separate Core clone or `git worktree`, never Core's main working
+tree:
+
+```toml
+# .cargo/config.toml (not committed)
+[patch."https://github.com/Riffe007/aegis-core"]
+aegis-perf = { path = "/path/to/aegis-core-worktree/rust/aegis-perf" }
+```
+
+Cargo reads it for every command run inside the repo, and while it is active
+it rewrites the `aegis-perf` entry in `Cargo.lock` (do not commit that).
+Remove it (or rename the file) to build from the pinned tag again; tests
+and CI always use the pin.
+`cargo tree -i aegis-perf --manifest-path custos-perf/Cargo.toml` shows which
+one is in use (a path, or `?tag=aegis-perf-v0.3.0#9157a34d`).
+
+---
+
 ## 🚀 Getting Started
 
 ### ✅ Requirements

@@ -21,6 +21,7 @@ mod ollama;
 mod malware;
 #[cfg(feature = "legacy-security")]
 mod sudo_auth;
+#[cfg(feature = "aegis")]
 mod perf;
 
 use std::sync::Arc;
@@ -1829,9 +1830,11 @@ fn main() {
     // Initialize the monitoring service with high-performance capabilities
     let service = Arc::new(RwLock::new(MonitoringService::new_with_high_perf(3000))); // 3000ms update interval (3 seconds)
 
-    let builder = tauri::Builder::default()
-        .manage(service)
-        .manage(perf::PerfState::from_env());
+    let builder = tauri::Builder::default().manage(service);
+
+    // AEGIS Custos perf views (feature "aegis", on by default).
+    #[cfg(feature = "aegis")]
+    let builder = builder.manage(perf::PerfState::from_env());
 
     // Legacy security state (feature "legacy-security", off by default).
     #[cfg(feature = "legacy-security")]
@@ -1934,11 +1937,16 @@ fn main() {
             .manage(sudo_auth)
     };
 
-    // One command list; the legacy security commands join it only with the feature.
+    // One command list: the system monitor's commands, plus the AEGIS perf
+    // commands with feature "aegis" (handler! adds them, then calls
+    // all_commands!) and the legacy security commands with "legacy-security"
+    // (handler!'s arguments).
+    #[cfg(feature = "aegis")]
     macro_rules! handler {
         ($($legacy:ident),* $(,)?) => {
-            tauri::generate_handler![
+            all_commands![
                 // AEGIS Custos: read-only perf DB views (src/perf.rs)
+                perf::perf_status,
                 perf::perf_sources,
                 perf::devices,
                 perf::arch_model,
@@ -1947,6 +1955,19 @@ fn main() {
                 perf::kernel_detail,
                 perf::roofline,
                 perf::compare,
+                $($legacy,)*
+            ]
+        };
+    }
+    #[cfg(not(feature = "aegis"))]
+    macro_rules! handler {
+        ($($legacy:ident),* $(,)?) => {
+            all_commands![$($legacy,)*]
+        };
+    }
+    macro_rules! all_commands {
+        ($($extra:tt)*) => {
+            tauri::generate_handler![
                 get_system_info,
                 start_monitoring,
                 start_high_perf_monitoring,
@@ -1964,7 +1985,7 @@ fn main() {
                 list_ollama_models,
                 pull_ollama_model,
                 test_ollama_model,
-                $($legacy),*
+                $($extra)*
             ]
         };
     }

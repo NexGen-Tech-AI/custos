@@ -3,14 +3,17 @@ import { invoke } from '@tauri-apps/api/core';
 import { Sidebar } from './components/Sidebar';
 import { MonitoringSection } from './components/sections/MonitoringSection';
 import { PlaceholderSection } from './components/sections/PlaceholderSection';
-import { DeviceSection } from './components/sections/perf/DeviceSection';
-import { RooflineSection } from './components/sections/perf/RooflineSection';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SystemInfo, SystemMetrics } from './types';
 import { Settings } from 'lucide-react';
+// AEGIS Custos perf views: an empty registry when built with VITE_AEGIS=0.
+import aegis from '@aegis';
 // Legacy security UI: an empty registry unless built with VITE_LEGACY_SECURITY=1.
 import legacy from '@legacy';
+
+const extraSections = [...aegis.sections, ...legacy.sections];
+const aegisIds = new Set(aegis.sections.map((s) => s.id));
 
 import './App.css';
 
@@ -22,7 +25,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeSection, setActiveSection] = useState('perf-device');
+  const [activeSection, setActiveSection] = useState(aegis.sections[0]?.id ?? 'monitoring');
 
   // Use scan context instead of local state
 
@@ -111,14 +114,10 @@ function App() {
     switch (activeSection) {
       case 'monitoring':
         return <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
-      case 'perf-device':
-        return <DeviceSection />;
-      case 'perf-roofline':
-        return <RooflineSection />;
       case 'settings':
         return <PlaceholderSection title="Settings" description="Configure your security preferences" icon={Settings} comingSoon={false} />;
       default:
-        return legacy.sections.find((s) => s.id === activeSection)?.render() ?? <DeviceSection />;
+        return extraSections.find((s) => s.id === activeSection)?.render() ?? <MonitoringSection systemInfo={systemInfo} metrics={metrics} />;
     }
   };
 
@@ -142,7 +141,7 @@ function App() {
               onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
-              extraItems={legacy.sections}
+              extraItems={extraSections}
             />
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -184,6 +183,7 @@ function App() {
                   </div>
                 )}
 
+                {aegisIds.has(activeSection) && <aegis.Banner />}
                 {renderSection()}
               </main>
             </div>

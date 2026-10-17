@@ -5,6 +5,7 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
+      "@aegis": ["./src/aegis/enabled.tsx"],
       "@legacy": ["./src/legacy/security.tsx"]
     }
   },

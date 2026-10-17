@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Activity,
-  Settings,
-  ChevronLeft,
-  Cpu,
-  LineChart,
-  ChevronRight
-} from 'lucide-react';
+import { Activity, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 import type { ExtraSection } from '../legacy/types';
 
@@ -15,14 +8,13 @@ interface SidebarProps {
   onToggle: () => void;
   activeSection: string;
   onSectionChange: (section: string) => void;
-  /** Sections registered at build time (the legacy security UI), before Settings. */
+  /** Sections registered at build time (the AEGIS perf views, the legacy
+   *  security UI), before Settings. */
   extraItems?: Pick<ExtraSection, 'id' | 'label' | 'icon'>[];
 }
 
 const menuItems = [
   { id: 'monitoring', label: 'System Monitoring', icon: Activity },
-  { id: 'perf-device', label: 'Device (AEGIS)', icon: Cpu },
-  { id: 'perf-roofline', label: 'Roofline (AEGIS)', icon: LineChart },
 ];
 const settingsItem = { id: 'settings', label: 'Settings', icon: Settings };
 
