@@ -1,6 +1,6 @@
 // Formatting for perf views. A null value renders as "not measured", never a
 // placeholder number (project rules 9 and 16).
-import type { Ci, VsBaseline, Tie } from './types';
+import type { Ci, Dispatch, VsBaseline, Tie } from './types';
 
 export const NOT_MEASURED = 'not measured';
 
@@ -66,4 +66,26 @@ export function tieText(t: Tie | null): string {
 export function pct(v: number | null | undefined, digits = 1): string | null {
   const s = num(v, digits);
   return s === null ? null : `${s}%`;
+}
+
+/** "dispatch: cuBLASLt (provisional)" / "dispatch: AEGIS kernel (provisional)". */
+export function dispatchTarget(d: Dispatch | null): string {
+  if (!d) return NOT_MEASURED;
+  const t = d.target === 'cublaslt' ? 'cuBLASLt' : 'AEGIS kernel';
+  return `dispatch: ${t}${d.provisional ? ' (provisional)' : ''}`;
+}
+
+/** Why: "paired CI upper bound 0.708 < 80% floor". */
+export function dispatchWhy(d: Dispatch | null): string | null {
+  if (!d || d.decided_on === null) return null;
+  const rel = d.target === 'cublaslt' ? '<' : '≥';
+  const what = d.basis === 'paired' ? 'paired CI upper bound' : 'unpaired median ratio';
+  return `${what} ${d.decided_on.toFixed(3)} ${rel} ${(d.floor * 100).toFixed(0)}% floor`;
+}
+
+/** Dispatch %: what is dispatched, never AEGIS's kernel % for a cuBLASLt route. */
+export function dispatchPct(d: Dispatch | null): string {
+  if (!d) return NOT_MEASURED;
+  if (d.target === 'cublaslt') return 'cuBLASLt path: not measured';
+  return d.pct_of_cublaslt_best === null ? NOT_MEASURED : `${d.pct_of_cublaslt_best.toFixed(1)}%`;
 }

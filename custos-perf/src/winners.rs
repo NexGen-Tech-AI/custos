@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::roof::{self, RoofMetrics};
-use crate::Sources;
+use crate::{core_fallbacks, Sources};
 
 /// A paired ratio and its 95% bootstrap CI.
 #[derive(Clone, Debug, Serialize)]
@@ -55,6 +55,39 @@ pub struct Tie {
     pub pick_reason: Option<String>,
 }
 
+/// Where `aegis::matmul` sends the shape, and what that path achieves
+/// (contract rule 10: kernel % and dispatch % are separate numbers).
+/// Provisional: aegis-perf v0.3.0 has no dispatch; the rule and its floor
+/// come from core_fallbacks (Core's d80d03f rule, restated).
+#[derive(Clone, Debug, Serialize)]
+pub struct Dispatch {
+    /// "aegis" (the tuned kernel) or "cublaslt" (the dispatch floor).
+    pub target: &'static str,
+    /// % of cublaslt_best of what is dispatched. "aegis": the kernel's own
+    /// %. "cublaslt": None. aegis::matmul's cuBLASLt path (the heuristic's
+    /// first algorithm) is not what cublaslt_best times (the fastest of up to
+    /// 8), and no row measures it.
+    pub pct_of_cublaslt_best: Option<f64>,
+    /// The ratio (cublaslt_best / kernel time) the decision used, and its
+    /// basis: "paired" (the CI's upper bound), "unpaired" (medians), "none".
+    pub decided_on: Option<f64>,
+    pub basis: &'static str,
+    pub floor: f64,
+    pub provisional: bool,
+}
+
+fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dispatch {
+    let (to_lt, decided_on, basis) = core_fallbacks::dispatch_to_cublaslt(lt_ci, pct_of_cublaslt_best);
+    Dispatch {
+        target: if to_lt { "cublaslt" } else { "aegis" },
+        pct_of_cublaslt_best: if to_lt { None } else { pct_of_cublaslt_best },
+        decided_on,
+        basis,
+        floor: core_fallbacks::DISPATCH_FLOOR,
+        provisional: true,
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Winner {
     pub sm_arch: i64,
@@ -78,7 +111,10 @@ pub struct Winner {
     pub protocol_version: i64,
     pub median_us: f64,
     pub warm_median_us: Option<f64>,
+    /// The kernel against cublaslt_best: kernel % (pct_of_cublaslt_best,
+    /// unpaired medians, as Core's report) and the paired CI.
     pub vs_cublaslt_best: VsBaseline,
+    pub dispatch: Dispatch,
     /// % of default cuBLAS: context only, never the headline (rule 5).
     pub pct_of_cublas: Option<f64>,
     pub tie: Tie,
@@ -124,6 +160,7 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
         regs: measured(w.kernel.regs),
         smem_bytes: measured(w.kernel.smem_bytes),
         local_bytes: measured(w.kernel.local_bytes),
+        dispatch: dispatch(w.lt_ratio_ci, w.pct_of_cublaslt_best),
         vs_cublaslt_best: VsBaseline {
             pct_of_cublaslt_best: w.pct_of_cublaslt_best,
             ci: lt_ci,

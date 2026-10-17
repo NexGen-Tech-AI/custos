@@ -222,6 +222,7 @@ export interface RooflinePoint {
     kernel_id: string | null;
     config: Record<string, unknown> | null;
     vs_cublaslt_best: VsBaseline | null;
+    dispatch: Dispatch | null;
     tie: Tie | null;
   };
 }
@@ -230,4 +231,18 @@ export interface Roofline {
   sm: number;
   roofs: ArchRoofs;
   points: RooflinePoint[];
+}
+
+/** Where aegis::matmul sends a shape (contract rule 10). Provisional:
+ *  aegis-perf v0.3.0 has no dispatch; custos-perf applies Core's 80% floor. */
+export interface Dispatch {
+  target: 'aegis' | 'cublaslt';
+  /** % of cublaslt_best of what is dispatched: the kernel's own % for
+   *  "aegis", null ("not measured") for "cublaslt". */
+  pct_of_cublaslt_best: number | null;
+  /** The ratio the decision used (cublaslt_best / kernel time). */
+  decided_on: number | null;
+  basis: 'paired' | 'unpaired' | 'none';
+  floor: number;
+  provisional: boolean;
 }

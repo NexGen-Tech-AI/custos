@@ -2,7 +2,9 @@
 // cublaslt_best), against the measured roofs of the arch file. Decode shapes
 // (M <= 16) are held to the read roof, the rest to the copy roof (rule 4);
 // every point and table row names its roof. Roof metrics are computed by
-// custos-perf on each call, never stored (rule 3).
+// custos-perf on each call, never stored (rule 3). The hover and the table
+// give the config, % of cublaslt_best with its paired CI, and the dispatch
+// target (provisional: Core's 80% floor, not in aegis-perf v0.3.0).
 import { useEffect, useMemo, useState } from 'react';
 import {
   CartesianGrid,
@@ -16,7 +18,7 @@ import {
 } from 'recharts';
 import { perfApi } from '../../../perf/api';
 import type { ArchRoofs, Roofline, RooflinePoint } from '../../../perf/types';
-import { NotMeasured, num, pct, tieText, vsBaseline } from '../../../perf/format';
+import { NotMeasured, dispatchTarget, dispatchWhy, num, pct, tieText, vsBaseline } from '../../../perf/format';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
@@ -30,7 +32,7 @@ const SERIES = {
   dark: { winner: '#3987e5', baseline: '#d95926', roof: '#d1d5db', roofRead: '#9ca3af', grid: '#374151', ink: '#9ca3af' },
 };
 
-type Datum =
+export type Datum =
   | { kind: 'point'; x: number; y: number; p: RooflinePoint }
   | { kind: 'roof'; x: number; y: number };
 
@@ -47,7 +49,7 @@ function roofLine(r: ArchRoofs, bw: number, x0: number, x1: number): Datum[] {
   return xs.map((x) => ({ kind: 'roof', x, y: Math.min((bw * x) / 1e3, r.peak_tflops) }));
 }
 
-function Hover({ active, payload }: { active?: boolean; payload?: { payload: Datum }[] }) {
+export function Hover({ active, payload }: { active?: boolean; payload?: { payload: Datum }[] }) {
   const d = payload?.[0]?.payload;
   if (!active || !d || d.kind !== 'point') return null;
   const p = d.p;
@@ -83,6 +85,10 @@ function Hover({ active, payload }: { active?: boolean; payload?: { payload: Dat
         ) : (
           <div>Baseline for this shape (cuBLASLt heuristic, fastest passing of top 8).</div>
         )}
+        <div className="mt-1">
+          {dispatchTarget(p.hover.dispatch)}
+          {dispatchWhy(p.hover.dispatch) && <span className="text-gray-500 dark:text-gray-400"> · {dispatchWhy(p.hover.dispatch)}</span>}
+        </div>
       </div>
     </div>
   );
@@ -196,6 +202,7 @@ function PointTable({ r }: { r: Roofline }) {
             <th className={th}>% roof</th>
             <th className={th}>vs cublaslt_best (paired 95% CI)</th>
             <th className={th}>Tie</th>
+            <th className={th}>Dispatch</th>
           </tr>
         </thead>
         <tbody>
@@ -217,6 +224,10 @@ function PointTable({ r }: { r: Roofline }) {
                 <td className={td}>{pct(b?.roof.pct_roof) ?? <NotMeasured />}</td>
                 <td className="py-2 pr-4 align-top text-xs min-w-[14rem]">{vsBaseline(w?.hover.vs_cublaslt_best ?? null)}</td>
                 <td className="py-2 pr-4 align-top text-xs min-w-[14rem] break-all">{tieText(w?.hover.tie ?? null)}</td>
+                <td className="py-2 pr-4 align-top text-xs min-w-[12rem]">
+                  {dispatchTarget(any.hover.dispatch)}
+                  {dispatchWhy(any.hover.dispatch) && <div className="text-gray-500 dark:text-gray-400">{dispatchWhy(any.hover.dispatch)}</div>}
+                </td>
               </tr>
             );
           })}

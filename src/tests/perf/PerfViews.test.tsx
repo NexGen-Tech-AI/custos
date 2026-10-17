@@ -7,7 +7,8 @@ import archModel from './fixtures/arch_model-121.json';
 import roofline from './fixtures/roofline-121.json';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { DeviceSection } from '../../components/sections/perf/DeviceSection';
-import { RooflineSection } from '../../components/sections/perf/RooflineSection';
+import { Hover, RooflineSection } from '../../components/sections/perf/RooflineSection';
+import goldenRoofline from '../../../tests/fixtures/golden/roofline-121.txt?raw';
 import { ci, cudaVersion, num, tieText, vsBaseline } from '../../perf/format';
 import type { Roofline } from '../../perf/types';
 
@@ -124,5 +125,49 @@ describe('RooflineSection', () => {
     );
     expect(await screen.findByText('no arch file; roofs not measured')).toBeInTheDocument();
     responses.roofline = roofline;
+  });
+});
+
+describe('Roofline data and hover', () => {
+  it('matches the golden aegis-perf roofline listing point for point', () => {
+    const r = roofline as unknown as Roofline;
+    const got = r.points
+      .map((p) => [p.label, p.roof.ai.toFixed(1), p.roof.tflops.toFixed(2), p.roof.pct_roof.toFixed(1), p.roof.roof].join(' '))
+      .sort();
+    const want = goldenRoofline
+      .split('\n')
+      .filter((l) => l.includes(' AI '))
+      .map((l) => {
+        const [label, rest] = l.split(' AI ');
+        const t = rest.trim().split(/\s+/);
+        return [label.trim(), t[0], t[1], t[3].replace('%', ''), t[6].slice(1)].join(' ');
+      })
+      .sort();
+    expect(want).toHaveLength(28);
+    expect(got).toEqual(want);
+    expect(want.some((w) => w.startsWith('1x4864x896 ') && w.endsWith(' read'))).toBe(true);
+  });
+
+  it('hover: config, % of cublaslt_best with the paired CI, dispatch target', () => {
+    const r = roofline as unknown as Roofline;
+    const p = r.points.find((x) => x.label === '4096x4096x4096 mma_pipe_256x128x32_4x2_s4')!;
+    render(<Hover active payload={[{ payload: { kind: 'point', x: p.roof.ai, y: p.roof.tflops, p } }]} />);
+    expect(screen.getByText(/70\.2% of cublaslt_best, ratio CI \[0\.701, 0\.708\]: slower/)).toBeInTheDocument();
+    expect(screen.getByText(/BM=256/)).toBeInTheDocument();
+    expect(screen.getByText(/dispatch: cuBLASLt \(provisional\)/)).toBeInTheDocument();
+    expect(screen.getByText(/paired CI upper bound 0\.708 < 80% floor/)).toBeInTheDocument();
+  });
+
+  it('table: the dispatch target per shape', async () => {
+    render(
+      <ThemeProvider>
+        <RooflineSection />
+      </ThemeProvider>,
+    );
+    const table = (await screen.findByText('Points')).parentElement!.querySelector('table')!;
+    const row = within(table).getAllByRole('row').find((x) => x.textContent!.startsWith('4096x4096x4096'))!;
+    expect(row).toHaveTextContent('dispatch: cuBLASLt (provisional)');
+    const dec = within(table).getAllByRole('row').find((x) => x.textContent!.startsWith('1x4864x896'))!;
+    expect(dec).toHaveTextContent('dispatch: AEGIS kernel (provisional)');
   });
 });

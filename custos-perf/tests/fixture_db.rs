@@ -266,3 +266,56 @@ fn compare_flags_build_over_build() {
     assert_eq!(x.excluded_a, 9);
     assert!(x.not_comparable.iter().all(|n| n.only_in == "b"));
 }
+
+/// The provisional dispatch (core_fallbacks: Core's d80d03f rule) gives what
+/// Core main's own winners header records for the same winners
+/// (tests/fixtures/winners/sm_121.main-eccf61f.h, generated from this DB's
+/// tune): `aegis::detail::Dispatch::Aegis` or `::Cublaslt` per shape.
+#[test]
+fn provisional_dispatch_matches_core_mains_header() {
+    let s = src();
+    let con = s.open().unwrap();
+    let w = custos_perf::winners(&s, &con, 121).unwrap();
+    let header = include_str!("../../tests/fixtures/winners/sm_121.main-eccf61f.h");
+    let mut n = 0;
+    for line in header.lines().map(str::trim).filter(|l| l.starts_with('{')) {
+        let body = line.trim_start_matches('{').split('}').next().unwrap();
+        let f: Vec<&str> = body.split(',').map(str::trim).collect();
+        let bucket = format!("{}x{}x{}", f[0], f[1], f[2]);
+        let target = match f[4] {
+            "aegis::detail::Dispatch::Aegis" => "aegis",
+            "aegis::detail::Dispatch::Cublaslt" => "cublaslt",
+            other => panic!("{other}"),
+        };
+        let got = w.iter().find(|x| x.shape_bucket == bucket).unwrap_or_else(|| panic!("{bucket}"));
+        assert_eq!(got.impl_, f[3].trim_matches('"'), "{bucket}");
+        assert_eq!(got.dispatch.target, target, "{bucket}");
+        assert!(got.dispatch.provisional);
+        n += 1;
+    }
+    assert_eq!(n, 14);
+    let routed: Vec<&str> = w.iter().filter(|x| x.dispatch.target == "cublaslt").map(|x| x.shape_bucket.as_str()).collect();
+    assert_eq!(routed, ["4096x4096x4096", "1x896x4864", "16x896x4864"]);
+}
+
+/// Roofline hover: the shape's config, % of cublaslt_best with the paired CI,
+/// and the dispatch target, on both points of the shape.
+#[test]
+fn roofline_hover_carries_dispatch() {
+    let s = src();
+    let con = s.open().unwrap();
+    let r = custos_perf::roofline(&s, &con, 121).unwrap().unwrap();
+    let big: Vec<_> = r.points.iter().filter(|p| p.shape_bucket == "4096x4096x4096").collect();
+    assert_eq!(big.len(), 2);
+    for p in &big {
+        let d = p.hover.dispatch.as_ref().unwrap();
+        assert_eq!((d.target, d.pct_of_cublaslt_best, d.basis), ("cublaslt", None, "paired"));
+        assert_eq!(p.hover.config.as_ref().unwrap()["BM"], 256);
+        let lt = p.hover.vs_cublaslt_best.as_ref().unwrap();
+        assert!(close(lt.ci.as_ref().unwrap().hi, 0.70828));
+    }
+    // A decode shape on the read roof, dispatched to the kernel.
+    let dec = r.points.iter().find(|p| p.label == "1x4864x896 mma_pipe_64x64x32_2x2_s4").unwrap();
+    assert_eq!(dec.roof.roof, "read");
+    assert_eq!(dec.hover.dispatch.as_ref().unwrap().target, "aegis");
+}

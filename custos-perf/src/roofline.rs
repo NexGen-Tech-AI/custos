@@ -1,13 +1,13 @@
 //! Roofline view: exactly the points `aegis-perf roofline` plots (one source,
 //! `aegis_perf::roofline::points`), plus the hover data the SVG cannot carry:
-//! config, % of cublaslt_best with its CI, and the tie call.
+//! config, % of cublaslt_best with its CI, the tie call and the dispatch target.
 use aegis_perf::rusqlite::Connection;
 use anyhow::Result;
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::roof::{self, ArchRoofs, RoofMetrics};
-use crate::winners::{self, Tie, VsBaseline};
+use crate::winners::{self, Dispatch, Tie, VsBaseline};
 use crate::Sources;
 
 #[derive(Clone, Debug, Serialize)]
@@ -15,6 +15,7 @@ pub struct Hover {
     pub kernel_id: Option<String>,
     pub config: Option<Value>,
     pub vs_cublaslt_best: Option<VsBaseline>,
+    pub dispatch: Option<Dispatch>,
     pub tie: Option<Tie>,
 }
 
@@ -58,6 +59,7 @@ pub fn roofline(src: &Sources, con: &Connection, sm: i64) -> Result<Option<Roofl
                     kernel_id: w.map(|w| w.kernel_id.clone()),
                     config: w.map(|w| w.config.clone()),
                     vs_cublaslt_best: w.map(|w| w.vs_cublaslt_best.clone()),
+                    dispatch: w.map(|w| w.dispatch.clone()),
                     tie: w.map(|w| w.tie.clone()),
                 },
                 label: p.label,

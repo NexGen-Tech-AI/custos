@@ -121,3 +121,50 @@ itself (`SQLITE_OPEN_READ_ONLY`, no writes, no migration) and calls
 - `custos-perf/src/status.rs::db_status` (use `Compat`).
 - Tests: `custos-perf/tests/schema_compat.rs` (doctored fixture copies at
   v2 and v4).
+
+---
+
+## 4. Dispatch and the production bars in aegis-perf (and in the perf DB)
+
+**Status:** open, 2026-10-17. Fallback in use: `custos-perf/src/core_fallbacks.rs`
+(`DISPATCH_FLOOR`, `dispatch_to_cublaslt`, `LARGE_SHAPE_MIN_DIM`,
+`LARGE_BAR`, `DECODE_BAR`); every value derived from them is labeled
+"provisional" in the UI.
+
+### What Custos needs
+
+1. **Dispatch per winner.** Core main (d80d03f, after aegis-perf-v0.3.0)
+   decides in `tune::dispatch` whether `aegis::matmul` runs the kernel or
+   cuBLASLt (the 80% floor, `tune::DISPATCH_FLOOR`) and writes it only into
+   the winners header. The `winners` table and `view::Winner` have no
+   dispatch, and v0.3.0 has neither the constant nor the rule, so Custos
+   restates the rule. Requested: a `dispatch` column in `winners` (written by
+   `cmd_winners` with the same rule) and `view::Winner::dispatch`, plus the
+   public `tune::DISPATCH_FLOOR` and `tune::dispatch` in the tagged library.
+2. **The dispatched path's own measurement.** When a shape goes to cuBLASLt,
+   `aegis::matmul` runs the heuristic's first algorithm (a cached plan);
+   `cublaslt_best` times the fastest of up to 8. No row measures the
+   dispatched path, so Custos shows its dispatch % as "not measured". If
+   Core wants a dispatch %, a sweep row for `aegis_matmul` (the dispatch as
+   a whole) per winner shape would give it directly (`paired_results` already
+   has `aegis_matmul` rows from `paired-ab`).
+3. **The production bars as constants:** shapes ≥ 1024 in every dimension
+   need ≥ 90% of cublaslt_best; decode (M ≤ 16, `params::DECODE_MAX_M`)
+   ≥ 100% ("a tie or a win"); no shape below the 80% floor. Requested: e.g.
+   `bars::LARGE_MIN_DIM = 1024`, `bars::LARGE = 0.90`, `bars::DECODE = 1.00`,
+   `bars::FLOOR = DISPATCH_FLOOR`, and ideally `bars::check(winner) -> Verdict`,
+   so Core's pass/fail and Custos's cannot disagree.
+
+### Why
+
+Contract rules 10 (kernel % and dispatch % are separate) and 12 (thresholds
+come from Core). Today a Core change to the floor or the bars would leave
+Custos showing stale verdicts with no compile error.
+
+### Custos code waiting on it
+
+- `custos-perf/src/core_fallbacks.rs` (delete the constants and the rule).
+- `custos-perf/src/winners.rs` (`dispatch()`, `bars()`): read Core's.
+- Tests: `provisional_dispatch_matches_core_mains_header` (fixture_db.rs)
+  compares the restated rule with Core main's header
+  (`tests/fixtures/winners/sm_121.main-eccf61f.h`).

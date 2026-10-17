@@ -18,3 +18,24 @@ pub fn db_schema_version(db: &Path) -> Result<i64> {
         .with_context(|| format!("open {} read-only", db.display()))?;
     Ok(aegis_perf::db::schema_version(&con)?.unwrap_or(1))
 }
+
+/// Production bar 3: `aegis::matmul` never runs a kernel below 80% of
+/// cublaslt_best; such shapes dispatch to cuBLASLt. Core has this as
+/// `tune::DISPATCH_FLOOR` and `tune::dispatch` since d80d03f, after
+/// aegis-perf-v0.3.0, and records the result only in the winners header, not
+/// in the perf DB. docs/core-requests.md #4.
+pub const DISPATCH_FLOOR: f64 = 0.80;
+
+/// Where `aegis::matmul` sends a winner's shape. Core's rule (`tune::dispatch`,
+/// d80d03f), restated: cuBLASLt when the paired CI of cublaslt_best / winner
+/// time lies entirely below the floor (upper bound below it); without a paired
+/// CI, when the unpaired median ratio is below it; neither known: the kernel.
+/// Returns (cuBLASLt?, the ratio the decision used, its basis: "paired",
+/// "unpaired" or "none").
+pub fn dispatch_to_cublaslt(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> (bool, Option<f64>, &'static str) {
+    match (lt_ci, pct_of_cublaslt_best) {
+        (Some((_, hi)), _) => (hi < DISPATCH_FLOOR, Some(hi), "paired"),
+        (None, Some(p)) => (p / 100.0 < DISPATCH_FLOOR, Some(p / 100.0), "unpaired"),
+        (None, None) => (false, None, "none"),
+    }
+}

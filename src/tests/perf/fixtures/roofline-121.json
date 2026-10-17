@@ -54,6 +54,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x64x32_2x2_s2"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 98.82034632034632,
+          "decided_on": 0.98495,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -116,6 +124,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x64x32_2x2_s2"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 98.82034632034632,
+          "decided_on": 0.98495,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -177,6 +193,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 99.44395748876957,
+          "decided_on": 0.99211,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -241,6 +265,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 99.44395748876957,
+          "decided_on": 0.99211,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": true,
@@ -304,6 +336,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.7296,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -365,6 +405,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.7296,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -428,6 +476,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 96.21017942145734,
+          "decided_on": 0.96432,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -489,6 +545,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 96.21017942145734,
+          "decided_on": 0.96432,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -552,6 +616,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 99.04930169947839,
+          "decided_on": 0.99108,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -613,6 +685,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 99.04930169947839,
+          "decided_on": 0.99108,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -676,6 +756,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.75043,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -737,6 +825,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.75043,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -800,6 +896,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 84.0283382656264,
+          "decided_on": 0.86636,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -861,6 +965,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 84.0283382656264,
+          "decided_on": 0.86636,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -924,6 +1036,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x128x32_2x4_s3"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 83.55450766165052,
+          "decided_on": 0.84491,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -985,6 +1105,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x128x32_2x4_s3"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 83.55450766165052,
+          "decided_on": 0.84491,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -1048,6 +1176,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 98.24120603015075,
+          "decided_on": 0.90183,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -1109,6 +1245,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 98.24120603015075,
+          "decided_on": 0.90183,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -1172,6 +1316,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_256x128x32_4x2_s4"
         },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.70828,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -1233,6 +1385,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_256x128x32_4x2_s4"
+        },
+        "dispatch": {
+          "target": "cublaslt",
+          "pct_of_cublaslt_best": null,
+          "decided_on": 0.70828,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -1296,6 +1456,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x64x32_2x2_s2"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 79.3488448742906,
+          "decided_on": 0.80019,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -1357,6 +1525,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_128x64x32_2x2_s2"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 79.3488448742906,
+          "decided_on": 0.80019,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -1420,6 +1596,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 87.53430441207514,
+          "decided_on": 0.87336,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -1481,6 +1665,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 87.53430441207514,
+          "decided_on": 0.87336,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",
@@ -1544,6 +1736,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 80.44235009682005,
+          "decided_on": 0.8576,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired_swap",
           "tied": false,
@@ -1605,6 +1805,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 80.44235009682005,
+          "decided_on": 0.8576,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired_swap",
@@ -1668,6 +1876,14 @@
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
         },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 92.17783884581411,
+          "decided_on": 0.92692,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
+        },
         "tie": {
           "method": "paired",
           "tied": false,
@@ -1729,6 +1945,14 @@
           },
           "verdict": "slower",
           "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 92.17783884581411,
+          "decided_on": 0.92692,
+          "basis": "paired",
+          "floor": 0.8,
+          "provisional": true
         },
         "tie": {
           "method": "paired",

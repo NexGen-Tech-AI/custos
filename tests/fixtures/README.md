@@ -96,3 +96,11 @@ Symbols (`Layout 0, 0` = row-major A and B, what bench_gemm measures):
 
 `cuobjdump -res-usage` gives REG 74 and 126, the `regs` the perf DB records
 for these kernels.
+
+## Core main's winners header (cross-check only)
+
+`winners/sm_121.main-eccf61f.h` is `include/aegis/winners/sm_121.h` at Core
+main `eccf61f5188e3c9983597853ed000372e266480e` (from git, not the working
+tree), generated 2026-10-17 20:54 UTC from the tune in this fixture. It has
+the dispatch column (Core d80d03f, after the tag). The provisional dispatch
+Custos applies (`core_fallbacks.rs`) is tested against it.
