@@ -1,6 +1,6 @@
 # Custos requests to AEGIS Core
 
-Custos never commits to aegis-core (project rule 18). When Custos needs a
+Custos never commits to aegis-core (project rule 21). When Custos needs a
 Core change, it is written up here and the Custos work waits for it. Each
 request names what Custos needs, why, and the Custos code waiting on it.
 Core decides the design; the shapes below are only what Custos would consume.
@@ -58,7 +58,7 @@ which is every shift today.
   handle "confirmed" and "not_confirmed", with unit tests.
 - Fixture tests on the fixture DB need `paired_results` rows. The fixture
   is refreshed with `sqlite3 <live> ".backup <fixture>"`, never `cp`.
-- Then a pin bump to the Core rev that ships this (its own commit, rule 20).
+- Then a pin bump to the Core rev that ships this (its own commit, rule 23).
 
 ---
 

@@ -1,5 +1,5 @@
 // Formatting for perf views. A null value renders as "not measured", never a
-// placeholder number (project rules 9 and 13).
+// placeholder number (project rules 9 and 16).
 import type { Ci, VsBaseline, Tie } from './types';
 
 export const NOT_MEASURED = 'not measured';

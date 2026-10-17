@@ -1,4 +1,4 @@
-//! custos-perf against fixture snapshots (project rule 16), never the live
+//! custos-perf against fixture snapshots (project rule 19), never the live
 //! Core tree (another session changes it at will):
 //! - the perf DB: ~/custos-fixtures/aegis_perf.db (AEGIS_PERFDB)
 //! - Core files: ~/custos-fixtures/core (AEGIS_FIXTURE_CORE): the arch file,

@@ -1,6 +1,6 @@
 //! AEGIS Custos data layer: read-only views over the AEGIS Core perf DB.
 //!
-//! Every query goes through `aegis_perf` (project rule 14), every DB handle
+//! Every query goes through `aegis_perf` (project rule 17), every DB handle
 //! is read-only (contract rule 1), and roof-derived metrics are computed here
 //! at view time from the arch file (contract rule 3), never stored.
 use std::path::{Path, PathBuf};

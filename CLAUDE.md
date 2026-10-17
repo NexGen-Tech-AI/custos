@@ -98,68 +98,80 @@ their UI sections.
 Each rule matches a mistake Core already caught in its own data. Break one and
 Custos shows numbers Core has disowned.
 
-1. **Read-only.** Open the perf DB read-only (`aegis_perf::db::connect_ro`,
-   SQLite `mode=ro`), so a running tune or sweep is never blocked or
-   corrupted. Writes stay in aegis-perf.
-2. **Protocol v2, cold, idle by default.** Every view defaults to
-   `protocol_version = 2`, `cache_mode = cold`, rows not marked `allow_busy`.
-   Version 1 rows are recorded history: shown only on request, labeled.
-3. **Derived metrics at view time.** % of roof, GB/s % and TFLOPS % are
-   computed from `include/aegis/arch/<sm>.json` when rendering
-   (`aegis_perf::params::ArchParams::roof`). Never store or cache them; the
-   bandwidth changed once (214.7 to 236.8 GB/s) and inflated older percentages.
-4. **The right roof.** Decode shapes (M ≤ 16) use the read-bandwidth roof;
-   everything else the copy roof. Label which roof each row uses.
-5. **The right baseline.** Performance is % of `cublaslt_best`, never of
-   default cuBLAS or of a naive kernel.
-6. **Ties are statistical.** Show the paired ratio and its 95% CI from
-   `winners`. A shape is tied when the CI contains 1.0. Never show a single
-   median as a win.
-7. **Only invalidated rows are hidden.** Each microbench row has a status:
-   `valid` (current), `replaced` (a newer run of the same probe exists; still
-   valid history) or `invalidated` (known bad, with a required reason).
-   `aegis_perf::view::microbench` never returns invalidated rows; show
-   replaced rows as history, labelled replaced (with `replaced_by`). The
-   hardware model (arch file) uses the newest valid run per probe
-   (`aegis_perf::db::current_run`; the newest replaced run only if no valid
-   one exists).
-8. **Two kinds of data, never mixed.** Continuous telemetry (NVML on the
-   Spark; sysfs and tegrastats on Jetson) is separate from profiled kernel
-   metrics (Nsight). Never imply that NVML provides hardware counters.
-9. **No numbers Core doesn't have.** If a value isn't in the DB, the arch file
-   or an artifact, show "not measured" (or "not profiled" for Nsight data),
-   never an estimate.
+1. **Read-only DB access.** Open the perf DB only with
+   `aegis_perf::db::connect_ro` (SQLite `mode=ro`), so a running tune or
+   sweep is never blocked or corrupted. Writes stay in aegis-perf.
+2. **Default filters: protocol v2, cold cache, not disturbed, not
+   allow_busy.** Every view starts there (`aegis_perf::db::Selection::ranking`).
+   Excluded rows (protocol v1, warm, disturbed, allow_busy) appear only on
+   request, and labeled.
+3. **Derived metrics are computed at view time** from the arch file
+   (`aegis_perf::params::ArchParams::roof`): % of roof, GB/s %, TFLOPS %, ns.
+   Never stored, never cached across calls. The bandwidth changed once
+   (214.7 to 236.8 GB/s) and inflated every stored percentage.
+4. **Roof:** decode shapes (M ≤ 16, `aegis_perf::params::DECODE_MAX_M`) use
+   the read-bandwidth roof, everything else the copy roof. Every row is
+   labeled with its roof.
+5. **Baseline is `cublaslt_best`**, never default cuBLAS or a naive kernel
+   (% of cuBLAS only as labeled context).
+6. **Ties are statistical.** Show the paired ratio and its 95% CI. Tied means
+   the CI contains 1.0. Never present a single median as a win.
+7. **Only valid microbench rows feed the hardware model.** Replaced rows are
+   history (shown labeled, with `replaced_by`); invalidated rows are hidden
+   unless requested (`aegis_perf::view::microbench` never returns them).
+8. **Telemetry and profiled metrics are never mixed.** Continuous telemetry
+   (NVML on the Spark; sysfs and tegrastats on Jetson) is separate from
+   profiled kernel metrics (Nsight). Never imply that NVML provides hardware
+   counters.
+9. **Nothing is estimated.** Missing data shows "not measured" (or "not
+   profiled" for Nsight data), never an estimate, an interpolation or a
+   datasheet figure.
+10. **Kernel % and dispatch % are separate columns.** Kernel %: AEGIS's own
+    kernel against `cublaslt_best`. Dispatch %: what `aegis::matmul` actually
+    runs for the shape. A shape routed to cuBLASLt shows "dispatch: cuBLASLt"
+    with AEGIS's own kernel % beside it, never as AEGIS's number.
+11. **Latency is shown with its clock and lock state**, e.g. "335 cycles =
+    139 ns at 2407 MHz (clocks not locked)". Cycles are what is stored; ns is
+    derived through aegis-perf (`params::Latency::ns`, `view::Microbench::ns`).
+12. **Thresholds and schema compatibility come from Core**, never hardcoded in
+    Custos (`aegis_perf::db::SCHEMA_VERSION`, `aegis_perf::regress::REGRESSION`,
+    `aegis_perf::sweep::IDLE_MAX_PCT`, ...). When aegis-perf lacks one,
+    `custos-perf/src/core_fallbacks.rs` holds it as a named constant citing
+    its `docs/core-requests.md` entry, and the UI labels every value derived
+    from it "provisional".
 
 ### Engineering rules
 
-10. **Rust, Tauri, React only.** No Python, no second backend language.
-11. **One chart library: recharts.** Do not add another.
-12. **No custom theming in v1.** Use the existing Tailwind tokens and
+13. **Rust, Tauri, React only.** No Python, no second backend language.
+14. **One chart library: recharts.** Do not add another.
+15. **No custom theming in v1.** Use the existing Tailwind tokens and
     `components/ui/*`; no new themes, palettes or theme switches.
-13. **No metric is ever estimated.** Missing data is `None` in Rust, `null`
+16. **No metric is ever estimated.** Missing data is `None` in Rust, `null`
     in TS, and "not measured" on screen. No interpolation, no datasheet
     fallbacks (Core rule 8: datasheet figures only as labeled context).
-14. **All SQL lives in aegis-perf.** Custos queries through
+17. **All SQL lives in aegis-perf.** Custos queries through
     `aegis_perf::view` / `db` / `roofline` (the library, never the CLI), so a
     schema change breaks Custos at compile time. A query Custos needs is
-    requested in `docs/core-requests.md` (rule 18), never written in Custos.
-15. **Design for many archs.** All data is sm_121 today; every command and
+    requested in `docs/core-requests.md` (rule 21), never written in Custos.
+18. **Design for many archs.** All data is sm_121 today; every command and
     view takes the arch as a parameter (sm_87 arrives with the Jetson port).
-16. **Development and tests use fixture snapshots, never live Core data.**
-    The DB: `~/custos-fixtures/aegis_perf.db` (`cp ~/Documents/projects/aegis/results/aegis_perf.db ~/custos-fixtures/`;
-    override with `AEGIS_PERFDB`). The Core files Custos reads (arch file,
-    manifest, `artifacts/sass`, `artifacts/ncu`), from the same moment:
-    `~/custos-fixtures/core` (tests: `AEGIS_FIXTURE_CORE`). The app reads the
-    live Core repo (`AEGIS_CORE`), which other sessions change at any time.
-17. **Never run git in Core's main working tree.** Another session works
+19. **Tests use the committed fixtures in `tests/fixtures/`, never live Core
+    data** (see its README: the trimmed perf DB, the arch file, winners
+    header, golden CLI outputs and SASS, all from the pinned tag). No test
+    reads from `~` or from a Core checkout. A perf DB is snapshotted only with
+    `sqlite3 SRC ".backup DST"`, never `cp`; the live DB is opened for nothing
+    else. The app reads the live Core repo (`AEGIS_CORE`, `AEGIS_PERFDB`),
+    which other sessions change at any time.
+20. **Never run git in Core's main working tree.** Another session works
     there. To read Core at a rev, clone it elsewhere (scratch directory).
-18. **Custos never commits to aegis-core.** When Custos needs a Core change
+21. **Custos never commits to aegis-core.** When Custos needs a Core change
     (a query, a column, a fix), write it up in `docs/core-requests.md` (what,
-    why, the Custos code waiting on it) and stop that work until Core lands it.
-19. **aegis-perf is a git dependency pinned to a specific rev** of
+    why, the Custos code waiting on it). If a fallback exists (rule 12), use
+    it; otherwise stop that work until Core lands it.
+22. **aegis-perf is a git dependency pinned to a specific rev** of
     https://github.com/Riffe007/aegis-core (`rev = "<full sha>"` in
     `custos-perf/Cargo.toml`), never a path or a branch, so a Custos build is
     reproducible and Core's working tree never leaks into it.
-20. **A pin bump is its own commit.** It changes only the rev (plus what the
+23. **A pin bump is its own commit.** It changes only the rev (plus what the
     bump forces in Custos) and its message records the new Core rev, the
     previous one, and the reason for the bump.
