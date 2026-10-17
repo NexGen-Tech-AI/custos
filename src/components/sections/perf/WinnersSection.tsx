@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import type { Bars, Winner } from '../../../perf/types';
-import { NotMeasured, ci, dispatchPct, dispatchTarget, dispatchWhy, pct } from '../../../perf/format';
+import { NotMeasured, ci, dispatchPct, dispatchTarget, dispatchWhy, ltAlgoText, pct } from '../../../perf/format';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
 const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4 whitespace-nowrap align-bottom';
@@ -66,9 +66,17 @@ function Row({ w }: { w: Winner }) {
       <td className={`${td} text-xs`} data-col="dispatch">
         <span className={routed ? 'font-medium' : ''}>{dispatchTarget(w.dispatch)}</span>
         {dispatchWhy(w.dispatch) && <div className={muted}>{dispatchWhy(w.dispatch)}</div>}
+        {routed && (
+          <div className="font-mono" data-col="dispatch-algo">
+            {w.lt_algo ? `runs cuBLASLt ${ltAlgoText(w.lt_algo)}` : <NotMeasured label="cuBLASLt algorithm not stored" />}
+          </div>
+        )}
       </td>
       <td className={`${td} text-xs whitespace-nowrap`} data-col="dispatch-pct">
         {routed ? <NotMeasured label={dispatchPct(w.dispatch)} /> : dispatchPct(w.dispatch)}
+      </td>
+      <td className={`${td} text-xs font-mono`} data-col="baseline-algo">
+        {w.lt_algo ? ltAlgoText(w.lt_algo) : <NotMeasured label="not stored" />}
       </td>
       <td className={`${td} text-xs whitespace-nowrap`} data-col="paired">
         {pairedRatio(w) ?? <NotMeasured label="no paired test" />}
@@ -155,6 +163,7 @@ export function WinnersSection() {
                     <th className={th}>AEGIS kernel %</th>
                     <th className={th}>Dispatch</th>
                     <th className={th}>Dispatch %</th>
+                    <th className={th}>cublaslt_best algorithm</th>
                     <th className={th}>Paired ratio vs cublaslt_best [95% CI]</th>
                     <th className={th}>Tied</th>
                     <th className={th}>Runner-up gap</th>
@@ -174,6 +183,8 @@ export function WinnersSection() {
               provisional: aegis-perf v0.3.0 has neither, so Custos applies Core&apos;s 80% dispatch floor and its bars (large:
               every dim ≥ 1024, ≥ 90%; decode M ≤ 16, ≥ 100%; floor 80%), a shape failing a bar when its CI lies entirely below it.
               A cuBLASLt route&apos;s dispatch % is not measured: no row times aegis::matmul&apos;s cuBLASLt path.
+              cublaslt_best algorithm: the cuBLASLt algorithm Core stored for the shape (perf DB schema v4); a shape
+              dispatched to cuBLASLt runs that algorithm.
             </p>
           </>
         )}

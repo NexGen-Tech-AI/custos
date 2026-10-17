@@ -1,6 +1,6 @@
 // Formatting for perf views. A null value renders as "not measured", never a
 // placeholder number (project rules 9 and 16).
-import type { Ci, Dispatch, VsBaseline, Tie } from './types';
+import type { Ci, Dispatch, LtAlgo, VsBaseline, Tie } from './types';
 
 export const NOT_MEASURED = 'not measured';
 
@@ -88,4 +88,18 @@ export function dispatchPct(d: Dispatch | null): string {
   if (!d) return NOT_MEASURED;
   if (d.target === 'cublaslt') return 'cuBLASLt path: not measured';
   return d.pct_of_cublaslt_best === null ? NOT_MEASURED : `${d.pct_of_cublaslt_best.toFixed(1)}%`;
+}
+
+/** "algo 67 · tile 412 · stages 35 · custom 31" (+ split-K, reduction,
+ *  swizzle, inner/cluster shape when not the default). */
+export function ltAlgoText(a: LtAlgo | null): string {
+  if (!a) return 'not stored';
+  const parts = [`algo ${a.algo_id}`, `tile ${a.tile_id}`, `stages ${a.stages_id}`];
+  if (a.splitk !== 1) parts.push(`split-K ${a.splitk}`);
+  if (a.reduction !== 0) parts.push(`reduction ${a.reduction}`);
+  if (a.swizzle !== 0) parts.push(`swizzle ${a.swizzle}`);
+  parts.push(`custom ${a.custom}`);
+  if (a.inner_shape !== 0) parts.push(`inner shape ${a.inner_shape}`);
+  if (a.cluster_shape !== 0) parts.push(`cluster shape ${a.cluster_shape}`);
+  return parts.join(' · ');
 }

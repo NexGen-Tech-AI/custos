@@ -284,6 +284,9 @@ export interface Winner {
   vs_cublaslt_best: VsBaseline;
   dispatch: Dispatch;
   bars: Bars;
+  /** cublaslt_best's stored cuBLASLt algorithm at this shape (schema v4);
+   *  also what a cuBLASLt-dispatched shape runs. null: not stored. */
+  lt_algo: LtAlgo | null;
   pct_of_cublas: number | null;
   tie: Tie;
   roof: RoofMetrics | null;
@@ -312,4 +315,17 @@ export interface KernelDetail {
   }[];
   nsight_reports: { shape: string; path: string }[];
   nsight_stalls: Record<string, unknown> | null;
+}
+
+/** A stored cuBLASLt algorithm (aegis::detail::LtAlgoConfig). */
+export interface LtAlgo {
+  algo_id: number;
+  tile_id: number;
+  stages_id: number;
+  splitk: number;
+  reduction: number;
+  swizzle: number;
+  custom: number;
+  inner_shape: number;
+  cluster_shape: number;
 }

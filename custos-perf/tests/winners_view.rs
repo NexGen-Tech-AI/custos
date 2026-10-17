@@ -163,3 +163,29 @@ fn matches_the_tags_header() {
         );
     }
 }
+
+/// The stored cuBLASLt algorithm (schema v4 lt_algo) on every row: what
+/// cublaslt_best ran at the shape, and what a cuBLASLt-dispatched shape runs.
+/// It equals the LtAlgoConfig the tag's own header carries for the shape.
+#[test]
+fn stored_cublaslt_algorithm() {
+    let w = winners();
+    let header = include_str!("../../tests/fixtures/winners/sm_121.h");
+    for line in header.lines().map(str::trim).filter(|l| l.starts_with('{')) {
+        let code = line.split("//").next().unwrap();
+        let dims: Vec<i64> = code[1..].split(',').take(3).map(|d| d.trim().parse().unwrap()).collect();
+        let tail = &code[code.rfind('{').unwrap() + 1..];
+        let want: Vec<i64> = tail.split('}').next().unwrap().split(',').map(|f| f.trim().parse().unwrap()).collect();
+        let x = w.iter().find(|x| (x.m, x.n, x.k) == (dims[0], dims[1], dims[2])).unwrap();
+        let a = x.lt_algo.unwrap_or_else(|| panic!("{}: no stored algorithm", x.shape_bucket));
+        let got = [a.algo_id, a.tile_id, a.stages_id, a.splitk, a.reduction, a.swizzle, a.custom, a.inner_shape, a.cluster_shape];
+        assert_eq!(got.to_vec(), want, "{}", x.shape_bucket);
+    }
+    let get = |b: &str| w.iter().find(|x| x.shape_bucket == b).unwrap();
+    let big = get("4096x4096x4096");
+    assert_eq!(big.dispatch.target, "cublaslt");
+    let a = big.lt_algo.unwrap();
+    assert_eq!((a.algo_id, a.tile_id, a.stages_id, a.splitk, a.custom), (67, 412, 35, 1, 31));
+    let a = get("1x896x4864").lt_algo.unwrap();
+    assert_eq!((a.algo_id, a.splitk, a.reduction), (13, 16, 2), "a split-K algorithm");
+}

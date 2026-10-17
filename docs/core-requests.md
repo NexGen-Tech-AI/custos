@@ -249,3 +249,36 @@ extracted".
   each listing; `nsight_stalls` is always None).
 - The test fixtures' SASS (`tests/fixtures/sass/sm_121/`) were compiled from
   the tag for this reason (tests/fixtures/README.md).
+
+---
+
+## 7. The stored cuBLASLt algorithm in `aegis_perf::view`
+
+**Status:** open, 2026-10-17. Fallback in use:
+`custos-perf/src/core_fallbacks.rs::stored_lt_algos`.
+
+### What Custos needs
+
+Schema v4 stores the algorithm cublaslt_best picked (`measurements.lt_algo`,
+`winners.lt_algo`, JSON). `view::Winner` and `view::Measurement` don't return
+it. The only library path is `tune::header_text`, which renders it as the
+`LtAlgoConfig` initializer in a generated C++ header; Custos parses that text.
+That drops `heuristic_rank`, `candidates`, `passed` and `workspace`, and it
+works only for winner shapes, never for a baseline row of another shape.
+
+Requested: `view::Winner::lt_algo` and `view::Measurement::lt_algo` as a typed
+struct, e.g. `LtAlgo { algo_id, tile_id, stages_id, splitk, reduction,
+swizzle, custom, inner_shape, cluster_shape, heuristic_rank, candidates,
+passed, workspace }` (`tune::lt_config` could build on it).
+
+### Why
+
+Contract rule 17: Custos reads Core's data through the library. Parsing a
+generated header is a text format, not an API, so a format change would
+break Custos at run time, not at compile time.
+
+### Custos code waiting on it
+
+- `custos-perf/src/core_fallbacks.rs::stored_lt_algos` (delete it).
+- `custos-perf/src/winners.rs` (`Winner::lt_algo`).
+- Tests: `stored_cublaslt_algorithm` (custos-perf/tests/winners_view.rs).

@@ -7,7 +7,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::roof::{self, RoofMetrics};
-use crate::{core_fallbacks, Sources};
+use crate::core_fallbacks::{self, LtAlgo};
+use crate::Sources;
 
 /// A paired ratio and its 95% bootstrap CI.
 #[derive(Clone, Debug, Serialize)]
@@ -164,6 +165,10 @@ pub struct Winner {
     pub tie: Tie,
     /// None when the arch file is missing ("not measured").
     pub roof: Option<RoofMetrics>,
+    /// The cuBLASLt algorithm cublaslt_best picked at this shape (stored by
+    /// Core, schema v4): the baseline's algorithm, and what aegis::matmul
+    /// runs when the shape dispatches to cuBLASLt. None: not stored.
+    pub lt_algo: Option<LtAlgo>,
 }
 
 /// Negative register counts mark baselines Core cannot inspect.
@@ -171,7 +176,7 @@ pub(crate) fn measured(v: Option<i64>) -> Option<i64> {
     v.filter(|&x| x >= 0)
 }
 
-fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
+fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>) -> Winner {
     let pick = w.kernel.impl_.clone();
     let role = |r: &str| w.paired.iter().find(|p| p.role.as_deref() == Some(r));
 
@@ -235,17 +240,20 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>) -> Winner {
         warm_median_us: w.warm_median_us,
         pct_of_cublas: w.pct_of_cublas,
         roof,
+        lt_algo,
     }
 }
 
 /// Winners of arch `sm`, roof metrics computed now from its arch file.
 pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> {
     let params = roof::load(src, sm)?;
+    let lt = core_fallbacks::stored_lt_algos(con, sm)?;
     Ok(view::winners(con, Some(sm))?
         .into_iter()
         .map(|w| {
             let r = params.as_ref().map(|p| roof::metrics(p, w.m, w.n, w.k, w.median_us));
-            from_view(w, r)
+            let algo = if w.op == "gemm" { lt.get(&(w.m, w.n, w.k)).copied() } else { None };
+            from_view(w, r, algo)
         })
         .collect())
 }
@@ -310,7 +318,7 @@ mod tests {
     #[test]
     fn baseline_row_is_the_picks() {
         let rows = vec![paired("fast", "cublaslt_best", 0.90), paired("pick", "cublaslt_best", 0.88)];
-        let w = from_view(winner(Some((0.87, 0.89)), rows), None);
+        let w = from_view(winner(Some((0.87, 0.89)), rows), None, None);
         let ci = w.vs_cublaslt_best.ci.unwrap();
         assert_eq!(ci.ratio_median, Some(0.88));
         assert_eq!(w.vs_cublaslt_best.tested_impl.as_deref(), Some("pick"));
@@ -319,7 +327,7 @@ mod tests {
     /// No CI for the pick: no verdict, and no config named as "tested".
     #[test]
     fn no_ci_names_no_config() {
-        let w = from_view(winner(None, vec![paired("fast", "cublaslt_best", 0.90)]), None);
+        let w = from_view(winner(None, vec![paired("fast", "cublaslt_best", 0.90)]), None, None);
         assert!(w.vs_cublaslt_best.ci.is_none() && w.vs_cublaslt_best.verdict.is_none());
         assert!(w.vs_cublaslt_best.tested_impl.is_none());
         assert_eq!(w.vs_cublaslt_best.pct_of_cublaslt_best, Some(88.0));

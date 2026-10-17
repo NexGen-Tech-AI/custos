@@ -49,3 +49,41 @@ pub const LARGE_BAR: f64 = 0.90;
 /// >= 100% of cublaslt_best, "a tie or a win". docs/core-requests.md #4.
 pub const DECODE_BAR: f64 = 1.00;
 // Every shape: not below the floor (DISPATCH_FLOOR above).
+
+/// The cuBLASLt algorithm cublaslt_best picked at a shape (schema v4
+/// `winners.lt_algo`), as aegis-perf renders it: an
+/// `aegis::detail::LtAlgoConfig` (`tune::lt_config`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct LtAlgo {
+    pub algo_id: i64,
+    pub tile_id: i64,
+    pub stages_id: i64,
+    pub splitk: i64,
+    pub reduction: i64,
+    pub swizzle: i64,
+    pub custom: i64,
+    pub inner_shape: i64,
+    pub cluster_shape: i64,
+}
+
+/// Each winner shape's stored cuBLASLt algorithm. aegis-perf v0.4.0 stores it
+/// but `view::Winner` does not return it; the one library path is
+/// `tune::header_text`, which reads it with Core's own query and writes it as
+/// the last field of each winners-header row (`{id, tile, stages, splitk,
+/// reduction, swizzle, custom, inner_shape, cluster_shape}`, `{}` when none).
+/// Reads only. docs/core-requests.md #7.
+pub fn stored_lt_algos(con: &Connection, arch: i64) -> Result<std::collections::HashMap<(i64, i64, i64), LtAlgo>> {
+    let (text, _) = aegis_perf::tune::header_text(con, arch, "custos")?;
+    let mut out = std::collections::HashMap::new();
+    for line in text.lines().map(str::trim).filter(|l| l.starts_with('{')) {
+        let code = line.split("//").next().unwrap_or("");
+        let dims: Vec<i64> = code.trim_start_matches('{').split(',').take(3).filter_map(|d| d.trim().parse().ok()).collect();
+        let [m, n, k] = dims[..] else { continue };
+        let Some(open) = code.rfind('{') else { continue };
+        let fields: Vec<i64> = code[open + 1..].split('}').next().unwrap_or("").split(',').filter_map(|f| f.trim().parse().ok()).collect();
+        if let [algo_id, tile_id, stages_id, splitk, reduction, swizzle, custom, inner_shape, cluster_shape] = fields[..] {
+            out.insert((m, n, k), LtAlgo { algo_id, tile_id, stages_id, splitk, reduction, swizzle, custom, inner_shape, cluster_shape });
+        }
+    }
+    Ok(out)
+}

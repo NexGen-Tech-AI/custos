@@ -78,3 +78,32 @@ describe('WinnersSection', () => {
     expect(cell(byShape(rs, '512x896x4864'), 'gap')).toBe('+0.12%');
   });
 });
+
+describe('WinnersSection: stored cuBLASLt algorithm', () => {
+  it('names the algorithm a cuBLASLt-dispatched shape runs, and every baseline\'s', async () => {
+    const rs = await rows();
+    const big = byShape(rs, '4096x4096x4096');
+    expect(cell(big, 'dispatch-algo')).toBe('runs cuBLASLt algo 67 · tile 412 · stages 35 · custom 31');
+    expect(cell(big, 'baseline-algo')).toBe('algo 67 · tile 412 · stages 35 · custom 31');
+    // A split-K algorithm: its non-default fields are shown.
+    expect(cell(byShape(rs, '1x896x4864'), 'dispatch-algo')).toBe(
+      'runs cuBLASLt algo 13 · tile 0 · stages 0 · split-K 16 · reduction 2 · custom 102',
+    );
+    // A kernel route names no dispatched algorithm, but its baseline still has one.
+    const k = byShape(rs, '1024x1024x1024');
+    expect(k.querySelector('[data-col="dispatch-algo"]')).toBeNull();
+    expect(cell(k, 'baseline-algo')).toBe('algo 21 · tile 24 · stages 9 · custom 0');
+    for (const r of rs) expect(cell(r, 'baseline-algo')).toMatch(/^algo \d+/);
+  });
+
+  it('says "not stored" when Core has no algorithm for the shape', async () => {
+    const w = structuredClone(winners) as Array<Record<string, unknown>>;
+    for (const x of w) x.lt_algo = null;
+    invoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === 'perf_sources' ? { db: '/f.db', core: '/c', measured_archs: [121] } : w),
+    );
+    const rs = await rows();
+    expect(cell(byShape(rs, '4096x4096x4096'), 'dispatch-algo')).toBe('cuBLASLt algorithm not stored');
+    expect(cell(byShape(rs, '256x256x256'), 'baseline-algo')).toBe('not stored');
+  });
+});
