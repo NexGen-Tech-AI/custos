@@ -104,3 +104,6 @@ main `eccf61f5188e3c9983597853ed000372e266480e` (from git, not the working
 tree), generated 2026-10-17 20:54 UTC from the tune in this fixture. It has
 the dispatch column (Core d80d03f, after the tag). The provisional dispatch
 Custos applies (`core_fallbacks.rs`) is tested against it.
+
+`sass/sm_121/resource-usage.txt` is `cuobjdump -res-usage mma_pipe.cubin` (the
+same cubin), the two kernels' entries only, in Core's resource-usage format.

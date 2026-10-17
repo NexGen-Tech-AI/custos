@@ -207,3 +207,45 @@ those builds, that device and that shape.
 - `custos-perf/src/measure.rs`: `same_build` (prefix match) and
   `paired_evidence` (add device/arch/dtype to the match).
 - Tests: `custos-perf/tests/compare_paired.rs`.
+
+---
+
+## 6. SASS and Nsight artifacts keyed by kernel
+
+**Status:** open, 2026-10-17. Custos shows what it can identify and says why
+for the rest.
+
+### What Custos needs
+
+1. **`tools/sass_dump.sh` file names collide.** It names each listing after
+   the demangled symbol cut to 120 characters. Since the kernels take
+   `Layout` template arguments, the row- and column-major instantiations of a
+   config share the cut name, and each file keeps whichever was written last.
+   In the 2026-10-17 dump that is the column-major one (`Layout 1, 1`),
+   never what bench_gemm measures (row-major A and B). The 2026-10-13 files
+   predate the `xor` smem layout. So Core's artifacts hold no SASS for any
+   measured mma_pipe kernel. Its `instruction-mix.txt` names are also cut (at
+   the first `(`, which is now inside `(Layout)1`), so its rows are
+   ambiguous. Requested: name listings by the full mangled symbol (or a hash
+   of it) and write a small index (symbol, impl, layout, file), or key them by
+   impl name plus layout.
+2. **Nsight summaries are not machine-readable per kernel.**
+   `artifacts/ncu_summary_*.txt` has stall and pipe metrics, but its column
+   headers truncate the impl (`128x128x32_2x4_s`, stage count lost), so a
+   column cannot be tied to a kernel. Requested: one JSON per (impl, shape,
+   arch) report, e.g. `artifacts/ncu/<impl>_<MxNxK>.json` next to the
+   `.ncu-rep`, with the metrics `tools/ncu_summary.sh` prints.
+
+### Why
+
+Contract rule 9: Custos shows a kernel's SASS, instruction mix and stalls only
+when Core's artifact is unambiguously that kernel. Today it falls back to
+"no SASS listing of the row-major instantiation" and "stall breakdown not
+extracted".
+
+### Custos code waiting on it
+
+- `custos-perf/src/kernel.rs` (`sass`: matches the `Function :` symbol inside
+  each listing; `nsight_stalls` is always None).
+- The test fixtures' SASS (`tests/fixtures/sass/sm_121/`) were compiled from
+  the tag for this reason (tests/fixtures/README.md).

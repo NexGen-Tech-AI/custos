@@ -288,3 +288,28 @@ export interface Winner {
   tie: Tie;
   roof: RoofMetrics | null;
 }
+
+/** Kernel detail (custos-perf kernel.rs). */
+export interface KernelDetail {
+  kernel_id: string;
+  op: string;
+  impl: string;
+  config: Record<string, unknown> | string;
+  baseline: boolean;
+  regs: number | null;
+  smem_bytes: number | null;
+  /** Local memory per thread: non-zero means register spills. */
+  local_bytes: number | null;
+  winner_of: string[];
+  measurements: { m: number; n: number; k: number; median_us: number; run_id: string; git_sha: string | null }[];
+  artifacts: {
+    sm: number;
+    sass: { path: string; symbol: string; lines: number; text: string } | null;
+    sass_note: string | null;
+    /** Lines with each opcode, counted in the SASS listing. */
+    instruction_mix: Record<string, number> | null;
+    resource_usage: { regs: number | null; stack: number | null; shared: number | null; local: number | null } | null;
+  }[];
+  nsight_reports: { shape: string; path: string }[];
+  nsight_stalls: Record<string, unknown> | null;
+}

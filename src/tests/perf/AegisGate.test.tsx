@@ -21,6 +21,7 @@ describe('AEGIS build flag', () => {
     expect(screen.getByText('Device (AEGIS)')).toBeInTheDocument();
     expect(screen.getByText('Roofline (AEGIS)')).toBeInTheDocument();
     expect(screen.getByText('Winners (AEGIS)')).toBeInTheDocument();
+    expect(screen.getByText('Kernel (AEGIS)')).toBeInTheDocument();
     expect(screen.getByText('System Monitoring')).toBeInTheDocument();
   });
 

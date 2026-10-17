@@ -1,8 +1,14 @@
 //! Kernel detail: config, registers, spills, shared memory, measurements,
-//! and Core's artifacts for it: raw SASS, instruction mix, ptxas resource
-//! usage, Nsight reports. Anything Core has not produced is None ("not
-//! measured" / "not profiled"), never estimated.
+//! and Core's artifacts for it: the SASS listing, its instruction mix, ptxas
+//! resource usage, Nsight reports. Anything Core has not produced is None
+//! ("not measured" / "not profiled"), never estimated.
+//!
+//! SASS is found by the kernel symbol inside each listing (`Function : ...`),
+//! never by file name: Core's dump truncates names, so the row- and
+//! column-major instantiations of one config share a file name. The measured
+//! kernel is the row-major one (Layout 0, 0: what bench_gemm runs).
 use std::collections::BTreeMap;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use aegis_perf::rusqlite::Connection;
@@ -18,12 +24,14 @@ use crate::Sources;
 #[derive(Clone, Debug, Serialize)]
 pub struct Sass {
     pub path: String,
+    /// The kernel symbol the listing is for (its `Function :` line).
+    pub symbol: String,
     pub lines: usize,
-    /// Raw SASS; control codes are not parsed yet (Core stage 2).
+    /// Raw SASS as cuobjdump prints it; control codes are not parsed.
     pub text: String,
 }
 
-/// ptxas resource usage for the kernel (artifacts/sass/<arch>/resource-usage.txt).
+/// ptxas resource usage for the kernel (`resource-usage.txt`, cuobjdump -res-usage).
 #[derive(Clone, Debug, Serialize)]
 pub struct ResourceUsage {
     pub regs: Option<i64>,
@@ -36,12 +44,15 @@ pub struct ResourceUsage {
 pub struct ArchArtifacts {
     pub sm: i64,
     pub sass: Option<Sass>,
-    /// Static instruction counts (HMMA, LDSM, LDGSTS, LDG, STS) from instruction-mix.txt.
+    /// Why there is no SASS listing, when there is none.
+    pub sass_note: Option<String>,
+    /// Lines of the listing with each opcode (HMMA, LDSM, LDGSTS, LDG, STS),
+    /// counted as tools/sass_dump.sh counts them (`grep -c '\bOP'`). None
+    /// without a listing.
     pub instruction_mix: Option<BTreeMap<String, i64>>,
     pub resource_usage: Option<ResourceUsage>,
 }
 
-/// An Nsight Compute report for this kernel.
 #[derive(Clone, Debug, Serialize)]
 pub struct NsightReport {
     pub shape: String,
@@ -60,107 +71,84 @@ pub struct KernelDetail {
     pub smem_bytes: Option<i64>,
     /// Local memory per thread: non-zero means register spills.
     pub local_bytes: Option<i64>,
-    /// Shapes where this kernel is the dispatched winner ("sm_121 1x896x896").
+    /// Shapes where this kernel is the winner ("sm_121 1x896x896").
     pub winner_of: Vec<String>,
-    /// Protocol v2, cold, idle rows (rule 2).
+    /// Protocol v2, cold, clean rows (rule 2).
     pub measurements: Vec<Measurement>,
     pub artifacts: Vec<ArchArtifacts>,
     /// Nsight Compute reports (.ncu-rep) Core captured for this kernel; empty
-    /// means "not profiled". Stall and pipe metrics are not extracted yet.
+    /// means "not profiled".
     pub nsight_reports: Vec<NsightReport>,
+    /// Stall and pipe metrics: Custos does not read .ncu-rep files, and Core's
+    /// text summaries truncate kernel names; None until Core provides them
+    /// per impl and shape (docs/core-requests.md #6).
+    pub nsight_stalls: Option<Value>,
 }
 
-/// The kernel's names in Core's artifacts: the demangled template name in
-/// instruction-mix.txt, a fragment of the SASS file name, and a fragment of
-/// the mangled name in resource-usage.txt.
-struct Names {
-    demangled: String,
-    file: String,
-    mangled: String,
-}
-
-fn names(impl_: &str, cfg: &Value) -> Option<Names> {
+/// The mangled-name fragment of the measured (row-major) instantiation of an
+/// mma_pipe config at aegis-perf-v0.3.0:
+/// `gemm_mma_pipe_kernel<Tile<BM, BN, BK, WM, WN, Layout 0, Layout 0>, STAGES>(KParams, bool, bool)`.
+/// Other impl families: None (no symbol known for them yet).
+fn symbol(impl_: &str, cfg: &Value) -> Option<String> {
+    if !impl_.starts_with("mma_pipe_") {
+        return None;
+    }
     let g = |k: &str| cfg.get(k).and_then(Value::as_i64);
-    let li = |v: &[i64]| v.iter().map(|x| format!("Li{x}E")).collect::<String>();
-    if impl_ == "naive" || impl_ == "tiled" {
-        let n = format!("gemm_{impl_}_kernel");
-        return Some(Names { demangled: n.clone(), file: format!("{n}___half"), mangled: format!("{n}EPK6__half") });
-    }
-    if impl_.starts_with("regblock_") {
-        let d = [g("BM")?, g("BN")?, g("BK")?, g("TM")?, g("TN")?];
-        let csv = d.map(|x| x.to_string()).join(", ");
-        let us = d.map(|x| x.to_string()).join("__");
-        return Some(Names {
-            demangled: format!("gemm_regblock_kernel<{csv}>"),
-            file: format!("gemm_regblock_kernel_{us}____half"),
-            mangled: format!("gemm_regblock_kernelI{}EE", li(&d)),
-        });
-    }
-    if impl_.starts_with("mma_") {
-        let t = [g("BM")?, g("BN")?, g("BK")?, g("WARPS_M")?, g("WARPS_N")?];
-        let csv = t.map(|x| x.to_string()).join(", ");
-        let us = t.map(|x| x.to_string()).join("__");
-        return Some(match g("STAGES") {
-            Some(s) => Names {
-                demangled: format!("gemm_mma_pipe_kernel<aegis::gemm::mma_detail::Tile<{csv}>, {s}>"),
-                file: format!("gemm_mma_pipe_kernel_aegis__gemm__mma_detail__Tile_{us}___{s}__"),
-                mangled: format!("gemm_mma_pipe_kernelINS0_10mma_detail4TileI{}EE{}EE", li(&t), li(&[s])),
-            },
-            None => Names {
-                demangled: format!("gemm_mma_kernel<aegis::gemm::mma_detail::Tile<{csv}> >"),
-                file: format!("gemm_mma_kernel_aegis__gemm__mma_detail__Tile_{us}______half"),
-                mangled: format!("gemm_mma_kernelINS0_10mma_detail4TileI{}EEEEEv", li(&t)),
-            },
-        });
-    }
-    None // baselines (cuBLAS) have no AEGIS artifacts
+    let t = [g("BM")?, g("BN")?, g("BK")?, g("WARPS_M")?, g("WARPS_N")?];
+    let li: String = t.iter().map(|x| format!("Li{x}E")).collect();
+    Some(format!(
+        "gemm_mma_pipe_kernelINS0_10mma_detail4TileI{li}LNS0_6LayoutE0ELS5_0EEELi{}EEEvNS0_7KParamsEbb",
+        g("STAGES")?
+    ))
 }
 
-fn sass(dir: &Path, n: &Names) -> Result<Option<Sass>> {
-    let Ok(entries) = std::fs::read_dir(dir) else { return Ok(None) };
-    let mut hits: Vec<PathBuf> = entries
+/// The kernel symbol a SASS listing is for (its first `Function :` line).
+fn listing_symbol(path: &Path) -> Option<String> {
+    let f = std::fs::File::open(path).ok()?;
+    BufReader::new(f).lines().take(64).map_while(Result::ok).find_map(|l| {
+        l.trim().strip_prefix("Function : ").map(|s| s.trim().to_string())
+    })
+}
+
+fn sass(dir: &Path, sym: &str) -> Result<(Option<Sass>, Option<String>)> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Ok((None, Some(format!("no SASS dump ({} missing)", dir.display()))));
+    };
+    let mut hits: Vec<(PathBuf, String)> = entries
         .flatten()
         .map(|e| e.path())
-        .filter(|p| {
-            p.extension().is_some_and(|e| e == "sass")
-                && p.file_name().is_some_and(|f| f.to_string_lossy().contains(&n.file))
-        })
+        .filter(|p| p.extension().is_some_and(|e| e == "sass"))
+        .filter_map(|p| listing_symbol(&p).filter(|s| s.contains(sym)).map(|s| (p, s)))
         .collect();
     hits.sort();
     match &hits[..] {
-        [p] => {
+        [(p, s)] => {
             let text = std::fs::read_to_string(p)?;
-            Ok(Some(Sass { path: p.display().to_string(), lines: text.lines().count(), text }))
+            Ok((Some(Sass { path: p.display().to_string(), symbol: s.clone(), lines: text.lines().count(), text }), None))
         }
-        _ => Ok(None), // none, or ambiguous: show nothing rather than the wrong kernel
+        [] => Ok((None, Some("no SASS listing of the row-major instantiation in the dump".into()))),
+        _ => Ok((None, Some(format!("{} listings claim this kernel; showing none", hits.len())))),
     }
 }
 
-fn instruction_mix(dir: &Path, n: &Names) -> Result<Option<BTreeMap<String, i64>>> {
-    let Ok(text) = std::fs::read_to_string(dir.join("instruction-mix.txt")) else { return Ok(None) };
-    let mut lines = text.lines();
-    let Some(header) = lines.next() else { return Ok(None) };
-    let cols: Vec<&str> = header.split_whitespace().skip(1).collect();
-    for line in lines {
-        let toks: Vec<&str> = line.split_whitespace().collect();
-        if toks.len() <= cols.len() {
-            continue;
-        }
-        let (name, counts) = toks.split_at(toks.len() - cols.len());
-        if name.join(" ") != n.demangled {
-            continue;
-        }
-        let counts: Option<Vec<i64>> = counts.iter().map(|c| c.parse().ok()).collect();
-        return Ok(counts.map(|c| cols.iter().map(|s| s.to_string()).zip(c).collect()));
-    }
-    Ok(None)
+/// `grep -cE "\bOP"`: lines with OP at a word start (tools/sass_dump.sh).
+fn count_lines(text: &str, op: &str) -> i64 {
+    let starts_word = |line: &str, i: usize| i == 0 || !line.as_bytes()[i - 1].is_ascii_alphanumeric() && line.as_bytes()[i - 1] != b'_';
+    text.lines().filter(|l| l.match_indices(op).any(|(i, _)| starts_word(l, i))).count() as i64
 }
 
-fn resource_usage(dir: &Path, n: &Names) -> Result<Option<ResourceUsage>> {
+fn instruction_mix(s: &Sass) -> BTreeMap<String, i64> {
+    [("HMMA", "HMMA"), ("LDSM", "LDSM"), ("LDGSTS", "LDGSTS"), ("LDG", "LDG."), ("STS", "STS")]
+        .into_iter()
+        .map(|(name, op)| (name.to_string(), count_lines(&s.text, op)))
+        .collect()
+}
+
+fn resource_usage(dir: &Path, sym: &str) -> Result<Option<ResourceUsage>> {
     let Ok(text) = std::fs::read_to_string(dir.join("resource-usage.txt")) else { return Ok(None) };
     let lines: Vec<&str> = text.lines().collect();
     let found: Vec<usize> = (0..lines.len())
-        .filter(|&i| lines[i].trim_start().starts_with("Function ") && lines[i].contains(&n.mangled))
+        .filter(|&i| lines[i].trim_start().starts_with("Function ") && lines[i].contains(sym))
         .collect();
     let [i] = found[..] else { return Ok(None) };
     let Some(usage) = lines.get(i + 1) else { return Ok(None) };
@@ -213,24 +201,39 @@ pub fn kernel_detail(src: &Sources, con: &Connection, kernel_id: &str) -> Result
     }
     archs.sort();
     archs.dedup();
-    let names = names(&k.impl_, &config);
+    let sym = symbol(&k.impl_, &config);
     let mut artifacts = Vec::new();
     for sm in archs {
         let dir = src.sass_dir.join(format!("sm_{sm}"));
-        artifacts.push(match &names {
-            Some(n) => ArchArtifacts {
+        artifacts.push(match &sym {
+            Some(sym) => {
+                let (sass, sass_note) = sass(&dir, sym)?;
+                ArchArtifacts {
+                    sm,
+                    instruction_mix: sass.as_ref().map(instruction_mix),
+                    sass,
+                    sass_note,
+                    resource_usage: resource_usage(&dir, sym)?,
+                }
+            }
+            None => ArchArtifacts {
                 sm,
-                sass: sass(&dir, n)?,
-                instruction_mix: instruction_mix(&dir, n)?,
-                resource_usage: resource_usage(&dir, n)?,
+                sass: None,
+                sass_note: Some(if aegis_perf::db::is_baseline(&k.impl_) {
+                    "a cuBLAS baseline: no AEGIS SASS".into()
+                } else {
+                    format!("no kernel symbol known for {} (only the mma_pipe family)", k.impl_)
+                }),
+                instruction_mix: None,
+                resource_usage: None,
             },
-            None => ArchArtifacts { sm, sass: None, instruction_mix: None, resource_usage: None },
         });
     }
 
     Ok(Some(KernelDetail {
         baseline: aegis_perf::db::is_baseline(&k.impl_),
         nsight_reports: nsight(src, &k.impl_),
+        nsight_stalls: None,
         regs: measured(k.regs),
         smem_bytes: measured(k.smem_bytes),
         local_bytes: measured(k.local_bytes),
