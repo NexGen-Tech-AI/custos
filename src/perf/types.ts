@@ -236,6 +236,9 @@ export interface RooflinePoint {
     vs_cublaslt_best: VsBaseline | null;
     dispatch: Dispatch | null;
     tie: Tie | null;
+    winner_impl: string | null;
+    paired_ab: PairedAb | null;
+    decode_spotlight: DecodeSpotlight | null;
   };
 }
 
@@ -311,6 +314,8 @@ export interface Winner {
   pct_of_cublas: number | null;
   tie: Tie;
   roof: RoofMetrics | null;
+  paired_ab: PairedAb;
+  decode_spotlight: DecodeSpotlight | null;
 }
 
 /** Kernel detail (custos-perf kernel.rs). */
@@ -355,3 +360,57 @@ export interface LtAlgo {
 export type SassOrigin =
   | { kind: 'core_artifact' }
   | { kind: 'compiled_from_tag'; tag: string; source: string | null };
+
+/** A stored paired-ab result against cublaslt_best, as % of its speed
+ *  (custos-perf winners.rs AbResult). Confirmed only from a clean build. */
+export interface AbResult {
+  source: string;
+  id: number;
+  impl: string;
+  sha_a: string | null;
+  sha_b: string | null;
+  pct_of_cublaslt_best: number;
+  ci_lo_pct: number;
+  ci_hi_pct: number;
+  pairs: number;
+  verdict: 'win' | 'tie' | 'loss';
+  provenance: 'clean' | 'dirty' | 'unlinked';
+  provenance_label: string | null;
+  confirmed: boolean;
+  /** "win (confirmed)", "win (unreproducible: dirty build)", ... */
+  label: string;
+  started_at: string;
+  excluded: number;
+}
+
+/** The kernel's and the dispatch's paired-ab results; null: none stored. */
+export interface PairedAb {
+  kernel: AbResult | null;
+  dispatch: AbResult | null;
+}
+
+/** A cited section of Core's docs (custos-perf docs.rs). */
+export interface DocRef {
+  doc: string;
+  path: string;
+  heading: string;
+  line: number;
+  why: string | null;
+}
+
+export interface Diagnosis {
+  label: string;
+  source: DocRef;
+}
+
+/** Decode shapes only (M <= 16). */
+export interface DecodeSpotlight {
+  pct_of_read_roof: number | null;
+  read_bw_gbps: number | null;
+  family: string;
+  path: string | null;
+  /** The config's requested split-K (S); 0 = auto (one wave). */
+  split_k: number | null;
+  /** Only where Core's docs state one. */
+  diagnosis: Diagnosis | null;
+}

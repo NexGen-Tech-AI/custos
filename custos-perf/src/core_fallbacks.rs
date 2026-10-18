@@ -71,3 +71,27 @@ pub fn stored_lt_algos(con: &Connection, arch: i64) -> Result<std::collections::
     }
     Ok(out)
 }
+
+/// A diagnosis Core states in prose in its docs, which Custos shows on the
+/// shapes it names. Core has no machine-readable diagnosis per shape
+/// (docs/core-requests.md #9), so each entry here names the doc section
+/// and the sentences that state it; Custos shows the label only while that
+/// section still states them (`docs::stated`), and links it. Never a Custos
+/// judgement: an entry is added only for a statement Core made.
+pub struct StatedDiagnosis {
+    pub shapes: &'static [&'static str],
+    pub label: &'static str,
+    /// Under Core's docs/: "LOG.md" or "analysis/<name>.md".
+    pub doc: &'static str,
+    pub heading: &'static str,
+    /// Each must appear verbatim in the section.
+    pub quotes: &'static [&'static str],
+}
+
+pub const STATED_DIAGNOSES: &[StatedDiagnosis] = &[StatedDiagnosis {
+    shapes: &["1x896x896", "16x896x896"],
+    label: "below floor: launch-overhead bound",
+    doc: "LOG.md",
+    heading: "2026-10-17 — Phase C step 4: decode results, winners and dispatch",
+    quotes: &["**The 896x896 shapes** run at ~65-70% of the floor", "They are bound by launch overhead"],
+}];

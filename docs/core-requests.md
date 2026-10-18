@@ -398,3 +398,45 @@ visible as disowned, with its reason, when someone asks why the model moved.
   and their reasons behind a toggle).
 - The Device view (a "show invalidated" control, each row labeled with its
   reason).
+
+---
+
+## 9. Decode floor and stated diagnoses as data
+
+**Status:** open, 2026-10-18. Fallback in use:
+`custos-perf/src/core_fallbacks.rs` (`STATED_DIAGNOSES`), checked against
+Core's docs at run time (`custos-perf/src/docs.rs::stated`).
+
+### What Custos needs
+
+1. **The decode floor.** LOG (2026-10-17, Phase C steps 2 and 4) reports
+   decode shapes as "% of the floor", floor = bytes(B) / read_bw (B's bytes
+   only). aegis-perf has no such function: `params::ArchParams::roof` counts
+   compulsory traffic (A, B and C), and that is what `aegis-perf report`
+   prints, so Custos's decode spotlight shows "% of the read roof" (it
+   matches the report: 1x896x896 65.3%, LOG's floor 69.8% in the paired-ab
+   table). Requested: e.g. `params::ArchParams::decode_floor_us(m, n, k)` (or
+   a `floor` field on `Roof`), so "% of floor" is one definition, Core's.
+2. **Diagnoses per shape.** The decode spotlight marks a shape "below floor:
+   launch-overhead bound" only where Core states it. Today the only statement
+   is prose: LOG 2026-10-17 Phase C step 4, "**The 896x896 shapes** run at
+   ~65-70% of the floor ... They are bound by launch overhead". Custos
+   carries the shapes, the label and the sentences in `STATED_DIAGNOSES` and
+   shows the label only while that section still contains them. Requested:
+   a machine-readable record (e.g. a `diagnoses` table or an
+   `analysis/diagnoses.json` with shape, arch, label, source section), so a
+   diagnosis Core revises or withdraws disappears from Custos without a
+   Custos change.
+
+### Why
+
+Contract rules 9 and 12: no Custos judgement and no restated definition.
+A paraphrase of a doc can drift from what Core meant; a record cannot.
+
+### Custos code waiting on it
+
+- `custos-perf/src/core_fallbacks.rs` (`STATED_DIAGNOSES`; delete it).
+- `custos-perf/src/winners.rs` (`DecodeSpotlight::pct_of_read_roof`,
+  `spotlight()`), `src/components/sections/perf/DecodeSpotlight.tsx`.
+- Tests: `custos-perf/tests/decode_spotlight.rs`
+  (`launch_overhead_diagnosis_only_where_core_states_it`).

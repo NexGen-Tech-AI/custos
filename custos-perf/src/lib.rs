@@ -109,6 +109,7 @@ impl Sources {
 
 pub mod core_fallbacks;
 pub mod device;
+pub mod docs;
 pub mod kernel;
 pub mod measure;
 pub mod roof;

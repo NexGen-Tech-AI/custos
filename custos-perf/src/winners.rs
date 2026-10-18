@@ -208,6 +208,144 @@ fn bars(m: i64, n: i64, k: i64, lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best:
     Bars { class, bar, floor, verdict, margin, below_floor: range.map(|(_, hi)| hi < floor), basis, provisional: true }
 }
 
+/// A stored paired-ab result against cublaslt_best (`paired_results`): the
+/// two impls on one shape, alternating processes, as a % of cublaslt_best's
+/// speed (100 / (impl time / cublaslt_best time)) with its 95% CI. A call
+/// ("win", "tie", "loss") is confirmed only from a clean build linked to the
+/// runs (docs/core-requests.md #5); otherwise it is labeled.
+#[derive(Clone, Debug, Serialize)]
+pub struct AbResult {
+    /// "paired_results #<id>".
+    pub source: String,
+    pub id: i64,
+    /// The impl measured against cublaslt_best.
+    #[serde(rename = "impl")]
+    pub impl_: String,
+    pub sha_a: Option<String>,
+    pub sha_b: Option<String>,
+    pub pct_of_cublaslt_best: f64,
+    pub ci_lo_pct: f64,
+    pub ci_hi_pct: f64,
+    pub pairs: i64,
+    /// From the CI: "win" (above 100%), "tie" (contains it) or "loss".
+    pub verdict: &'static str,
+    pub provenance: &'static str,
+    pub provenance_label: Option<&'static str>,
+    /// The verdict counts: the result is from a clean, linked build.
+    pub confirmed: bool,
+    /// "win (confirmed)", "win (unreproducible: dirty build)", "tie (unlinked build)".
+    pub label: String,
+    pub started_at: String,
+    /// Matching results left out: disturbed, or busy / unread idle guard (rule 2).
+    pub excluded: usize,
+}
+
+/// The newest clean-GPU paired-ab of `impl_` against cublaslt_best at `shape`
+/// (protocol 2, cold), either stored order.
+fn ab_vs_cublaslt(results: &[view::PairedResult], run_shas: &[String], shape: (i64, i64, i64), impl_: &str) -> Option<AbResult> {
+    let mut excluded = 0;
+    let mut hit = None;
+    for p in results.iter().filter(|p| (p.m, p.n, p.k) == shape && p.protocol_version == 2 && p.cache_mode == "cold") {
+        // time ratio impl / cublaslt_best: stored as B / A.
+        let ratio = if p.impl_a == "cublaslt_best" && p.impl_b == impl_ {
+            (p.ratio, p.ci_lo, p.ci_hi)
+        } else if p.impl_b == "cublaslt_best" && p.impl_a == impl_ {
+            (1.0 / p.ratio, 1.0 / p.ci_hi, 1.0 / p.ci_lo)
+        } else {
+            continue;
+        };
+        if p.disturbed == Some(true) || p.busy() {
+            excluded += 1;
+            continue;
+        }
+        hit = Some((p, ratio)); // oldest first: the last is the newest
+    }
+    let (p, (r, lo, hi)) = hit?;
+    let (pct, ci_lo_pct, ci_hi_pct) = (100.0 / r, 100.0 / hi, 100.0 / lo);
+    let verdict = if ci_lo_pct > 100.0 { "win" } else if ci_hi_pct < 100.0 { "loss" } else { "tie" };
+    let prov = crate::measure::Provenance::of(p, run_shas);
+    let confirmed = prov.provenance == "clean";
+    let label = match prov.provenance {
+        "clean" => format!("{verdict} (confirmed)"),
+        "dirty" => format!("{verdict} (unreproducible: dirty build)"),
+        _ => format!("{verdict} (unlinked build)"),
+    };
+    Some(AbResult {
+        source: format!("paired_results #{}", p.id),
+        id: p.id,
+        impl_: impl_.to_string(),
+        sha_a: p.sha_a.clone(),
+        sha_b: p.sha_b.clone(),
+        pct_of_cublaslt_best: pct,
+        ci_lo_pct,
+        ci_hi_pct,
+        pairs: p.pairs,
+        verdict,
+        provenance: prov.provenance,
+        provenance_label: prov.provenance_label,
+        confirmed,
+        label,
+        started_at: p.started_at.clone(),
+        excluded,
+    })
+}
+
+/// Paired-ab results of the shape against cublaslt_best: the winner kernel
+/// itself, and the dispatch as a caller sees it (`db::DISPATCH_IMPL`,
+/// aegis::matmul). None: no such result.
+#[derive(Clone, Debug, Serialize)]
+pub struct PairedAb {
+    pub kernel: Option<AbResult>,
+    pub dispatch: Option<AbResult>,
+}
+
+/// What the decode spotlight shows for a decode shape (M <= DECODE_MAX_M)
+/// beyond the row: its position against the read-bandwidth roof, the impl
+/// family and split-K, and a diagnosis only where Core states one.
+#[derive(Clone, Debug, Serialize)]
+pub struct DecodeSpotlight {
+    /// % of the read roof (compulsory traffic, the read bandwidth of the
+    /// arch file), as `aegis-perf report` prints it; None without an arch file.
+    pub pct_of_read_roof: Option<f64>,
+    pub read_bw_gbps: Option<f64>,
+    /// The impl family: the impl name up to its first numeric field
+    /// ("gemv_tc", "gemv", "mma_pipe").
+    pub family: String,
+    /// The config's data path ("tensor_core"); None when the config has none.
+    pub path: Option<String>,
+    /// The config's requested split-K count (`S`; 0 = auto, one wave). The
+    /// effective count per call is Core's (`gemv_split_count`), not stored.
+    pub split_k: Option<i64>,
+    /// A diagnosis Core states for the shape, with its source; None: no
+    /// statement, so the number stands alone.
+    pub diagnosis: Option<Diagnosis>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Diagnosis {
+    pub label: &'static str,
+    pub source: crate::docs::DocRef,
+}
+
+pub fn family(impl_: &str) -> String {
+    impl_.split('_').take_while(|t| !t.starts_with(|c: char| c.is_ascii_digit())).collect::<Vec<_>>().join("_")
+}
+
+fn spotlight(src: &Sources, w: &Winner) -> DecodeSpotlight {
+    let diagnosis = core_fallbacks::STATED_DIAGNOSES.iter().filter(|d| d.shapes.contains(&w.shape_bucket.as_str())).find_map(|d| {
+        Some(Diagnosis { label: d.label, source: crate::docs::stated(src, d.doc, d.heading, d.quotes)? })
+    });
+    let read = w.roof.as_ref().filter(|r| r.roof == "read");
+    DecodeSpotlight {
+        pct_of_read_roof: read.map(|r| r.pct_roof),
+        read_bw_gbps: read.map(|r| r.roof_gbps),
+        family: family(&w.impl_),
+        path: w.config.get("path").and_then(Value::as_str).map(str::to_string),
+        split_k: w.config.get("S").and_then(Value::as_i64),
+        diagnosis,
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Winner {
     pub sm_arch: i64,
@@ -245,6 +383,10 @@ pub struct Winner {
     /// Core, schema v4): the baseline's algorithm, and what aegis::matmul
     /// runs when the shape dispatches to cuBLASLt. None: not stored.
     pub lt_algo: Option<LtAlgo>,
+    /// Stored paired-ab results against cublaslt_best (kernel, dispatch).
+    pub paired_ab: PairedAb,
+    /// Decode shapes only.
+    pub decode_spotlight: Option<DecodeSpotlight>,
 }
 
 /// Negative register counts mark baselines Core cannot inspect.
@@ -322,6 +464,8 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>
         pct_of_cublas: w.pct_of_cublas,
         roof,
         lt_algo,
+        paired_ab: PairedAb { kernel: None, dispatch: None },
+        decode_spotlight: None,
     }
 }
 
@@ -330,13 +474,26 @@ pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> 
     let params = roof::load(src, sm)?;
     let lt = core_fallbacks::stored_lt_algos(con, sm)?;
     let header = StoredDispatch::load(src, sm);
+    let ab = view::paired_results(con, &view::PairedResultFilter::default())?;
+    let run_shas = crate::measure::run_shas(con)?;
     Ok(view::winners(con, Some(sm))?
         .into_iter()
         .map(|w| {
             let r = params.as_ref().map(|p| roof::metrics(p, w.m, w.n, w.k, w.median_us));
             let algo = if w.op == "gemm" { lt.get(&(w.m, w.n, w.k)).copied() } else { None };
             let stored = header.as_ref().filter(|_| w.op == "gemm").and_then(|h| Some((h.get((w.m, w.n, w.k))?, h.source.as_str())));
-            from_view(w, r, algo, stored)
+            let mut x = from_view(w, r, algo, stored);
+            // paired_results carry no arch or dtype (core-requests #5): matched on
+            // shape and impls, so only for the arch the DB was measured on.
+            let shape = (x.m, x.n, x.k);
+            x.paired_ab = PairedAb {
+                kernel: ab_vs_cublaslt(&ab, &run_shas, shape, &x.impl_),
+                dispatch: ab_vs_cublaslt(&ab, &run_shas, shape, aegis_perf::db::DISPATCH_IMPL),
+            };
+            if x.decode {
+                x.decode_spotlight = Some(spotlight(src, &x));
+            }
+            x
         })
         .collect())
 }

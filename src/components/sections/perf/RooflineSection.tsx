@@ -6,6 +6,7 @@
 // give the config, % of cublaslt_best with its paired CI, and the dispatch
 // target (Core's rule and 80% floor, aegis-perf tune::dispatch).
 import { useEffect, useMemo, useState } from 'react';
+import { DecodeSpotlightPanel, spotRowsFromRoofline } from './DecodeSpotlight';
 import {
   CartesianGrid,
   ResponsiveContainer,
@@ -330,6 +331,11 @@ export function RooflineSection() {
             <h3 className="text-lg font-semibold mb-3">Points</h3>
             <PointTable r={data} />
           </div>
+          {spotRowsFromRoofline(data).length > 0 && (
+            <div className={panel}>
+              <DecodeSpotlightPanel rows={spotRowsFromRoofline(data)} />
+            </div>
+          )}
         </>
       )}
     </div>

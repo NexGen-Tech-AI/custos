@@ -7,6 +7,7 @@
 // custos-perf applies Core's documented bars (core_fallbacks.rs).
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
+import { DecodeSpotlightPanel, spotRowsFromWinners } from './DecodeSpotlight';
 import type { Bars, Winner } from '../../../perf/types';
 import {
   DisagreeWarning,
@@ -215,6 +216,11 @@ export function WinnersSection() {
           </>
         )}
       </div>
+      {rows !== null && spotRowsFromWinners(rows).length > 0 && (
+        <div className={panel}>
+          <DecodeSpotlightPanel rows={spotRowsFromWinners(rows)} />
+        </div>
+      )}
     </div>
   );
 }

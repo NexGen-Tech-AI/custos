@@ -1,6 +1,6 @@
 // Formatting for perf views. A null value renders as "not measured", never a
 // placeholder number (project rules 9 and 16).
-import type { Ci, Dispatch, LtAlgo, VsBaseline, Tie } from './types';
+import type { AbResult, Ci, Dispatch, DocRef, LtAlgo, VsBaseline, Tie } from './types';
 
 export const NOT_MEASURED = 'not measured';
 
@@ -145,5 +145,25 @@ export function DispatchMismatch({ d }: { d: Dispatch | null }) {
       </div>
       <div className="text-gray-500 dark:text-gray-400">filed in docs/core-requests.md #4</div>
     </div>
+  );
+}
+
+/** "106.2% [105.2, 106.7] of cublaslt_best": a paired-ab result's speed. */
+export function abText(a: AbResult | null): string | null {
+  if (!a) return null;
+  return `${a.pct_of_cublaslt_best.toFixed(1)}% [${a.ci_lo_pct.toFixed(1)}, ${a.ci_hi_pct.toFixed(1)}] of cublaslt_best`;
+}
+
+/** "docs/LOG.md:1977 § 2026-10-17 — Phase C step 4: ..." */
+export function docRefText(d: DocRef): string {
+  return `${d.doc}:${d.line} § ${d.heading}`;
+}
+
+/** A cited doc section; the file Custos read it from is its title. */
+export function DocCite({ d, col }: { d: DocRef; col?: string }) {
+  return (
+    <span className="font-mono text-xs text-blue-700 dark:text-blue-300" title={d.path} data-col={col}>
+      {docRefText(d)}
+    </span>
   );
 }

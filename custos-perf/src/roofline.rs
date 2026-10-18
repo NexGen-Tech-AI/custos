@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::roof::{self, ArchRoofs, RoofMetrics};
-use crate::winners::{self, Dispatch, Tie, VsBaseline};
+use crate::winners::{self, DecodeSpotlight, Dispatch, PairedAb, Tie, VsBaseline};
 use crate::Sources;
 
 #[derive(Clone, Debug, Serialize)]
@@ -17,6 +17,10 @@ pub struct Hover {
     pub vs_cublaslt_best: Option<VsBaseline>,
     pub dispatch: Option<Dispatch>,
     pub tie: Option<Tie>,
+    /// The winner's impl (the "winner" point's own; the baseline point's shape winner).
+    pub winner_impl: Option<String>,
+    pub paired_ab: Option<PairedAb>,
+    pub decode_spotlight: Option<DecodeSpotlight>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -61,6 +65,9 @@ pub fn roofline(src: &Sources, con: &Connection, sm: i64) -> Result<Option<Roofl
                     vs_cublaslt_best: w.map(|w| w.vs_cublaslt_best.clone()),
                     dispatch: w.map(|w| w.dispatch.clone()),
                     tie: w.map(|w| w.tie.clone()),
+                    winner_impl: w.map(|w| w.impl_.clone()),
+                    paired_ab: w.map(|w| w.paired_ab.clone()),
+                    decode_spotlight: w.and_then(|w| w.decode_spotlight.clone()),
                 },
                 label: p.label,
                 shape_bucket: p.shape_bucket,

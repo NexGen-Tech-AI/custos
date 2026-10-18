@@ -81,7 +81,13 @@
           },
           "runner_up_gap_pct": 1.648000000000005,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_128x64x32_2x2_s2",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -154,7 +160,13 @@
           },
           "runner_up_gap_pct": 1.648000000000005,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_128x64x32_2x2_s2",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -227,6 +239,53 @@
           },
           "runner_up_gap_pct": 0.27399999999999647,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #40",
+            "id": 40,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.09548235310116,
+            "ci_lo_pct": 100.64667734154882,
+            "ci_hi_pct": 102.26606007321001,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:22:12.349196+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #41",
+            "id": 41,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.25404660155964,
+            "ci_lo_pct": 100.7405607694085,
+            "ci_hi_pct": 103.21792304636409,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:23:29.783274+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 91.38737834511163,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": null
         }
       }
     },
@@ -300,6 +359,53 @@
           },
           "runner_up_gap_pct": 0.27399999999999647,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #40",
+            "id": 40,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.09548235310116,
+            "ci_lo_pct": 100.64667734154882,
+            "ci_hi_pct": 102.26606007321001,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:22:12.349196+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #41",
+            "id": 41,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.25404660155964,
+            "ci_lo_pct": 100.7405607694085,
+            "ci_hi_pct": 103.21792304636409,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:23:29.783274+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 91.38737834511163,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": null
         }
       }
     },
@@ -374,6 +480,53 @@
           },
           "runner_up_gap_pct": 0.11699999999998933,
           "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #43",
+            "id": 43,
+            "impl": "gemv_tc_16x64x64_1x4_s5_k3",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.30843891685987,
+            "ci_lo_pct": 97.33826344614793,
+            "ci_hi_pct": 100.84745784174044,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:25:54.897324+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #44",
+            "id": 44,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.20922459122764,
+            "ci_lo_pct": 100.58133975674467,
+            "ci_hi_pct": 101.7875292276448,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:27:12.508097+00:00",
+            "excluded": 5
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 89.40162235133899,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 3,
+          "diagnosis": null
         }
       }
     },
@@ -448,6 +601,53 @@
           },
           "runner_up_gap_pct": 0.11699999999998933,
           "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #43",
+            "id": 43,
+            "impl": "gemv_tc_16x64x64_1x4_s5_k3",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.30843891685987,
+            "ci_lo_pct": 97.33826344614793,
+            "ci_hi_pct": 100.84745784174044,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:25:54.897324+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #44",
+            "id": 44,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 101.20922459122764,
+            "ci_lo_pct": 100.58133975674467,
+            "ci_hi_pct": 101.7875292276448,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:27:12.508097+00:00",
+            "excluded": 5
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 89.40162235133899,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 3,
+          "diagnosis": null
         }
       }
     },
@@ -521,6 +721,62 @@
           },
           "runner_up_gap_pct": 2.143000000000006,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #36",
+            "id": 36,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 114.8010469780332,
+            "ci_lo_pct": 113.53965775772157,
+            "ci_hi_pct": 115.33848895810999,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:17:17.373229+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #38",
+            "id": 38,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 115.00357945733057,
+            "ci_lo_pct": 113.56780609565718,
+            "ci_hi_pct": 115.43869598451901,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:19:49.062838+00:00",
+            "excluded": 1
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 67.6415120665159,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": {
+            "label": "below floor: launch-overhead bound",
+            "source": {
+              "doc": "docs/LOG.md",
+              "path": "tests/fixtures/docs/LOG.md",
+              "heading": "2026-10-17 — Phase C step 4: decode results, winners and dispatch",
+              "line": 1977,
+              "why": null
+            }
+          }
         }
       }
     },
@@ -594,6 +850,62 @@
           },
           "runner_up_gap_pct": 2.143000000000006,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #36",
+            "id": 36,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 114.8010469780332,
+            "ci_lo_pct": 113.53965775772157,
+            "ci_hi_pct": 115.33848895810999,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:17:17.373229+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #38",
+            "id": 38,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 115.00357945733057,
+            "ci_lo_pct": 113.56780609565718,
+            "ci_hi_pct": 115.43869598451901,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:19:49.062838+00:00",
+            "excluded": 1
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 67.6415120665159,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": {
+            "label": "below floor: launch-overhead bound",
+            "source": {
+              "doc": "docs/LOG.md",
+              "path": "tests/fixtures/docs/LOG.md",
+              "heading": "2026-10-17 — Phase C step 4: decode results, winners and dispatch",
+              "line": 1977,
+              "why": null
+            }
+          }
         }
       }
     },
@@ -667,6 +979,53 @@
           },
           "runner_up_gap_pct": 0.34199999999999786,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x128x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #30",
+            "id": 30,
+            "impl": "gemv_tc_16x128x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.20863780724366,
+            "ci_lo_pct": 97.68340269499126,
+            "ci_hi_pct": 101.1566554515081,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:07:15.299243+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #31",
+            "id": 31,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.2993837835384,
+            "ci_lo_pct": 99.32720761397337,
+            "ci_hi_pct": 101.14098325650649,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:08:34.443113+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 92.31869841882958,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": null
         }
       }
     },
@@ -740,6 +1099,53 @@
           },
           "runner_up_gap_pct": 0.34199999999999786,
           "pick_reason": "fastest"
+        },
+        "winner_impl": "gemv_tc_16x128x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #30",
+            "id": 30,
+            "impl": "gemv_tc_16x128x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.20863780724366,
+            "ci_lo_pct": 97.68340269499126,
+            "ci_hi_pct": 101.1566554515081,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:07:15.299243+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #31",
+            "id": 31,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 100.2993837835384,
+            "ci_lo_pct": 99.32720761397337,
+            "ci_hi_pct": 101.14098325650649,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:08:34.443113+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 92.31869841882958,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": null
         }
       }
     },
@@ -821,6 +1227,53 @@
           },
           "runner_up_gap_pct": 0.08500000000000174,
           "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #33",
+            "id": 33,
+            "impl": "gemv_tc_16x64x64_1x4_s5_k3",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 105.3401126948476,
+            "ci_lo_pct": 103.99226885758861,
+            "ci_hi_pct": 105.68899631748378,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:11:54.805276+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #34",
+            "id": 34,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 104.47747964219224,
+            "ci_lo_pct": 103.44485587615753,
+            "ci_hi_pct": 105.15048385446167,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:14:52.059174+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 92.3690824707964,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 3,
+          "diagnosis": null
         }
       }
     },
@@ -902,6 +1355,53 @@
           },
           "runner_up_gap_pct": 0.08500000000000174,
           "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #33",
+            "id": 33,
+            "impl": "gemv_tc_16x64x64_1x4_s5_k3",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 105.3401126948476,
+            "ci_lo_pct": 103.99226885758861,
+            "ci_hi_pct": 105.68899631748378,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:11:54.805276+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #34",
+            "id": 34,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 104.47747964219224,
+            "ci_lo_pct": 103.44485587615753,
+            "ci_hi_pct": 105.15048385446167,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:14:52.059174+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 92.3690824707964,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 3,
+          "diagnosis": null
         }
       }
     },
@@ -975,6 +1475,62 @@
           },
           "runner_up_gap_pct": null,
           "pick_reason": "fastest in the paired test (lower unpaired median: the runner-up)"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #27",
+            "id": 27,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 106.22090283911639,
+            "ci_lo_pct": 105.2061054715642,
+            "ci_hi_pct": 106.67515419317003,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:01:41.220993+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #28",
+            "id": 28,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 105.08025912235328,
+            "ci_lo_pct": 104.1787252648114,
+            "ci_hi_pct": 106.77640036157918,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:03:11.327382+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 65.32465551570947,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": {
+            "label": "below floor: launch-overhead bound",
+            "source": {
+              "doc": "docs/LOG.md",
+              "path": "tests/fixtures/docs/LOG.md",
+              "heading": "2026-10-17 — Phase C step 4: decode results, winners and dispatch",
+              "line": 1977,
+              "why": null
+            }
+          }
         }
       }
     },
@@ -1048,6 +1604,62 @@
           },
           "runner_up_gap_pct": null,
           "pick_reason": "fastest in the paired test (lower unpaired median: the runner-up)"
+        },
+        "winner_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #27",
+            "id": 27,
+            "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 106.22090283911639,
+            "ci_lo_pct": 105.2061054715642,
+            "ci_hi_pct": 106.67515419317003,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:01:41.220993+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #28",
+            "id": 28,
+            "impl": "aegis_matmul",
+            "sha_a": "0bd0f22a35a6-dirty",
+            "sha_b": "0bd0f22a35a6-dirty",
+            "pct_of_cublaslt_best": 105.08025912235328,
+            "ci_lo_pct": 104.1787252648114,
+            "ci_hi_pct": 106.77640036157918,
+            "pairs": 30,
+            "verdict": "win",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "win (unreproducible: dirty build)",
+            "started_at": "2026-10-18T05:03:11.327382+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": {
+          "pct_of_read_roof": 65.32465551570947,
+          "read_bw_gbps": 257.841,
+          "family": "gemv_tc",
+          "path": "tensor_core",
+          "split_k": 1,
+          "diagnosis": {
+            "label": "below floor: launch-overhead bound",
+            "source": {
+              "doc": "docs/LOG.md",
+              "path": "tests/fixtures/docs/LOG.md",
+              "heading": "2026-10-17 — Phase C step 4: decode results, winners and dispatch",
+              "line": 1977,
+              "why": null
+            }
+          }
         }
       }
     },
@@ -1122,7 +1734,47 @@
           },
           "runner_up_gap_pct": 1.4939999999999953,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_tma_128x128x32_2x4_s3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #20",
+            "id": 20,
+            "impl": "mma_tma_128x128x32_2x4_s3",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 85.81249973083594,
+            "ci_lo_pct": 85.4724717011938,
+            "ci_hi_pct": 86.36971842447555,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:05:07.832437+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #24",
+            "id": 24,
+            "impl": "aegis_matmul",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 85.32728152195268,
+            "ci_lo_pct": 85.01745129426085,
+            "ci_hi_pct": 85.7464608871726,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:27:58.453490+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1196,7 +1848,47 @@
           },
           "runner_up_gap_pct": 1.4939999999999953,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_tma_128x128x32_2x4_s3",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #20",
+            "id": 20,
+            "impl": "mma_tma_128x128x32_2x4_s3",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 85.81249973083594,
+            "ci_lo_pct": 85.4724717011938,
+            "ci_hi_pct": 86.36971842447555,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:05:07.832437+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #24",
+            "id": 24,
+            "impl": "aegis_matmul",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 85.32728152195268,
+            "ci_lo_pct": 85.01745129426085,
+            "ci_hi_pct": 85.7464608871726,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:27:58.453490+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1269,7 +1961,13 @@
           },
           "runner_up_gap_pct": 2.696999999999994,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1342,7 +2040,13 @@
           },
           "runner_up_gap_pct": 2.696999999999994,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1416,7 +2120,47 @@
           },
           "runner_up_gap_pct": 2.624000000000004,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_tma_128x256x32_2x4_s4",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #23",
+            "id": 23,
+            "impl": "mma_tma_128x256x32_2x4_s4",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 71.84915276328105,
+            "ci_lo_pct": 71.48017603929844,
+            "ci_hi_pct": 73.32692816585796,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:12:14.150355+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #25",
+            "id": 25,
+            "impl": "aegis_matmul",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 100.21970228211414,
+            "ci_lo_pct": 99.93965346683544,
+            "ci_hi_pct": 100.70529277264548,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:30:08.286010+00:00",
+            "excluded": 1
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1490,7 +2234,47 @@
           },
           "runner_up_gap_pct": 2.624000000000004,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_tma_128x256x32_2x4_s4",
+        "paired_ab": {
+          "kernel": {
+            "source": "paired_results #23",
+            "id": 23,
+            "impl": "mma_tma_128x256x32_2x4_s4",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 71.84915276328105,
+            "ci_lo_pct": 71.48017603929844,
+            "ci_hi_pct": 73.32692816585796,
+            "pairs": 30,
+            "verdict": "loss",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "loss (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:12:14.150355+00:00",
+            "excluded": 0
+          },
+          "dispatch": {
+            "source": "paired_results #25",
+            "id": 25,
+            "impl": "aegis_matmul",
+            "sha_a": "7e433cf9285e-dirty",
+            "sha_b": "7e433cf9285e-dirty",
+            "pct_of_cublaslt_best": 100.21970228211414,
+            "ci_lo_pct": 99.93965346683544,
+            "ci_hi_pct": 100.70529277264548,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-18T00:30:08.286010+00:00",
+            "excluded": 1
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1570,7 +2354,30 @@
           },
           "runner_up_gap_pct": 0.9509999999999907,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_128x64x32_2x2_s2",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": {
+            "source": "paired_results #15",
+            "id": 15,
+            "impl": "aegis_matmul",
+            "sha_a": "eccf61f5188e-dirty",
+            "sha_b": "eccf61f5188e-dirty",
+            "pct_of_cublaslt_best": 100.36647371127762,
+            "ci_lo_pct": 99.41364256788134,
+            "ci_hi_pct": 101.29200344287938,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-17T22:08:58.868693+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1650,7 +2457,30 @@
           },
           "runner_up_gap_pct": 0.9509999999999907,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_128x64x32_2x2_s2",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": {
+            "source": "paired_results #15",
+            "id": 15,
+            "impl": "aegis_matmul",
+            "sha_a": "eccf61f5188e-dirty",
+            "sha_b": "eccf61f5188e-dirty",
+            "pct_of_cublaslt_best": 100.36647371127762,
+            "ci_lo_pct": 99.41364256788134,
+            "ci_hi_pct": 101.29200344287938,
+            "pairs": 30,
+            "verdict": "tie",
+            "provenance": "dirty",
+            "provenance_label": "unreproducible (dirty build)",
+            "confirmed": false,
+            "label": "tie (unreproducible: dirty build)",
+            "started_at": "2026-10-17T22:08:58.868693+00:00",
+            "excluded": 0
+          }
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1723,7 +2553,13 @@
           },
           "runner_up_gap_pct": 1.9940000000000069,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1796,7 +2632,13 @@
           },
           "runner_up_gap_pct": 1.9940000000000069,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1870,7 +2712,13 @@
           },
           "runner_up_gap_pct": 0.12000000000000899,
           "pick_reason": "tie-break: fewer registers (71), neighbors tied at 0"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s3",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -1944,7 +2792,13 @@
           },
           "runner_up_gap_pct": 0.12000000000000899,
           "pick_reason": "tie-break: fewer registers (71), neighbors tied at 0"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s3",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -2017,7 +2871,13 @@
           },
           "runner_up_gap_pct": 0.25999999999999357,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     },
     {
@@ -2090,7 +2950,13 @@
           },
           "runner_up_gap_pct": 0.25999999999999357,
           "pick_reason": "fastest"
-        }
+        },
+        "winner_impl": "mma_pipe_64x64x32_2x2_s4",
+        "paired_ab": {
+          "kernel": null,
+          "dispatch": null
+        },
+        "decode_spotlight": null
       }
     }
   ]

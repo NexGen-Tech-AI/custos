@@ -220,6 +220,43 @@ fn linked(stored: Option<&str>, run_shas: &[String]) -> bool {
     commit(s).len() >= RUNS_SHA_LEN && run_shas.iter().filter(|r| same_build(Some(s), r)).count() == 1
 }
 
+/// Whether a stored paired result can be reproduced and tied to the measured
+/// runs (docs/core-requests.md #5).
+pub struct Provenance {
+    /// A build had uncommitted changes (`-dirty`).
+    pub dirty: bool,
+    /// Both builds name exactly one runs.git_sha.
+    pub linked: bool,
+    /// "clean", "dirty" or "unlinked"; only "clean" decides anything.
+    pub provenance: &'static str,
+    /// "unreproducible (dirty build)" or "unlinked build"; None when clean.
+    pub provenance_label: Option<&'static str>,
+}
+
+impl Provenance {
+    pub fn of(p: &view::PairedResult, run_shas: &[String]) -> Provenance {
+        let dirty = |s: &Option<String>| s.as_deref().is_some_and(|s| s.ends_with("-dirty"));
+        let dirty = dirty(&p.sha_a) || dirty(&p.sha_b);
+        let linked = linked(p.sha_a.as_deref(), run_shas) && linked(p.sha_b.as_deref(), run_shas);
+        let (provenance, provenance_label) = if dirty {
+            ("dirty", Some("unreproducible (dirty build)"))
+        } else if !linked {
+            ("unlinked", Some("unlinked build"))
+        } else {
+            ("clean", None)
+        };
+        Provenance { dirty, linked, provenance, provenance_label }
+    }
+}
+
+/// Every distinct runs.git_sha, for [`Provenance::of`].
+pub fn run_shas(con: &Connection) -> Result<Vec<String>> {
+    let mut shas: Vec<String> = view::runs(con)?.into_iter().filter_map(|r| r.git_sha).collect();
+    shas.sort();
+    shas.dedup();
+    Ok(shas)
+}
+
 /// The stored paired result backing row `ra` (build a) vs build b: same shape,
 /// the same impl on both sides, the selection's protocol and cache mode, the
 /// two builds in either order. Disturbed or busy results (idle reading above
@@ -261,16 +298,7 @@ fn paired_evidence(
     let older = hits.len().saturating_sub(1);
     let ev = hits.last().map(|&(p, inverted)| {
         let (ratio, lo, hi) = if inverted { (1.0 / p.ratio, 1.0 / p.ci_hi, 1.0 / p.ci_lo) } else { (p.ratio, p.ci_lo, p.ci_hi) };
-        let dirty = |s: &Option<String>| s.as_deref().is_some_and(|s| s.ends_with("-dirty"));
-        let dirty = dirty(&p.sha_a) || dirty(&p.sha_b);
-        let linked = linked(p.sha_a.as_deref(), run_shas) && linked(p.sha_b.as_deref(), run_shas);
-        let (provenance, provenance_label) = if dirty {
-            ("dirty", Some("unreproducible (dirty build)"))
-        } else if !linked {
-            ("unlinked", Some("unlinked build"))
-        } else {
-            ("clean", None)
-        };
+        let Provenance { dirty, linked, provenance, provenance_label } = Provenance::of(p, run_shas);
         PairedEvidence {
             source: format!("paired_results #{}", p.id),
             id: p.id,
@@ -489,9 +517,7 @@ pub fn compare(con: &Connection, sha_a: &str, sha_b: &str, f: &Filter) -> Result
     let (b_rows, excluded_b) = get(sha_b)?;
     let sel = base.sel;
     let stored = view::paired_results(con, &view::PairedResultFilter::default())?;
-    let mut run_shas: Vec<String> = view::runs(con)?.into_iter().filter_map(|r| r.git_sha).collect();
-    run_shas.sort();
-    run_shas.dedup();
+    let run_shas = run_shas(con)?;
     let (rows, not_comparable) = compare_rows(sha_a, sha_b, a_rows, b_rows, |ra, _| {
         paired_evidence(&stored, &run_shas, &sel, (sha_a, sha_b), ra)
     });

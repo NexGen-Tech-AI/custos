@@ -19,6 +19,7 @@ aegis-perf library is unchanged from v0.4.0).
 | `golden/regress-<run>.txt` | `aegis-perf regress --run <run> --header winners/9157a34/sm_121.h`, per nightly | same |
 | `sass/sm_121/mma_pipe_64x64x32_2x2_s4.sass`, `mma_pipe_128x64x32_2x2_s2.sass` | SASS of two winner kernels | compiled by Custos from tag v0.3.0, not Core's dump (below) |
 | `sass/sm_121/ORIGIN` | where those listings come from | written with them (below) |
+| `docs/LOG.md`, `docs/analysis/gemm-large.md` | Core's run log and analysis, which Custos cites (stated diagnoses, the win chain's sources) | the tag: `docs/` (`git show aegis-perf-v0.5.0:docs/...`) |
 | `manifest-spark-5822.json` | `aegis_manifest` output (SM count, memory, toolchain) | Core `results/` (not in git); byte-identical to the 2026-10-14 copy |
 | `aegis_perf_full.db` | full snapshot (gitignored) | `sqlite3 .backup` |
 
@@ -100,7 +101,7 @@ No clean-build paired result exists, so no decode win is reproducible from
 the record yet: Custos shows them "win (unreproducible: dirty build)".
 
 The nightly fuzz (50,000 cases a night) is not in the perf DB: Core writes it
-to `results/nightly/fuzz-<stamp>.txt` (core-requests #9).
+to `results/nightly/fuzz-<stamp>.txt` (core-requests #10).
 
 ## Golden outputs
 
