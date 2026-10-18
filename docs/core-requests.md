@@ -6,7 +6,14 @@ request names what Custos needs, why, and the Custos code waiting on it.
 Core decides the design; the shapes below are only what Custos would consume.
 
 Pinned Core when requests 1-2 were written: rev `733f1b393ad68e276ad56e1f51a0442110dfa1da`.
-Pinned now: tag `aegis-perf-v0.4.0` (`7e433cf9285e839454bdc971efafb661f71939a0`).
+Pinned now: tag `aegis-perf-v0.5.0` (`9f3f41cc9a8545a52a191f1f9af1a8d75bf59042`).
+
+**v0.5.0 review (2026-10-18).** The aegis-perf library is unchanged from v0.4.0
+(only its version moved; schema still v4), so v0.5.0 resolves none of #2-#8 in
+the library. What changed is Core's data (gemv_tc and mma_tma winners, a new
+winners header, 26 more paired results), so the evidence under #4 and #5 is
+updated below. Still: no `aegis_matmul` measurement rows (0), 39 of 40 runs
+with `clocks_locked` NULL (#2), `tools/sass_dump.sh` unchanged (#6).
 
 ---
 
@@ -126,23 +133,30 @@ itself (`SQLITE_OPEN_READ_ONLY`, no writes, no migration) and calls
 
 ## 4. Dispatch and the production bars in aegis-perf (and in the perf DB)
 
-**Status:** partly resolved by aegis-perf-v0.4.0 (2026-10-17).
+**Status:** partly resolved by aegis-perf-v0.4.0 (2026-10-17); v0.5.0
+(2026-10-18) changes nothing here.
 
 - Item 1 (dispatch): **resolved.** v0.4.0 exports `tune::DISPATCH_FLOOR` and
   `tune::dispatch`; Custos calls them on `view::Winner`'s CI and % (the same
   call `emit-header` makes) and no longer labels dispatch provisional. The
-  `winners` table and `view::Winner` still carry no dispatch column (nice to
-  have, not needed).
+  `winners` table and `view::Winner` still carry no dispatch column, so the
+  dispatch Core *stored* is read from the winners header (item 5).
 - Item 2 (the dispatched path's measurement): **partly.** v0.4.0 names it
   (`db::DISPATCH_IMPL` = `aegis_matmul`), measures it in the nightly sweep
   and paired-ab, and `regress::ShapeCheck::dispatch_pct` reports it per
-  regression run. The perf DB has no `aegis_matmul` measurement rows yet, so
-  a cuBLASLt route's dispatch % stays "not measured". When rows exist,
-  Custos can read them with `view::measurements` (impl `aegis_matmul`).
+  regression run. The perf DB still has no `aegis_matmul` measurement rows
+  (v0.5.0 snapshot: 0); `paired_results` has 23 cublaslt_best vs
+  `aegis_matmul` results, every one from a `-dirty` build (#5).
 - Item 3 (production bars): **open.** Fallback in use:
   `custos-perf/src/core_fallbacks.rs` (`LARGE_SHAPE_MIN_DIM`, `LARGE_BAR`,
   `DECODE_BAR`); the floor is Core's `tune::DISPATCH_FLOOR`. The bars are
   labeled "provisional" in the UI.
+- Item 4 (median vs paired CI): **open.** Fallback: `DISAGREE_PTS`.
+- Item 5 (stored dispatch vs the rule): **checked, no mismatch.** On the
+  v0.5.0 fixture, `tune::dispatch` on each winner's paired CI agrees with the
+  header's stored dispatch on all 14 shapes (test
+  `dispatch_rule_matches_the_stored_dispatch_on_every_shape`). Custos flags
+  any future mismatch on the row (`Dispatch::mismatch`), never hides it.
 
 ### What Custos needs
 
@@ -180,7 +194,22 @@ itself (`SQLITE_OPEN_READ_ONLY`, no writes, no migration) and calls
    - 512x4864x896 in the v0.4.0 fixture (run `7e94c009266f`, eccf61f): header
      82.21%, paired CI [78.51, 79.03], 3.18 points apart. Dispatch uses the
      CI (upper bound 0.790 < 0.80: cuBLASLt); the header's 82.2% reads as
-     above the floor.
+     above the floor. Unchanged in the v0.5.0 fixture.
+   - 1x896x4864 in the v0.5.0 fixture (decode tune `c2b937d8adca`, 1084490):
+     header 109.6%, paired CI [105.42, 105.93], 3.67 points apart. The pick
+     (`gemv_tc_16x64x64_1x4_s5_k3`, tied with `..._s6_k4`, tie-break fewer
+     registers) is the config the CI was measured on. LOG's paired-ab table
+     (2026-10-17 Phase C step 4) has 105.3% (104.0-105.7%) for it.
+
+5. **The stored dispatch, as data.** Custos compares Core's rule on the
+   paired CI with the dispatch the winners header stores
+   (`regress::header_dispatch` on `include/aegis/winners/sm_<arch>.h`). The
+   header is generated text; a `dispatch` column in `winners` (or
+   `view::Winner::dispatch`, written by the same `tune::dispatch` call) would
+   let Custos check the stored decision without reading the header. On the
+   v0.5.0 fixture they agree everywhere: 4096³ (upper bound 0.7428) and
+   512x4864x896 (0.7903, i.e. 79.03%) go to cuBLASLt; the closest call,
+   512x896x4864 (0.8066), stays on the kernel.
    Requested: Core states which number is of record in the report and the
    header when they disagree (the paired CI, as Custos assumes), and a
    threshold constant (e.g. `regress::MEDIAN_CI_DISAGREE`) or a check, so
@@ -201,7 +230,9 @@ Custos showing stale verdicts with no compile error.
 - Waiting: `core_fallbacks.rs` (`LARGE_SHAPE_MIN_DIM`, `LARGE_BAR`,
   `DECODE_BAR`, `DISAGREE_PTS`), `winners.rs::bars()` and
   `winners.rs::disagreement()`; a cuBLASLt route's dispatch %
-  (`Dispatch::pct_of_cublaslt_best`) once `aegis_matmul` rows exist.
+  (`Dispatch::pct_of_cublaslt_best`) once `aegis_matmul` rows exist;
+  `winners.rs::StoredDispatch` (reads the header) once `winners` stores the
+  dispatch.
 
 ---
 
@@ -234,7 +265,13 @@ same impl on both sides, protocol, cache mode and the two builds
    is all 18 paired results: every one has a `-dirty` build. 16 are dirty on
    both sides (9157a34d24b5-dirty, bc353c572335-dirty, eccf61f5188e-dirty);
    2 are `b0bedd58fbf9` vs `b0bedd58fbf9-dirty`, and that clean side names no
-   run in the DB either. So no stored result can back a shift today. Requested: paired-ab
+   run in the DB either. So no stored result can back a shift today.
+   The v0.5.0 snapshot (2026-10-18) has 44, still every one `-dirty` on at
+   least one side. The 19 decode results (ids 26-44, Phase C step 4) are all
+   `0bd0f22a35a6-dirty` on both sides ("same build (0bd0f22 + this header)",
+   LOG 2026-10-17), and no run has build 0bd0f22: the decode tune they
+   follow ran 1084490. So no decode win is reproducible from the record:
+   Custos shows each as "win (unreproducible: dirty build)". Requested: paired-ab
    refuses (or flags in a column) a dirty build unless asked, and stores the
    full SHA of a build that has a `runs` row, so a result links to it.
 3. **paired-ab's protocol and cache mode** are taken as stored; fine. But

@@ -50,7 +50,7 @@ pub struct LtAlgo {
     pub cluster_shape: i64,
 }
 
-/// Each winner shape's stored cuBLASLt algorithm. aegis-perf v0.4.0 stores it
+/// Each winner shape's stored cuBLASLt algorithm. aegis-perf (v0.4.0, v0.5.0) stores it
 /// but `view::Winner` does not return it; the one library path is
 /// `tune::header_text`, which reads it with Core's own query and writes it as
 /// the last field of each winners-header row (`{id, tile, stages, splitk,

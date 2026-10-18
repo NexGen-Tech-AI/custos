@@ -256,6 +256,15 @@ export interface Dispatch {
   decided_on: number | null;
   basis: 'paired' | 'unpaired' | 'none';
   floor: number;
+  /** What Core stored: the winners header's dispatch column; null: no header or no row. */
+  stored: 'aegis' | 'cublaslt' | null;
+  stored_source: string | null;
+  /** The stored dispatch differs from Core's rule on the paired CI. */
+  mismatch: boolean;
+}
+
+/** The kernel against the production bars| 'unpaired' | 'none';
+  floor: number;
 }
 
 /** The kernel against the production bars: class bars provisional (Custos

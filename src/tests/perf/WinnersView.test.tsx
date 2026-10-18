@@ -124,3 +124,31 @@ describe('WinnersSection: paired and unpaired disagree', () => {
     expect(c.textContent).not.toContain('secondary');
   });
 });
+
+describe('WinnersSection: stored dispatch against the rule', () => {
+  it('every row shows the header\'s dispatch, and on the fixture it agrees with the rule', async () => {
+    const rs = await rows();
+    for (const r of rs) {
+      const target = cell(r, 'dispatch').startsWith('dispatch: cuBLASLt') ? 'cuBLASLt' : 'AEGIS kernel';
+      expect(cell(r, 'stored-dispatch')).toBe(`header: ${target}`);
+      expect(r.querySelector('[data-col="dispatch-mismatch"]')).toBeNull();
+    }
+    expect(cell(byShape(rs, '512x4864x896'), 'dispatch')).toContain('paired CI upper bound 0.790 < 80% floor');
+  });
+
+  it('flags a shape whose stored dispatch disagrees with the rule', async () => {
+    const w = structuredClone(winners) as Array<{ shape_bucket: string; dispatch: Record<string, unknown> }>;
+    const x = w.find((r) => r.shape_bucket === '512x4864x896')!;
+    x.dispatch.stored = 'aegis';
+    x.dispatch.mismatch = true;
+    invoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === 'perf_sources' ? { db: '/f.db', core: '/c', measured_archs: [121] } : w),
+    );
+    const rs = await rows();
+    const flagged = rs.filter((r) => r.querySelector('[data-col="dispatch-mismatch"]'));
+    expect(flagged.map((r) => r.dataset.shape)).toEqual(['512x4864x896']);
+    expect(cell(flagged[0], 'dispatch-mismatch')).toContain(
+      'stored dispatch disagrees with the rule: header AEGIS kernel, rule on the paired CI cuBLASLt',
+    );
+  });
+});

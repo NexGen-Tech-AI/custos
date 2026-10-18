@@ -24,6 +24,13 @@ pub struct Sources {
     pub sass_dir: PathBuf,
     /// Nsight Compute reports (`*.ncu-rep`).
     pub ncu_dir: PathBuf,
+    /// Winners headers: `sm_<arch>.h` (what aegis::matmul dispatches), and
+    /// `<build>/sm_<arch>.h`, the header a past build ran (core_fallbacks::build_header).
+    pub winners_dir: PathBuf,
+    /// Core's docs: `LOG.md` and `analysis/*.md`.
+    pub docs_dir: PathBuf,
+    /// The nightly job's outputs (`fuzz-<stamp>.txt`).
+    pub nightly_dir: PathBuf,
 }
 
 impl Sources {
@@ -36,6 +43,9 @@ impl Sources {
             manifest_dir: core.join("results"),
             sass_dir: core.join("artifacts/sass"),
             ncu_dir: core.join("artifacts/ncu"),
+            winners_dir: core.join("include/aegis/winners"),
+            docs_dir: core.join("docs"),
+            nightly_dir: core.join("results/nightly"),
             root: core,
         }
     }
@@ -49,6 +59,9 @@ impl Sources {
             manifest_dir: dir.clone(),
             sass_dir: dir.join("sass"),
             ncu_dir: dir.join("ncu"),
+            winners_dir: dir.join("winners"),
+            docs_dir: dir.join("docs"),
+            nightly_dir: dir.join("nightly"),
             root: dir,
         }
     }
@@ -81,6 +94,11 @@ impl Sources {
 
     pub fn open(&self) -> Result<Connection> {
         aegis_perf::db::connect_ro(&self.db)
+    }
+
+    /// The winners header aegis::matmul dispatches from (`sm_<arch>.h`).
+    pub fn winners_header(&self, sm: i64) -> PathBuf {
+        self.winners_dir.join(format!("sm_{sm}.h"))
     }
 
     pub fn arch_file(&self, sm: i64) -> PathBuf {

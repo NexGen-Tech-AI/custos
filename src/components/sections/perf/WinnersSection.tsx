@@ -3,12 +3,23 @@
 // shape and what that path achieves (rule 10); the paired ratio and its 95%
 // CI (rule 6); the tie call and the runner-up gap; the production bars.
 // Dispatch is Core's own rule (aegis-perf tune::dispatch). The production
-// bars are provisional: aegis-perf v0.4.0 has no bar constants, so
+// bars are provisional: aegis-perf v0.5.0 has no bar constants, so
 // custos-perf applies Core's documented bars (core_fallbacks.rs).
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import type { Bars, Winner } from '../../../perf/types';
-import { DisagreeWarning, NotMeasured, ci, dispatchPct, dispatchTarget, dispatchWhy, ltAlgoText, pct } from '../../../perf/format';
+import {
+  DisagreeWarning,
+  DispatchMismatch,
+  NotMeasured,
+  ci,
+  dispatchPct,
+  dispatchTarget,
+  dispatchWhy,
+  ltAlgoText,
+  pct,
+  storedDispatchText,
+} from '../../../perf/format';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
 const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4 whitespace-nowrap align-bottom';
@@ -71,6 +82,10 @@ function Row({ w }: { w: Winner }) {
       <td className={`${td} text-xs`} data-col="dispatch">
         <span className={routed ? 'font-medium' : ''}>{dispatchTarget(w.dispatch)}</span>
         {dispatchWhy(w.dispatch) && <div className={muted}>{dispatchWhy(w.dispatch)}</div>}
+        <div className={muted} data-col="stored-dispatch">
+          {storedDispatchText(w.dispatch)}
+        </div>
+        <DispatchMismatch d={w.dispatch} />
         {routed && (
           <div className="font-mono" data-col="dispatch-algo">
             {w.lt_algo ? `runs cuBLASLt ${ltAlgoText(w.lt_algo)}` : <NotMeasured label="cuBLASLt algorithm not stored" />}
@@ -186,7 +201,7 @@ export function WinnersSection() {
             <p className={`${muted} mt-3`}>
               Kernel %: cublaslt_best median / kernel median (Core&apos;s report). Paired ratio: cublaslt_best / kernel time, 30
               alternating windows, 95% bootstrap CI; tied means the runner-up CI contains 1.0. Dispatch: Core&apos;s rule and 80% floor (aegis-perf). Production
-              bars are provisional: aegis-perf v0.4.0 has no bar constants, so Custos applies Core&apos;s documented bars
+              bars are provisional: aegis-perf v0.5.0 has no bar constants, so Custos applies Core&apos;s documented bars
               (large: every dim ≥ 1024, ≥ 90%; decode M ≤ 16, ≥ 100%; floor 80%, Core&apos;s), a shape failing a bar when
               its CI lies entirely below it.
               A cuBLASLt route&apos;s dispatch % is not measured: no row times aegis::matmul&apos;s cuBLASLt path yet.
@@ -194,6 +209,8 @@ export function WinnersSection() {
               (provisional threshold); the paired CI is the number of record.
               cublaslt_best algorithm: the cuBLASLt algorithm Core stored for the shape (perf DB schema v4); a shape
               dispatched to cuBLASLt runs that algorithm.
+              Header: the dispatch Core stored in the winners header; a warning marks any shape where it disagrees with
+              the rule applied to the paired CI.
             </p>
           </>
         )}

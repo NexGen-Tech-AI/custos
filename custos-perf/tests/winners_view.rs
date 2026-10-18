@@ -235,3 +235,55 @@ fn paired_and_unpaired_disagree() {
     let c = ws.iter().find(|w| w.shape_bucket == "256x256x256").unwrap();
     assert!(c.vs_cublaslt_best.ci.is_some() && c.vs_cublaslt_best.disagreement.is_none());
 }
+
+/// Core's dispatch rule (tune::dispatch: the paired CI's upper bound against
+/// the 80% floor) applied to each winner's paired CI, against the dispatch
+/// the winners header stores, on all 14 shapes: they agree everywhere.
+#[test]
+fn dispatch_rule_matches_the_stored_dispatch_on_every_shape() {
+    let w = winners();
+    assert_eq!(w.len(), 14);
+    for x in &w {
+        assert_eq!(x.dispatch.stored.as_deref(), Some(x.dispatch.target), "{}", x.shape_bucket);
+        assert!(!x.dispatch.mismatch, "{}", x.shape_bucket);
+        assert!(x.dispatch.stored_source.as_deref().unwrap().ends_with("tests/fixtures/winners/sm_121.h"));
+        // The rule itself, restated only to check it: upper bound < floor -> cuBLASLt.
+        let hi = x.vs_cublaslt_best.ci.as_ref().unwrap().hi;
+        assert_eq!(x.dispatch.target == "cublaslt", hi < aegis_perf::tune::DISPATCH_FLOOR, "{}", x.shape_bucket);
+    }
+    // 512x4864x896: the paired CI's upper bound is 0.79031 (79.03%), below the
+    // floor, so the rule sends it to cuBLASLt; the header stores Cublaslt.
+    let s = w.iter().find(|x| x.shape_bucket == "512x4864x896").unwrap();
+    assert!((s.vs_cublaslt_best.ci.as_ref().unwrap().hi - 0.79031).abs() < 1e-9);
+    assert_eq!((s.dispatch.target, s.dispatch.basis, s.dispatch.stored.as_deref()), ("cublaslt", "paired", Some("cublaslt")));
+    // The closest call the other way: 512x896x4864, upper bound 0.80655 >= 0.80.
+    let s = w.iter().find(|x| x.shape_bucket == "512x896x4864").unwrap();
+    assert!((s.dispatch.decided_on.unwrap() - 0.80655).abs() < 1e-9);
+    assert_eq!((s.dispatch.target, s.dispatch.stored.as_deref()), ("aegis", Some("aegis")));
+}
+
+/// A header whose stored dispatch disagrees with the rule is flagged on that
+/// row only (a doctored copy of the tag's header); without a header there is
+/// nothing stored to compare.
+#[test]
+fn stored_dispatch_disagreeing_with_the_rule_is_flagged() {
+    let mut s = Sources::repo_fixtures();
+    let dir = std::env::temp_dir().join(format!("custos-dispatch-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let header = std::fs::read_to_string(s.winners_header(121)).unwrap();
+    let row = "{512, 4864, 896, \"mma_pipe_128x64x32_2x2_s2\", aegis::detail::Dispatch::Cublaslt";
+    assert!(header.contains(row));
+    std::fs::write(dir.join("sm_121.h"), header.replace(row, &row.replace("Cublaslt", "Aegis"))).unwrap();
+    s.winners_dir = dir.clone();
+    let con = s.open().unwrap();
+    let w = custos_perf::winners(&s, &con, 121).unwrap();
+    let flagged: Vec<&str> = w.iter().filter(|x| x.dispatch.mismatch).map(|x| x.shape_bucket.as_str()).collect();
+    assert_eq!(flagged, ["512x4864x896"]);
+    let x = w.iter().find(|x| x.shape_bucket == "512x4864x896").unwrap();
+    assert_eq!((x.dispatch.target, x.dispatch.stored.as_deref()), ("cublaslt", Some("aegis")));
+
+    s.winners_dir = dir.join("missing");
+    let w = custos_perf::winners(&s, &con, 121).unwrap();
+    assert!(w.iter().all(|x| x.dispatch.stored.is_none() && !x.dispatch.mismatch));
+    std::fs::remove_dir_all(&dir).ok();
+}

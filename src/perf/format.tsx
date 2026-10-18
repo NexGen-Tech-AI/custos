@@ -126,3 +126,24 @@ export function ltAlgoText(a: LtAlgo | null): string {
   if (a.cluster_shape !== 0) parts.push(`cluster shape ${a.cluster_shape}`);
   return parts.join(' · ');
 }
+
+/** "header: cuBLASLt": the dispatch Core stored in the winners header. */
+export function storedDispatchText(d: Dispatch | null): string {
+  if (!d || d.stored === null) return 'stored dispatch: no winners header row';
+  return `header: ${d.stored === 'cublaslt' ? 'cuBLASLt' : 'AEGIS kernel'}`;
+}
+
+/** The warning on a shape whose stored dispatch disagrees with Core's rule
+ *  applied to its paired CI (never hidden; docs/core-requests.md #4). */
+export function DispatchMismatch({ d }: { d: Dispatch | null }) {
+  if (!d || !d.mismatch) return null;
+  const name = (t: string | null) => (t === 'cublaslt' ? 'cuBLASLt' : 'AEGIS kernel');
+  return (
+    <div role="note" data-col="dispatch-mismatch" className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+      <div className="font-medium">
+        ⚠ stored dispatch disagrees with the rule: header {name(d.stored)}, rule on the paired CI {name(d.target)}
+      </div>
+      <div className="text-gray-500 dark:text-gray-400">filed in docs/core-requests.md #4</div>
+    </div>
+  );
+}

@@ -108,9 +108,37 @@ pub struct Dispatch {
     pub decided_on: Option<f64>,
     pub basis: &'static str,
     pub floor: f64,
+    /// What Core stored for the shape: the winners header's dispatch column
+    /// (`sm_<arch>.h`, read by aegis-perf's `regress::header_dispatch`),
+    /// "aegis" or "cublaslt". None: no header, or no row for the shape.
+    pub stored: Option<String>,
+    /// The header the stored dispatch comes from.
+    pub stored_source: Option<String>,
+    /// The stored dispatch differs from Core's rule applied to this winner's
+    /// paired CI (`target`). Shown, never hidden (docs/core-requests.md #4).
+    pub mismatch: bool,
 }
 
-fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dispatch {
+/// The winners header's dispatch per shape, as aegis-perf parses it.
+pub struct StoredDispatch {
+    pub source: String,
+    pub rows: Vec<((i64, i64, i64), String)>,
+}
+
+impl StoredDispatch {
+    /// The header `src` names for `sm`; None when there is none.
+    pub fn load(src: &Sources, sm: i64) -> Option<StoredDispatch> {
+        let path = src.winners_header(sm);
+        let text = std::fs::read_to_string(&path).ok()?;
+        Some(StoredDispatch { source: path.display().to_string(), rows: aegis_perf::regress::header_dispatch(&text) })
+    }
+
+    fn get(&self, shape: (i64, i64, i64)) -> Option<String> {
+        self.rows.iter().find(|(s, _)| *s == shape).map(|(_, d)| d.clone())
+    }
+}
+
+fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>, stored: Option<(String, &str)>) -> Dispatch {
     let to_lt = tune::dispatch(lt_ci, pct_of_cublaslt_best) == tune::Dispatch::Cublaslt;
     // What the decision looked at, as tune::dispatch documents it: the paired
     // CI's upper bound, else the unpaired median ratio.
@@ -119,12 +147,20 @@ fn dispatch(lt_ci: Option<(f64, f64)>, pct_of_cublaslt_best: Option<f64>) -> Dis
         (None, Some(p)) => (Some(p / 100.0), "unpaired"),
         (None, None) => (None, "none"),
     };
+    let target = if to_lt { "cublaslt" } else { "aegis" };
+    let (stored, stored_source) = match stored {
+        Some((d, source)) => (Some(d), Some(source.to_string())),
+        None => (None, None),
+    };
     Dispatch {
-        target: if to_lt { "cublaslt" } else { "aegis" },
+        target,
         pct_of_cublaslt_best: if to_lt { None } else { pct_of_cublaslt_best },
         decided_on,
         basis,
         floor: tune::DISPATCH_FLOOR,
+        mismatch: stored.as_deref().is_some_and(|s| s != target),
+        stored,
+        stored_source,
     }
 }
 
@@ -216,7 +252,7 @@ pub(crate) fn measured(v: Option<i64>) -> Option<i64> {
     v.filter(|&x| x >= 0)
 }
 
-fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>) -> Winner {
+fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>, stored: Option<(String, &str)>) -> Winner {
     let pick = w.kernel.impl_.clone();
     let role = |r: &str| w.paired.iter().find(|p| p.role.as_deref() == Some(r));
 
@@ -249,7 +285,7 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>
         regs: measured(w.kernel.regs),
         smem_bytes: measured(w.kernel.smem_bytes),
         local_bytes: measured(w.kernel.local_bytes),
-        dispatch: dispatch(w.lt_ratio_ci, w.pct_of_cublaslt_best),
+        dispatch: dispatch(w.lt_ratio_ci, w.pct_of_cublaslt_best, stored),
         bars: bars(w.m, w.n, w.k, w.lt_ratio_ci, w.pct_of_cublaslt_best),
         vs_cublaslt_best: VsBaseline {
             disagreement: disagreement(
@@ -293,12 +329,14 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>
 pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> {
     let params = roof::load(src, sm)?;
     let lt = core_fallbacks::stored_lt_algos(con, sm)?;
+    let header = StoredDispatch::load(src, sm);
     Ok(view::winners(con, Some(sm))?
         .into_iter()
         .map(|w| {
             let r = params.as_ref().map(|p| roof::metrics(p, w.m, w.n, w.k, w.median_us));
             let algo = if w.op == "gemm" { lt.get(&(w.m, w.n, w.k)).copied() } else { None };
-            from_view(w, r, algo)
+            let stored = header.as_ref().filter(|_| w.op == "gemm").and_then(|h| Some((h.get((w.m, w.n, w.k))?, h.source.as_str())));
+            from_view(w, r, algo, stored)
         })
         .collect())
 }
@@ -363,7 +401,7 @@ mod tests {
     #[test]
     fn baseline_row_is_the_picks() {
         let rows = vec![paired("fast", "cublaslt_best", 0.90), paired("pick", "cublaslt_best", 0.88)];
-        let w = from_view(winner(Some((0.87, 0.89)), rows), None, None);
+        let w = from_view(winner(Some((0.87, 0.89)), rows), None, None, None);
         let ci = w.vs_cublaslt_best.ci.unwrap();
         assert_eq!(ci.ratio_median, Some(0.88));
         assert_eq!(w.vs_cublaslt_best.tested_impl.as_deref(), Some("pick"));
@@ -372,7 +410,7 @@ mod tests {
     /// No CI for the pick: no verdict, and no config named as "tested".
     #[test]
     fn no_ci_names_no_config() {
-        let w = from_view(winner(None, vec![paired("fast", "cublaslt_best", 0.90)]), None, None);
+        let w = from_view(winner(None, vec![paired("fast", "cublaslt_best", 0.90)]), None, None, None);
         assert!(w.vs_cublaslt_best.ci.is_none() && w.vs_cublaslt_best.verdict.is_none());
         assert!(w.vs_cublaslt_best.tested_impl.is_none());
         assert_eq!(w.vs_cublaslt_best.pct_of_cublaslt_best, Some(88.0));
@@ -385,13 +423,13 @@ mod tests {
     fn median_outside_the_paired_ci_is_flagged() {
         let mut v = winner(Some((0.8985, 0.9018)), vec![paired("pick", "cublaslt_best", 0.90)]);
         v.pct_of_cublaslt_best = Some(98.24);
-        let d = from_view(v, None, None).vs_cublaslt_best.disagreement.unwrap();
+        let d = from_view(v, None, None, None).vs_cublaslt_best.disagreement.unwrap();
         assert_eq!((d.median_pct, d.threshold_pts), (98.24, 2.0));
         assert!((d.off_by_pts - 8.06).abs() < 1e-9 && d.provisional);
         // Within 2 points of the CI: not flagged.
         let mut v = winner(Some((0.8985, 0.9018)), vec![paired("pick", "cublaslt_best", 0.90)]);
         v.pct_of_cublaslt_best = Some(92.0);
-        assert!(from_view(v, None, None).vs_cublaslt_best.disagreement.is_none());
+        assert!(from_view(v, None, None, None).vs_cublaslt_best.disagreement.is_none());
     }
 
     /// The paired test ran another config of the tie: no comparison.
@@ -399,6 +437,6 @@ mod tests {
     fn a_tie_break_pick_is_not_compared() {
         let mut v = winner(Some((0.8985, 0.9018)), vec![paired("fast", "cublaslt_best", 0.90)]);
         v.pct_of_cublaslt_best = Some(98.24);
-        assert!(from_view(v, None, None).vs_cublaslt_best.disagreement.is_none());
+        assert!(from_view(v, None, None, None).vs_cublaslt_best.disagreement.is_none());
     }
 }

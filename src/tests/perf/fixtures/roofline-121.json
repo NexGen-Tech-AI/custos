@@ -60,7 +60,10 @@
           "pct_of_cublaslt_best": 98.18500238815476,
           "decided_on": 0.98693,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -130,7 +133,10 @@
           "pct_of_cublaslt_best": 98.18500238815476,
           "decided_on": 0.98693,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -200,7 +206,10 @@
           "pct_of_cublaslt_best": 102.30852725491752,
           "decided_on": 1.00895,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -270,7 +279,10 @@
           "pct_of_cublaslt_best": 102.30852725491752,
           "decided_on": 1.00895,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -340,7 +352,10 @@
           "pct_of_cublaslt_best": 102.01232777374909,
           "decided_on": 1.01128,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -411,7 +426,10 @@
           "pct_of_cublaslt_best": 102.01232777374909,
           "decided_on": 1.01128,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -482,7 +500,10 @@
           "pct_of_cublaslt_best": 110.7603565810173,
           "decided_on": 1.11622,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -552,7 +573,10 @@
           "pct_of_cublaslt_best": 110.7603565810173,
           "decided_on": 1.11622,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -622,7 +646,10 @@
           "pct_of_cublaslt_best": 101.24093165330281,
           "decided_on": 1.01047,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -692,7 +719,10 @@
           "pct_of_cublaslt_best": 101.24093165330281,
           "decided_on": 1.01047,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -769,7 +799,10 @@
           "pct_of_cublaslt_best": 109.59995633902746,
           "decided_on": 1.05927,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -847,7 +880,10 @@
           "pct_of_cublaslt_best": 109.59995633902746,
           "decided_on": 1.05927,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -918,7 +954,10 @@
           "pct_of_cublaslt_best": 101.29788570232363,
           "decided_on": 1.01982,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired_swap",
@@ -988,7 +1027,10 @@
           "pct_of_cublaslt_best": 101.29788570232363,
           "decided_on": 1.01982,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired_swap",
@@ -1059,7 +1101,10 @@
           "pct_of_cublaslt_best": 85.80535633856495,
           "decided_on": 0.86212,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1130,7 +1175,10 @@
           "pct_of_cublaslt_best": 85.80535633856495,
           "decided_on": 0.86212,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1200,7 +1248,10 @@
           "pct_of_cublaslt_best": 88.66285714285715,
           "decided_on": 0.88967,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1270,7 +1321,10 @@
           "pct_of_cublaslt_best": 88.66285714285715,
           "decided_on": 0.88967,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1341,7 +1395,10 @@
           "pct_of_cublaslt_best": null,
           "decided_on": 0.74275,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "cublaslt",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1412,7 +1469,10 @@
           "pct_of_cublaslt_best": null,
           "decided_on": 0.74275,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "cublaslt",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1489,7 +1549,10 @@
           "pct_of_cublaslt_best": null,
           "decided_on": 0.79031,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "cublaslt",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1566,7 +1629,10 @@
           "pct_of_cublaslt_best": null,
           "decided_on": 0.79031,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "cublaslt",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1636,7 +1702,10 @@
           "pct_of_cublaslt_best": 86.87318690426855,
           "decided_on": 0.87132,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1706,7 +1775,10 @@
           "pct_of_cublaslt_best": 86.87318690426855,
           "decided_on": 0.87132,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1776,7 +1848,10 @@
           "pct_of_cublaslt_best": 82.47462963169706,
           "decided_on": 0.80655,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1847,7 +1922,10 @@
           "pct_of_cublaslt_best": 82.47462963169706,
           "decided_on": 0.80655,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1918,7 +1996,10 @@
           "pct_of_cublaslt_best": 92.51553101272063,
           "decided_on": 0.92788,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",
@@ -1988,7 +2069,10 @@
           "pct_of_cublaslt_best": 92.51553101272063,
           "decided_on": 0.92788,
           "basis": "paired",
-          "floor": 0.8
+          "floor": 0.8,
+          "stored": "aegis",
+          "stored_source": "tests/fixtures/winners/sm_121.h",
+          "mismatch": false
         },
         "tie": {
           "method": "paired",

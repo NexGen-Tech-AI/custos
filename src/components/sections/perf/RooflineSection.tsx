@@ -18,7 +18,18 @@ import {
 } from 'recharts';
 import { perfApi } from '../../../perf/api';
 import type { ArchRoofs, Roofline, RooflinePoint } from '../../../perf/types';
-import { DisagreeWarning, NotMeasured, dispatchTarget, dispatchWhy, num, pct, tieText, vsBaseline } from '../../../perf/format';
+import {
+  DisagreeWarning,
+  DispatchMismatch,
+  NotMeasured,
+  dispatchTarget,
+  dispatchWhy,
+  num,
+  pct,
+  storedDispatchText,
+  tieText,
+  vsBaseline,
+} from '../../../perf/format';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
@@ -90,6 +101,7 @@ export function Hover({ active, payload }: { active?: boolean; payload?: { paylo
           {dispatchTarget(p.hover.dispatch)}
           {dispatchWhy(p.hover.dispatch) && <span className="text-gray-500 dark:text-gray-400"> · {dispatchWhy(p.hover.dispatch)}</span>}
         </div>
+        <DispatchMismatch d={p.hover.dispatch} />
       </div>
     </div>
   );
@@ -231,6 +243,8 @@ function PointTable({ r }: { r: Roofline }) {
                 <td className="py-2 pr-4 align-top text-xs min-w-[12rem]">
                   {dispatchTarget(any.hover.dispatch)}
                   {dispatchWhy(any.hover.dispatch) && <div className="text-gray-500 dark:text-gray-400">{dispatchWhy(any.hover.dispatch)}</div>}
+                  <div className="text-gray-500 dark:text-gray-400" data-col="stored-dispatch">{storedDispatchText(any.hover.dispatch)}</div>
+                  <DispatchMismatch d={any.hover.dispatch} />
                 </td>
               </tr>
             );

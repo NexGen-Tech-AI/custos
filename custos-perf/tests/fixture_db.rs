@@ -24,7 +24,7 @@ fn fixtures_are_self_contained() {
     let root = s.root.canonicalize().unwrap();
     let repo_fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures").canonicalize().unwrap();
     assert_eq!(root, repo_fixtures);
-    for p in [&s.db, &s.arch_dir, &s.manifest_dir, &s.sass_dir] {
+    for p in [&s.db, &s.arch_dir, &s.manifest_dir, &s.sass_dir, &s.winners_dir] {
         assert!(p.canonicalize().unwrap().starts_with(&root), "{} outside the fixtures", p.display());
     }
 }
