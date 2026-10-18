@@ -29,8 +29,8 @@ dependencies = [
 
 [[package]]
 name = "aegis-perf"
-version = "0.4.0"
-source = "git+https://github.com/Riffe007/aegis-core?tag=aegis-perf-v0.4.0#7e433cf9285e839454bdc971efafb661f71939a0"
+version = "0.5.0"
+source = "git+https://github.com/Riffe007/aegis-core?tag=aegis-perf-v0.5.0#9f3f41cc9a8545a52a191f1f9af1a8d75bf59042"
 dependencies = [
  "anyhow",
  "chrono",

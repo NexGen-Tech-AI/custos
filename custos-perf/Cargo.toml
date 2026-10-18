@@ -11,7 +11,7 @@ description = "AEGIS Custos data layer: read-only views over the AEGIS Core perf
 [dependencies]
 # AEGIS Core's perf DB library: schema, queries and roofline math (never the CLI).
 # Pinned to a Core rev (project rules 22-23); bump it in its own commit.
-aegis-perf = { git = "https://github.com/Riffe007/aegis-core", tag = "aegis-perf-v0.4.0" }
+aegis-perf = { git = "https://github.com/Riffe007/aegis-core", tag = "aegis-perf-v0.5.0" }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
