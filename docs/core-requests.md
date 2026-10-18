@@ -6,7 +6,7 @@ request names what Custos needs, why, and the Custos code waiting on it.
 Core decides the design; the shapes below are only what Custos would consume.
 
 Pinned Core when requests 1-2 were written: rev `733f1b393ad68e276ad56e1f51a0442110dfa1da`.
-Pinned now: tag `aegis-perf-v0.3.0` (`9157a34d24b5368ef81f7d3add2b31f07de87301`).
+Pinned now: tag `aegis-perf-v0.4.0` (`7e433cf9285e839454bdc971efafb661f71939a0`).
 
 ---
 
@@ -168,10 +168,28 @@ itself (`SQLITE_OPEN_READ_ONLY`, no writes, no migration) and calls
    `bars::FLOOR = DISPATCH_FLOOR`, and ideally `bars::check(winner) -> Verdict`,
    so Core's pass/fail and Custos's cannot disagree.
 
+4. **A rule for when the unpaired median and the paired CI disagree.**
+   The Winners and Roofline views warn when a winner's unpaired median % of
+   cublaslt_best (the report and header figure) lies more than 2 points
+   outside its paired CI; the 2 points are a Custos fallback
+   (`core_fallbacks::DISAGREE_PTS`, labeled provisional). Evidence:
+   - 256x256x256 in the v0.3.0 fixture (run `41cc8ffb03fd`, 7fe7a84): header
+     98.24%, paired CI [89.85, 90.18], 8.06 points apart. The header called
+     it near parity; the paired test put it at 90%. (In the v0.4.0 fixture's
+     tune it agrees: 88.66% against [88.69, 88.97].)
+   - 512x4864x896 in the v0.4.0 fixture (run `7e94c009266f`, eccf61f): header
+     82.21%, paired CI [78.51, 79.03], 3.18 points apart. Dispatch uses the
+     CI (upper bound 0.790 < 0.80: cuBLASLt); the header's 82.2% reads as
+     above the floor.
+   Requested: Core states which number is of record in the report and the
+   header when they disagree (the paired CI, as Custos assumes), and a
+   threshold constant (e.g. `regress::MEDIAN_CI_DISAGREE`) or a check, so
+   Custos stops carrying one.
+
 ### Why
 
-Contract rules 10 (kernel % and dispatch % are separate) and 12 (thresholds
-come from Core). Today a Core change to the floor or the bars would leave
+Contract rules 6 (ties and claims are statistical), 10 (kernel % and
+dispatch % are separate) and 12 (thresholds come from Core). Today a Core change to the floor or the bars would leave
 Custos showing stale verdicts with no compile error.
 
 ### Custos code waiting on it
@@ -181,7 +199,8 @@ Custos showing stale verdicts with no compile error.
   `dispatch_is_cores` (winners_view.rs), `dispatch_matches_the_tags_header`
   (fixture_db.rs).
 - Waiting: `core_fallbacks.rs` (`LARGE_SHAPE_MIN_DIM`, `LARGE_BAR`,
-  `DECODE_BAR`) and `winners.rs::bars()`; a cuBLASLt route's dispatch %
+  `DECODE_BAR`, `DISAGREE_PTS`), `winners.rs::bars()` and
+  `winners.rs::disagreement()`; a cuBLASLt route's dispatch %
   (`Dispatch::pct_of_cublaslt_best`) once `aegis_matmul` rows exist.
 
 ---
@@ -203,10 +222,21 @@ same impl on both sides, protocol, cache mode and the two builds
    columns, filled by `paired-ab`, and in `PairedResultFilter`.
 2. **Build identity differs between tables.** `runs.git_sha` keeps 7 hex
    digits and no dirty marker; `paired_results.sha_a/sha_b` keep 12 and a
-   `-dirty` suffix. Custos matches on the common prefix and ignores
-   `-dirty`, labeling the evidence `dirty`, since it cannot tell whether the
-   measured runs were dirty either. Requested: the same identity in both
-   (full SHA plus a dirty flag, e.g. `runs.git_dirty`).
+   `-dirty` suffix. Custos matches on the common prefix. Requested: the same
+   identity in both (full SHA plus a dirty flag, e.g. `runs.git_dirty`).
+4. **Dirty builds and short SHAs make paired results unusable as evidence.**
+   A `-dirty` build had uncommitted changes, so the result cannot be
+   reproduced from any commit; a stored SHA shorter than the 7 hex digits
+   `runs` keeps, or one that matches no single `runs.git_sha`, cannot be tied
+   to the measured runs. Custos now shows such a result as "unreproducible
+   (dirty build)" or "unlinked build" and never lets it confirm or rule out a
+   shift in compare() (it stays "unconfirmed"). In the v0.4.0 fixture that
+   is all 18 paired results: every one has a `-dirty` build. 16 are dirty on
+   both sides (9157a34d24b5-dirty, bc353c572335-dirty, eccf61f5188e-dirty);
+   2 are `b0bedd58fbf9` vs `b0bedd58fbf9-dirty`, and that clean side names no
+   run in the DB either. So no stored result can back a shift today. Requested: paired-ab
+   refuses (or flags in a column) a dirty build unless asked, and stores the
+   full SHA of a build that has a `runs` row, so a result links to it.
 3. **paired-ab's protocol and cache mode** are taken as stored; fine. But
    `idle_reading` NULL makes `PairedResult::busy()` true, so results without
    a reading never count as evidence by default (correct per Core's rule;
@@ -219,9 +249,10 @@ those builds, that device and that shape.
 
 ### Custos code waiting on it
 
-- `custos-perf/src/measure.rs`: `same_build` (prefix match) and
-  `paired_evidence` (add device/arch/dtype to the match).
-- Tests: `custos-perf/tests/compare_paired.rs`.
+- `custos-perf/src/measure.rs`: `same_build` (prefix match), `linked`
+  (provenance) and `paired_evidence` (add device/arch/dtype to the match).
+- Tests: `custos-perf/tests/compare_paired.rs`
+  (`dirty_and_unlinked_results_never_confirm`).
 
 ---
 
@@ -297,3 +328,36 @@ break Custos at run time, not at compile time.
 - `custos-perf/src/core_fallbacks.rs::stored_lt_algos` (delete it).
 - `custos-perf/src/winners.rs` (`Winner::lt_algo`).
 - Tests: `stored_cublaslt_algorithm` (custos-perf/tests/winners_view.rs).
+
+---
+
+## 8. Invalidated microbench rows, on request
+
+**Status:** open, 2026-10-17. No fallback: Custos cannot show them (rule 17
+forbids its own SQL).
+
+### What Custos needs
+
+Contract rule 7: invalidated microbench rows are hidden unless requested.
+`view::microbench` filters them out in its query (`m.status <>
+'invalidated'`), and `MicrobenchStatus` has no `Invalidated` variant, so no
+library call returns them or their `status_reason`. The "on request" half of
+rule 7 cannot be honored. The v0.4.0 fixture has 108 invalidated rows (442
+valid, 641 replaced).
+
+Requested, e.g.: `view::microbench_with(con, arch, &MicrobenchFilter {
+include_invalidated: bool })` (or a flag on `microbench`), a
+`MicrobenchStatus::Invalidated` variant, and `Microbench::status_reason`.
+The default stays as today (hidden).
+
+### Why
+
+Contract rule 7, and rule 9's spirit: a value Core has disowned should be
+visible as disowned, with its reason, when someone asks why the model moved.
+
+### Custos code waiting on it
+
+- `custos-perf/src/device.rs` (the per-probe rows: add the invalidated rows
+  and their reasons behind a toggle).
+- The Device view (a "show invalidated" control, each row labeled with its
+  reason).
