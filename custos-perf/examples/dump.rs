@@ -1,5 +1,5 @@
 //! Print a perf command's JSON, as the Tauri app returns it:
-//!     cargo run --example dump -- devices | arch_model SM | roofline SM | winners SM
+//!     cargo run --example dump -- devices | arch_model SM | roofline SM | winners SM | regression SM
 //!         | win_chain SM [SHAPE|-] [SASS_LINES] | kernel KERNEL_ID [SASS_LINES] | status
 //! (status: perf_status; any other command on a DB the app refuses prints
 //! {"error": "..."}, the string the Tauri command returns, and exits 2.)
@@ -30,6 +30,7 @@ fn main() -> Result<()> {
         Some("devices") => serde_json::to_string_pretty(&custos_perf::devices(&src, &con)?)?,
         Some("arch_model") => serde_json::to_string_pretty(&custos_perf::arch_model(&src, &con, sm()?)?)?,
         Some("roofline") => serde_json::to_string_pretty(&custos_perf::roofline(&src, &con, sm()?)?)?,
+        Some("regression") => serde_json::to_string_pretty(&custos_perf::regression(&src, &con, sm()?)?)?,
         Some("winners") => serde_json::to_string_pretty(&custos_perf::winners(&src, &con, sm()?)?)?,
         Some("win_chain") => {
             // win_chain SM [SHAPE|-] [SASS_LINES]
@@ -54,7 +55,7 @@ fn main() -> Result<()> {
             }
             serde_json::to_string_pretty(&k)?
         }
-        _ => bail!("usage: dump devices | arch_model SM | roofline SM | winners SM | win_chain SM [SHAPE|-] [SASS_LINES] | kernel KERNEL_ID [SASS_LINES]"),
+        _ => bail!("usage: dump devices | arch_model SM | roofline SM | winners SM | win_chain SM [SHAPE|-] [SASS_LINES] | regression SM | kernel KERNEL_ID [SASS_LINES]"),
     };
     let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").canonicalize()?;
     println!("{}", json.replace(&format!("{}/", repo.display()), ""));

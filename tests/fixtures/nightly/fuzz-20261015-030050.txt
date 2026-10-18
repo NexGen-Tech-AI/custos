@@ -1,0 +1,1 @@
+aegis_fuzz: 50000 cases, 0 failures (37488 CPU-FP64 reference, 12512 cuBLASLt; 2502 with NaN/Inf, 24498 misaligned), 1000.2 s, seed 20261015

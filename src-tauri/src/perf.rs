@@ -106,3 +106,9 @@ pub async fn win_chain(
 ) -> Result<Option<custos_perf::win_chain::WinChain>, String> {
     run(&state, move |s, c| custos_perf::win_chain(s, c, sm, shape.as_deref())).await
 }
+
+/// Core's nightly regression check per sweep, and the nightly fuzz.
+#[tauri::command]
+pub async fn regression(state: State<'_, PerfState>, sm: i64) -> Result<custos_perf::regression::Regression, String> {
+    run(&state, move |s, c| custos_perf::regression(s, c, sm)).await
+}

@@ -452,3 +452,80 @@ A paraphrase of a doc can drift from what Core meant; a record cannot.
   `spotlight()`), `src/components/sections/perf/DecodeSpotlight.tsx`.
 - Tests: `custos-perf/tests/decode_spotlight.rs`
   (`launch_overhead_diagnosis_only_where_core_states_it`).
+
+---
+
+## 10. Nightly fuzz results in the perf DB
+
+**Status:** open, 2026-10-18. Fallback in use:
+`custos-perf/src/core_fallbacks.rs` (`nightly_fuzz`, `fuzz_adjudication`).
+
+### What Custos needs
+
+The nightly job's fuzz (50,000 cases) goes to
+`results/nightly/fuzz-<stamp>.txt` and one summary line in
+`results/nightly.log`; nothing reaches the perf DB, and aegis-perf has no
+reader. Custos's fuzz panel parses `aegis_fuzz`'s summary line (cases,
+failures, FP64 / cuBLASLt reference counts, overruled, seconds, seed) and the
+`FAIL case` / `note case` lines. The FP64 adjudication of case 24632
+(cuBLASLt 2.57 ulp vs ours 0.43 ulp at the failing element: "a reference
+bug") exists only as a table in LOG 2026-10-15, which Custos reads by
+heading ("Fuzz case 24632") and row ("(the failure)"). Requested: a table,
+e.g. `fuzz_runs` (run id, build, seed, cases, failures, reference counts,
+overruled, seconds, started_at) and `fuzz_cases` (case, impl, shape, layouts,
+element, got, reference value, FP64 value, ulp ours / reference, verdict),
+written by `aegis_fuzz` or the nightly, with `view::fuzz_runs`.
+
+### Why
+
+Contract rule 17 (Custos reads Core's data through the library) and rule 9
+(a number Custos shows is a stored one, not text it scraped).
+
+### Custos code waiting on it
+
+- `custos-perf/src/core_fallbacks.rs` (`nightly_fuzz`, `fuzz_adjudication`;
+  delete them), `custos-perf/src/regression.rs` (`Regression::fuzz`).
+- Tests: `custos-perf/tests/regression.rs` (`nightly_fuzz_panel`).
+
+---
+
+## 11. Regression checks as data: the header each nightly ran, the run kind
+
+**Status:** open, 2026-10-18. Fallback in use:
+`custos-perf/src/core_fallbacks.rs` (`build_header`).
+
+### What Custos needs
+
+The regression view calls Core's own check (`regress::check`,
+`ShapeCheck::watch` / `regressed`), so the rule is Core's. Two inputs are
+not in the DB:
+
+1. **Which winners header a nightly checked.** `tools/nightly.sh` passes
+   the committed header of the moment; the run records only its build.
+   Custos looks for a copy of that build's header
+   (`<winners_dir>/<sha>/sm_<arch>.h`; the fixtures hold 9157a34's, from tag
+   v0.3.0) and otherwise uses the current header, labeled. With the v0.5.0
+   header the 9157a34 nightlies' decode and TMA winners were never measured,
+   so both watches (16x4864x896 99.4 -> 96.1%, 1x4864x896 98.1 -> 94.0%)
+   disappear. Requested: store the check (`regress_checks`: run, shape,
+   impl, %, before run, status, confirming paired_results id) or at least the
+   header's dispatched impls per run.
+2. **What a run is.** A sweep and a tune are told apart by whether the run
+   has paired tests, but `view::paired` hides a disturbed or busy run's
+   rows, so a disturbed tune (60959720261a) and a disturbed nightly
+   (d1504a45376d) look alike; Custos lists both as excluded, "kind not
+   readable". Requested: `runs.kind` ("tune", "sweep", "nightly",
+   "paired-ab") or a `view::Run` field.
+
+Also: Core's rule counts a paired-ab confirmation whatever its build;
+Custos labels a dirty or unlinked one (#5) but does not change the call.
+
+### Why
+
+Contract rule 12 (the rule and its inputs come from Core) and rule 6.
+
+### Custos code waiting on it
+
+- `custos-perf/src/core_fallbacks.rs::build_header`,
+  `custos-perf/src/regression.rs` (`is_sweep`, `RegressionRun::kind`).
+- Tests: `custos-perf/tests/regression.rs`.

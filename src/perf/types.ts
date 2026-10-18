@@ -435,3 +435,71 @@ export interface WinChain {
   kernel: KernelDetail | null;
   docs: DocRef[];
 }
+
+/** custos-perf regression.rs: Core's regress per nightly sweep. */
+export interface RegressionCheck {
+  shape: string;
+  impl: string;
+  pct: number | null;
+  before_run: string | null;
+  before_pct: number | null;
+  status: 'regression' | 'watch' | 'ok' | 'not measured';
+  why: string | null;
+  paired: {
+    source: string;
+    id: number;
+    ratio: number;
+    ci_lo: number;
+    ci_hi: number;
+    sha_a: string | null;
+    sha_b: string | null;
+    provenance: 'clean' | 'dirty' | 'unlinked';
+    provenance_label: string | null;
+  } | null;
+  dispatch: string;
+  dispatch_pct: number | null;
+}
+
+export interface RegressionRun {
+  run_id: string;
+  git_sha: string | null;
+  started_at: string;
+  disturbed: boolean | null;
+  disturbed_detail: string | null;
+  allow_busy: boolean;
+  excluded: boolean;
+  kind: 'sweep' | 'not readable';
+  header: { path: string; own_build: boolean; provisional: boolean } | null;
+  checks: RegressionCheck[];
+  measured: number;
+  watches: number;
+  regressions: number;
+}
+
+export interface FuzzNight {
+  file: string;
+  stamp: string;
+  seed: number | null;
+  cases: number | null;
+  failures: number | null;
+  fp64_reference: number | null;
+  cublaslt_reference: number | null;
+  nan_inf: number | null;
+  misaligned: number | null;
+  overruled_by_fp64: number | null;
+  seconds: number | null;
+  cases_reported: {
+    kind: string;
+    case: number;
+    line: string;
+    detail: string | null;
+    adjudication: { ours_ulp: number; cublaslt_ulp: number; verdict: string; source: DocRef } | null;
+  }[];
+}
+
+export interface Regression {
+  sm: number;
+  threshold_pct: number;
+  runs: RegressionRun[];
+  fuzz: FuzzNight[];
+}
