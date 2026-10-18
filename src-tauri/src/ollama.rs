@@ -70,7 +70,7 @@ impl OllamaClient {
     /// Check if Ollama is available and running
     pub async fn check_status(&self) -> OllamaStatus {
         // Try to connect to Ollama
-        match self.client.get(&format!("{}/api/tags", self.base_url))
+        match self.client.get(format!("{}/api/tags", self.base_url))
             .send()
             .await
         {
@@ -108,7 +108,7 @@ impl OllamaClient {
     /// List available models
     pub async fn list_models(&self) -> Result<Vec<OllamaModel>, String> {
         let response = self.client
-            .get(&format!("{}/api/tags", self.base_url))
+            .get(format!("{}/api/tags", self.base_url))
             .send()
             .await
             .map_err(|e| format!("Failed to connect to Ollama: {}", e))?;
@@ -139,7 +139,7 @@ impl OllamaClient {
         });
 
         let response = self.client
-            .post(&format!("{}/api/pull", self.base_url))
+            .post(format!("{}/api/pull", self.base_url))
             .json(&request)
             .send()
             .await
@@ -167,7 +167,7 @@ impl OllamaClient {
         };
 
         let response = self.client
-            .post(&format!("{}/api/generate", self.base_url))
+            .post(format!("{}/api/generate", self.base_url))
             .json(&request)
             .timeout(Duration::from_secs(300))
             .send()
@@ -185,6 +185,7 @@ impl OllamaClient {
     }
 
     /// Analyze a vulnerability using the model
+    #[allow(clippy::too_many_arguments)]
     pub async fn analyze_vulnerability(
         &self,
         model: &str,

@@ -1,7 +1,7 @@
 #[cfg(target_os = "linux")]
 use {
     std::num::NonZeroUsize,
-    std::os::fd::{BorrowedFd, FromRawFd},
+    std::os::fd::BorrowedFd,
     std::os::unix::io::RawFd,
     nix::libc::{self, c_void, size_t},
     nix::sys::mman::{mmap, munmap, MapFlags, ProtFlags},
@@ -53,14 +53,14 @@ mod perf_event_bindings {
 
     // Syscall number for perf_event_open (x86_64)
     #[cfg(target_arch = "x86_64")]
-    pub const SYS_perf_event_open: libc::c_long = 298;
+    pub const SYS_PERF_EVENT_OPEN: libc::c_long = 298;
 
     // Syscall number for perf_event_open (aarch64)
     #[cfg(target_arch = "aarch64")]
-    pub const SYS_perf_event_open: libc::c_long = 241;
+    pub const SYS_PERF_EVENT_OPEN: libc::c_long = 241;
 
     // ioctl commands
-    pub const PERF_EVENT_IOC_ENABLE: libc::c_ulong = 0x2400 + 0;
+    pub const PERF_EVENT_IOC_ENABLE: libc::c_ulong = 0x2400;
     pub const PERF_EVENT_IOC_DISABLE: libc::c_ulong = 0x2400 + 1;
     pub const PERF_EVENT_IOC_ID: libc::c_ulong = 0x80082407;
 }
@@ -88,7 +88,7 @@ impl PerfEvent {
     ) -> Result<Self, nix::Error> {
         let fd = unsafe {
             libc::syscall(
-                SYS_perf_event_open,
+                SYS_PERF_EVENT_OPEN,
                 &perf_event_attr {
                     type_: event_type,
                     size: std::mem::size_of::<perf_event_attr>() as u32,

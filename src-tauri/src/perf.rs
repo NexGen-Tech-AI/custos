@@ -49,7 +49,7 @@ pub fn perf_sources(state: State<'_, PerfState>) -> PerfSources {
 
 #[tauri::command]
 pub async fn devices(state: State<'_, PerfState>) -> Result<Vec<device::Device>, String> {
-    run(&state, |s, c| custos_perf::devices(s, c)).await
+    run(&state, custos_perf::devices).await
 }
 
 #[tauri::command]

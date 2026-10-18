@@ -4,8 +4,6 @@ use tokio::sync::RwLock;
 use sysinfo::{System, Disks, Networks, ProcessStatus};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
-use hostname;
-use os_info;
 
 // Import the high-performance monitoring system
 pub mod high_perf_monitor;
@@ -25,10 +23,9 @@ pub mod pci_devices;
 pub mod platform_security;
 
 use kernel_monitor::{KernelMonitor, KernelMetrics};
-pub use pci_devices::{PciDevice, PciEnumerator, PciError};
+pub use pci_devices::{PciDevice, PciEnumerator};
 pub use platform_security::{
-    PlatformSecurityStatus, PlatformSecurityMonitor, TpmStatus,
-    SecureBootStatus, FirmwareInfo, BootIntegrityStatus, SecurityError
+    PlatformSecurityStatus, PlatformSecurityMonitor
 };
 
 // Export eBPF types for integration tests
@@ -146,19 +143,28 @@ pub struct SystemMetrics {
     pub top_processes: Vec<ProcessMetrics>,
 }
 
+/// A registered metrics callback.
+type Callback<T> = Arc<RwLock<Option<Box<dyn Fn(T) + Send + Sync>>>>;
+
 pub struct MonitoringService {
     system: Arc<RwLock<System>>,
-    metrics_callback: Arc<RwLock<Option<Box<dyn Fn(SystemMetrics) + Send + Sync>>>>,
+    metrics_callback: Callback<SystemMetrics>,
     previous_network_stats: Arc<RwLock<HashMap<String, (u64, u64)>>>,
     // High-performance monitoring system
     high_perf_service: Option<HighPerfMonitoringService>,
-    high_perf_callback: Arc<RwLock<Option<Box<dyn Fn(HighPerfMetrics) + Send + Sync>>>>,
+    high_perf_callback: Callback<HighPerfMetrics>,
     // Ultra-performance monitoring system
     ultra_perf_service: Option<UltraPerfMonitoringService>,
-    ultra_perf_callback: Arc<RwLock<Option<Box<dyn Fn(UltraPerfMetrics) + Send + Sync>>>>,
+    ultra_perf_callback: Callback<UltraPerfMetrics>,
     // Kernel-level monitoring system
     kernel_monitor: Option<KernelMonitor>,
-    kernel_callback: Arc<RwLock<Option<Box<dyn Fn(KernelMetrics) + Send + Sync>>>>,
+    kernel_callback: Callback<KernelMetrics>,
+}
+
+impl Default for MonitoringService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MonitoringService {
@@ -400,7 +406,6 @@ impl MonitoringService {
             .to_string();
 
         let os_info = os_info::get();
-        let cpu_info = system.global_cpu_info();
         
         // Get CPU brand using the helper function
         let cpu_brand = Self::detect_cpu_brand();
@@ -594,7 +599,7 @@ impl MonitoringService {
         {
             // Try to detect GPUs using lspci
             if let Ok(output) = std::process::Command::new("lspci")
-                .args(&["-v"])
+                .args(["-v"])
                 .output()
             {
                 let output_str = String::from_utf8_lossy(&output.stdout);
@@ -612,8 +617,7 @@ impl MonitoringService {
                         }
                         
                         // Look for memory info in the next few lines
-                        for j in (i+1)..std::cmp::min(i+10, lines.len()) {
-                            let next_line = lines[j];
+                        for next_line in lines.iter().take(i + 10).skip(i + 1) {
                             if next_line.contains("Memory") && next_line.contains("size=") {
                                 // Extract memory size (simplified parsing)
                                 if let Some(size_part) = next_line.split("size=").nth(1) {
@@ -742,7 +746,6 @@ impl MonitoringService {
             load_average: {
                 // Windows doesn't have traditional load average like Unix systems
                 // We'll calculate a pseudo-load average based on CPU usage and process count
-                let cpu_usage = cpu_usage;
                 let process_count = system.processes().len() as f32;
                 let cpu_count = system.cpus().len() as f32;
                 

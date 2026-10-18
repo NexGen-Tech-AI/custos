@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use thiserror::Error;
-use tracing::{info, warn, error};
+use tracing::{info, error};
 
 #[derive(Error, Debug)]
 pub enum PciError {
@@ -42,6 +41,12 @@ pub struct PciDevice {
 }
 
 pub struct PciEnumerator;
+
+impl Default for PciEnumerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PciEnumerator {
     pub fn new() -> Self {
@@ -326,7 +331,7 @@ impl PciEnumerator {
         }
     }
 
-    fn lookup_pci_names(vendor_id: &str, device_id: &str) -> (Option<String>, Option<String>) {
+    fn lookup_pci_names(vendor_id: &str, _device_id: &str) -> (Option<String>, Option<String>) {
         // Common vendor IDs
         let vendor_name = match vendor_id {
             "0x8086" => Some("Intel Corporation"),
@@ -334,7 +339,6 @@ impl PciEnumerator {
             "0x1002" => Some("Advanced Micro Devices, Inc. [AMD/ATI]"),
             "0x1022" => Some("Advanced Micro Devices, Inc. [AMD]"),
             "0x14e4" => Some("Broadcom Inc."),
-            "0x8086" => Some("Intel Corporation"),
             "0x10ec" => Some("Realtek Semiconductor Co., Ltd."),
             "0x1af4" => Some("Red Hat, Inc."),
             "0x15ad" => Some("VMware"),

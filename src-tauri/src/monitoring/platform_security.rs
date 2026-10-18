@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::{info, warn, error};
+use tracing::error;
 
 #[derive(Error, Debug)]
 pub enum SecurityError {
@@ -95,6 +95,12 @@ pub struct PcrValue {
 }
 
 pub struct PlatformSecurityMonitor;
+
+impl Default for PlatformSecurityMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PlatformSecurityMonitor {
     pub fn new() -> Self {
@@ -191,7 +197,7 @@ impl PlatformSecurityMonitor {
 
         // Try to use tpm2_getcap if available
         if let Ok(output) = Command::new("tpm2_getcap")
-            .args(&["properties-fixed"])
+            .args(["properties-fixed"])
             .output()
         {
             if output.status.success() {

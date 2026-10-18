@@ -129,7 +129,7 @@ impl HardwareDetector {
     fn detect_ram_windows() -> Result<(f64, f64), String> {
         // Use systeminfo or wmic
         let output = Command::new("wmic")
-            .args(&["OS", "get", "TotalVisibleMemorySize,FreePhysicalMemory", "/value"])
+            .args(["OS", "get", "TotalVisibleMemorySize,FreePhysicalMemory", "/value"])
             .output()
             .map_err(|e| format!("Failed to run wmic: {}", e))?;
 
@@ -207,7 +207,7 @@ impl HardwareDetector {
     fn detect_gpu_linux() -> (bool, Option<String>, Option<f64>) {
         // Try nvidia-smi first
         if let Ok(output) = Command::new("nvidia-smi")
-            .args(&["--query-gpu=name,memory.total", "--format=csv,noheader"])
+            .args(["--query-gpu=name,memory.total", "--format=csv,noheader"])
             .output()
         {
             let output_str = String::from_utf8_lossy(&output.stdout);
@@ -229,7 +229,7 @@ impl HardwareDetector {
             let output_str = String::from_utf8_lossy(&output.stdout);
             for line in output_str.lines() {
                 if line.contains("VGA compatible controller") || line.contains("3D controller") {
-                    let gpu_info = line.split(':').last().unwrap_or("Unknown GPU").trim().to_string();
+                    let gpu_info = line.split(':').next_back().unwrap_or("Unknown GPU").trim().to_string();
                     return (true, Some(gpu_info), None); // Can't reliably get VRAM without nvidia-smi
                 }
             }
@@ -241,7 +241,7 @@ impl HardwareDetector {
     fn detect_gpu_windows() -> (bool, Option<String>, Option<f64>) {
         // Use wmic to query GPU
         if let Ok(output) = Command::new("wmic")
-            .args(&["path", "win32_VideoController", "get", "name,AdapterRAM", "/value"])
+            .args(["path", "win32_VideoController", "get", "name,AdapterRAM", "/value"])
             .output()
         {
             let output_str = String::from_utf8_lossy(&output.stdout);

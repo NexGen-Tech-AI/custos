@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 // Ultra-high-performance metrics with nanosecond precision
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct UltraPerfMetrics {
     pub timestamp_nanos: u64,
     pub collection_latency_ns: u64,
@@ -117,6 +118,7 @@ pub struct UltraProcessMetrics {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct HardwareCounterMetrics {
     pub cpu_cycles: u64,
     pub instructions: u64,
@@ -169,21 +171,6 @@ impl UltraPerfRingBuffer {
     }
 }
 
-impl Default for UltraPerfMetrics {
-    fn default() -> Self {
-        Self {
-            timestamp_nanos: 0,
-            collection_latency_ns: 0,
-            cpu: UltraCpuMetrics::default(),
-            memory: UltraMemoryMetrics::default(),
-            gpus: Vec::new(),
-            disks: Vec::new(),
-            networks: Vec::new(),
-            processes: Vec::new(),
-            hardware_counters: HardwareCounterMetrics::default(),
-        }
-    }
-}
 
 impl Default for UltraCpuMetrics {
     fn default() -> Self {
@@ -225,22 +212,6 @@ impl Default for UltraMemoryMetrics {
     }
 }
 
-impl Default for HardwareCounterMetrics {
-    fn default() -> Self {
-        Self {
-            cpu_cycles: 0,
-            instructions: 0,
-            cache_references: 0,
-            cache_misses: 0,
-            branch_instructions: 0,
-            branch_misses: 0,
-            bus_cycles: 0,
-            stalled_cycles_frontend: 0,
-            stalled_cycles_backend: 0,
-            ref_cpu_cycles: 0,
-        }
-    }
-}
 
 // Ultra-high-performance monitoring service
 pub struct UltraPerfMonitoringService {
@@ -306,7 +277,7 @@ impl UltraPerfMonitoringService {
                 ring_buffer.push(metrics.clone());
                 
                 // Send to subscribers with non-blocking send
-                if let Err(_) = sender.try_send(metrics) {
+                if sender.try_send(metrics).is_err() {
                     // Channel is full, drop oldest
                     let _ = ring_buffer.pop();
                 }
@@ -423,6 +394,7 @@ impl UltraPerfMonitoringService {
     }
 
     fn collect_ultra_gpu_metrics() -> Vec<UltraGpuMetrics> {
+        #[cfg_attr(not(feature = "nvidia"), allow(unused_mut))]
         let mut gpus = Vec::new();
         
         #[cfg(feature = "nvidia")]
@@ -462,19 +434,19 @@ impl UltraPerfMonitoringService {
     }
 
     fn collect_ultra_disk_metrics(_sys: &sysinfo::System, _previous_stats: &DashMap<String, (u64, u64)>) -> Vec<UltraDiskMetrics> {
-        let disks = Vec::new();
+        
         
         // TODO: Implement actual disk I/O monitoring with ultra-low latency
         // For now, return empty vector
-        disks
+        Vec::new()
     }
 
     fn collect_ultra_network_metrics(_sys: &sysinfo::System, _previous_stats: &DashMap<String, (u64, u64)>) -> Vec<UltraNetworkMetrics> {
-        let networks = Vec::new();
+        
         
         // TODO: Implement actual network monitoring with ultra-low latency
         // For now, return empty vector
-        networks
+        Vec::new()
     }
 
     fn collect_ultra_process_metrics(sys: &sysinfo::System) -> Vec<UltraProcessMetrics> {

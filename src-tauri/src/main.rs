@@ -1,5 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// The system monitor's collectors keep unused items (speculative probes,
+// platform-only paths, stubs): kept, not pruned (CLAUDE.md, "Legacy code").
+#[allow(dead_code)]
 mod monitoring;
 #[cfg(feature = "legacy-security")]
 mod threat_detection;
@@ -15,7 +18,9 @@ mod network;
 mod vulnerability;
 #[cfg(feature = "legacy-security")]
 mod ai_analysis;
+#[allow(dead_code)] // as monitoring
 mod hardware_detector;
+#[allow(dead_code)] // as monitoring
 mod ollama;
 #[cfg(feature = "legacy-security")]
 mod malware;
@@ -194,7 +199,7 @@ async fn stop_monitoring(_state: State<'_, ServiceState>) -> Result<(), String> 
 #[tauri::command]
 async fn get_current_metrics(state: State<'_, ServiceState>) -> Result<SystemMetrics, String> {
     let service = state.read().await;
-    service.collect_metrics().await.map_err(|e| e)
+    service.collect_metrics().await
 }
 
 #[tauri::command]

@@ -11,6 +11,7 @@ use sysinfo;
 
 // High-performance metrics with microsecond precision
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct HighPerfMetrics {
     pub timestamp_nanos: u64,
     pub cpu: CpuMetrics,
@@ -42,6 +43,7 @@ pub struct CpuMetrics {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct MemoryMetrics {
     pub total_bytes: u64,
     pub used_bytes: u64,
@@ -240,25 +242,6 @@ impl MetricsRingBuffer {
     }
 }
 
-impl Default for HighPerfMetrics {
-    fn default() -> Self {
-        Self {
-            timestamp_nanos: 0,
-            cpu: CpuMetrics::default(),
-            memory: MemoryMetrics::default(),
-            gpus: Vec::new(),
-            disks: Vec::new(),
-            networks: Vec::new(),
-            processes: Vec::new(),
-            dpus: Vec::new(),
-            npus: Vec::new(),
-            external_ddr: Vec::new(),
-            fpgas: Vec::new(),
-            asics: Vec::new(),
-            quantum_processors: Vec::new(),
-        }
-    }
-}
 
 impl Default for CpuMetrics {
     fn default() -> Self {
@@ -276,22 +259,6 @@ impl Default for CpuMetrics {
     }
 }
 
-impl Default for MemoryMetrics {
-    fn default() -> Self {
-        Self {
-            total_bytes: 0,
-            used_bytes: 0,
-            available_bytes: 0,
-            cached_bytes: 0,
-            buffer_bytes: 0,
-            swap_total_bytes: 0,
-            swap_used_bytes: 0,
-            page_faults: 0,
-            page_ins: 0,
-            page_outs: 0,
-        }
-    }
-}
 
 // High-performance monitoring service
 pub struct HighPerfMonitoringService {
@@ -357,7 +324,7 @@ impl HighPerfMonitoringService {
                 ring_buffer.push(metrics.clone());
                 
                 // Send to subscribers
-                if let Err(_) = sender.send(metrics) {
+                if sender.send(metrics).is_err() {
                     // Channel is full, drop oldest
                     let _ = ring_buffer.pop();
                 }
@@ -458,6 +425,7 @@ impl HighPerfMonitoringService {
     }
 
     fn collect_gpu_metrics() -> Vec<GpuMetrics> {
+        #[cfg_attr(not(feature = "nvidia"), allow(unused_mut))]
         let mut gpus = Vec::new();
         
         #[cfg(feature = "nvidia")]
@@ -494,19 +462,19 @@ impl HighPerfMonitoringService {
     }
 
     fn collect_disk_metrics(_sys: &sysinfo::System, _previous_stats: &DashMap<String, (u64, u64)>) -> Vec<DiskMetrics> {
-        let disks = Vec::new();
+        
         
         // TODO: Implement actual disk I/O monitoring
         // For now, return empty vector
-        disks
+        Vec::new()
     }
 
     fn collect_network_metrics(_sys: &sysinfo::System, _previous_stats: &DashMap<String, (u64, u64)>) -> Vec<NetworkMetrics> {
-        let networks = Vec::new();
+        
         
         // TODO: Implement actual network monitoring
         // For now, return empty vector
-        networks
+        Vec::new()
     }
 
     fn collect_process_metrics(sys: &sysinfo::System) -> Vec<ProcessMetrics> {
