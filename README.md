@@ -10,13 +10,13 @@ Collects comprehensive CPU, memory, GPU, disk, network, and process metrics usin
 | ![Winners view: per shape the tuned config, kernel % and dispatch, paired CI, ties, production bars](docs/screenshots/winners-light.png) | ![Roofline view: winners and cublaslt_best against the measured roofs](docs/screenshots/roofline-light.png) |
 | **Device** | **Kernel detail** |
 | ![Device view: the measured hardware model, each value linked to its run](docs/screenshots/device-light.png) | ![Kernel detail: config, resources, SASS and instruction mix](docs/screenshots/kernel-light.png) |
+| **Win chain** (one decode win, from its Winners row) | **Regressions** (nightly check by build, nightly fuzz) |
+| ![Win chain: roofline position, kernel, SASS with provenance, paired CI, dispatch, Core's docs](docs/screenshots/win-chain-light.png) | ![Regressions: watch and regression by build, and the nightly fuzz with case 24632](docs/screenshots/regression-light.png) |
 
 An unusable perf DB shows only its state:
 ![Incompatible perf DB: DB schema v4, Custos supports v3](docs/screenshots/incompatible-v4-light.png)
 
 Dark mode and what each shot shows: [`docs/screenshots/`](docs/screenshots/README.md).
-The four view shots are from the aegis-perf-v0.3.0 fixture; they predate the
-cuBLASLt algorithm column and the paired/unpaired warning.
 
 ---
 

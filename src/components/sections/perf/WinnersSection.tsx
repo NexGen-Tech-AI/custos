@@ -91,7 +91,7 @@ function Row({ w, onChain }: { w: Winner; onChain: (shape: string) => void }) {
         </span>
         {disagree && <div className={muted}>unpaired median (secondary)</div>}
       </td>
-      <td className={`${td} text-xs`} data-col="dispatch">
+      <td className={`${td} text-xs min-w-[13rem]`} data-col="dispatch">
         <span className={routed ? 'font-medium' : ''}>{dispatchTarget(w.dispatch)}</span>
         {dispatchWhy(w.dispatch) && <div className={muted}>{dispatchWhy(w.dispatch)}</div>}
         <div className={muted} data-col="stored-dispatch">
