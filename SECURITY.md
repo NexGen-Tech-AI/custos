@@ -146,7 +146,7 @@ Security updates will be communicated through:
 
 ### Security Documentation
 
-- **Architecture Security**: See `API_DOCUMENTATION.md` for security architecture
+- **Architecture Security**: See `docs/archive/API_DOCUMENTATION.md` for security architecture
 - **Development Security**: See `DEVELOPMENT_PROMPT.md` for secure coding practices
 - **Deployment Security**: See deployment guides (when available)
 

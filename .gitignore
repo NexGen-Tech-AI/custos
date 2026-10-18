@@ -6,3 +6,6 @@ tests/fixtures/aegis_perf_full*.db
 tests/fixtures/*.db.tmp
 # Local aegis-perf override (see README)
 .cargo/config.toml
+
+# Vite build output (pnpm build); never committed
+dist/
