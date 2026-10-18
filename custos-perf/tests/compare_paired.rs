@@ -90,9 +90,9 @@ fn matching_paired_results_confirm_or_not() {
             result(A, "9157a34d24b5", "mma_pipe_64x64x32_2x2_s4", (1.050, 1.064)),
             // +4.5%; paired CI contains 1.0: not confirmed.
             result(A, "9157a34d24b5", "mma_pipe_128x64x32_2x2_s3", (0.995, 1.012)),
-            // -15.7%, stored the other way round (B, A) and dirty: inverted
-            // to b / a = [1/1.19, 1/1.17], below 1: a confirmed speed-up.
-            result("9157a34d24b5-dirty", A, "mma_pipe_128x256x32_2x4_s4", (1.17, 1.19)),
+            // -15.7%, stored the other way round (B, A): inverted to b / a =
+            // [1/1.19, 1/1.17], below 1: a confirmed speed-up.
+            result("9157a34d24b5", A, "mma_pipe_128x256x32_2x4_s4", (1.17, 1.19)),
         ],
     );
     let c = compare(&s, &Filter::default());
@@ -100,7 +100,8 @@ fn matching_paired_results_confirm_or_not() {
     assert!(r.change_pct > REGRESSION_PCT);
     assert_eq!((r.flag, r.status), ("slower", "confirmed"));
     let p = r.paired.as_ref().unwrap();
-    assert!(p.source.starts_with("paired_results #") && !p.inverted && !p.dirty);
+    assert!(p.source.starts_with("paired_results #") && !p.inverted && !p.dirty && p.linked);
+    assert_eq!((p.provenance, p.provenance_label), ("clean", None));
     assert_eq!((p.ratio_ci_lo, p.ratio_ci_hi, p.pairs), (1.050, 1.064, Some(30)));
 
     let r = row(&c, "mma_pipe_128x64x32_2x2_s3");
@@ -109,7 +110,7 @@ fn matching_paired_results_confirm_or_not() {
     let r = row(&c, "mma_pipe_128x256x32_2x4_s4");
     assert_eq!((r.flag, r.status), ("faster", "confirmed"));
     let p = r.paired.as_ref().unwrap();
-    assert!(p.inverted && p.dirty);
+    assert!(p.inverted && p.usable());
     assert!((p.ratio_ci_lo - 1.0 / 1.19).abs() < 1e-12 && (p.ratio_ci_hi - 1.0 / 1.17).abs() < 1e-12);
 
     assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (1, 1, 9));
@@ -144,5 +145,48 @@ fn non_matching_and_excluded_results_leave_it_unconfirmed() {
     assert_eq!((r.flag, r.status), ("slower", "confirmed"));
     let p = r.paired.as_ref().unwrap();
     assert_eq!((p.older_matches, r.paired_excluded), (2, 0));
+    std::fs::remove_dir_all(s.db.parent().unwrap()).ok();
+}
+
+/// Doctored copies: a paired result from a `-dirty` build, or with a short
+/// SHA no runs row can be matched to, is attached to the shift, labeled, and
+/// never confirms it (or rules it out).
+#[test]
+fn dirty_and_unlinked_results_never_confirm() {
+    let up = "mma_pipe_64x64x32_2x2_s4"; // +5.8% median shift
+    let up2 = "mma_pipe_64x128x32_2x4_s3"; // +10.8%
+    let down = "mma_pipe_128x256x32_2x4_s4"; // -15.7%
+    let s = doctored(
+        "provenance",
+        &[
+            // CI above 1, but build b had uncommitted changes.
+            result(A, "9157a34d24b5-dirty", up, (1.050, 1.064)),
+            // CI above 1, but "7fe7a" (5 hex digits) is shorter than any
+            // runs.git_sha: it cannot be tied to the measured run.
+            result("7fe7a", B, up2, (1.08, 1.12)),
+            // CI entirely below 1 (would confirm the speed-up), dirty build a.
+            result("7fe7a84-dirty", B, down, (0.84, 0.86)),
+        ],
+    );
+    let c = compare(&s, &Filter::default());
+
+    let r = row(&c, up);
+    assert_eq!((r.flag, r.status), ("slower", "unconfirmed"));
+    let p = r.paired.as_ref().unwrap();
+    assert!(p.dirty && !p.usable());
+    assert_eq!((p.provenance, p.provenance_label), ("dirty", Some("unreproducible (dirty build)")));
+    assert_eq!((p.ratio_ci_lo, p.ratio_ci_hi), (1.050, 1.064));
+
+    let r = row(&c, up2);
+    assert_eq!((r.flag, r.status), ("slower", "unconfirmed"));
+    let p = r.paired.as_ref().unwrap();
+    assert!(!p.dirty && !p.linked);
+    assert_eq!((p.provenance, p.provenance_label), ("unlinked", Some("unlinked build")));
+
+    let r = row(&c, down);
+    assert_eq!((r.flag, r.status), ("faster", "unconfirmed"));
+    assert_eq!(r.paired.as_ref().unwrap().provenance_label, Some("unreproducible (dirty build)"));
+
+    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (0, 0, 11));
     std::fs::remove_dir_all(s.db.parent().unwrap()).ok();
 }

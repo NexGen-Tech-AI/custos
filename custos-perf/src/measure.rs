@@ -169,6 +169,15 @@ pub struct PairedEvidence {
     /// A stored build had uncommitted changes (`-dirty`). It is matched on its
     /// commit: runs.git_sha does not record dirty state either.
     pub dirty: bool,
+    /// Both stored builds name exactly one `runs.git_sha` (at least its 7 hex
+    /// digits). An unlinked build cannot be tied to the measured runs.
+    pub linked: bool,
+    /// "clean", "dirty" or "unlinked". Only "clean" evidence can confirm or
+    /// rule out a shift; the rest is shown, labeled, and the shift stays
+    /// "unconfirmed" (docs/core-requests.md #5).
+    pub provenance: &'static str,
+    /// "unreproducible (dirty build)" or "unlinked build"; None when clean.
+    pub provenance_label: Option<&'static str>,
     pub pairs: Option<i64>,
     pub ratio_median: f64,
     pub ratio_ci_lo: f64,
@@ -178,13 +187,37 @@ pub struct PairedEvidence {
     pub older_matches: usize,
 }
 
+impl PairedEvidence {
+    /// Evidence a shift can be called on: a clean build on both sides, each
+    /// linked to its runs row.
+    pub fn usable(&self) -> bool {
+        self.provenance == "clean"
+    }
+}
+
+/// Git's shortest abbreviation: a stored build shorter than this names nothing.
+const MIN_ABBREV: usize = 4;
+/// runs.git_sha keeps 7 hex digits: a shorter stored build cannot be linked.
+const RUNS_SHA_LEN: usize = 7;
+
+fn commit(sha: &str) -> &str {
+    sha.strip_suffix("-dirty").unwrap_or(sha)
+}
+
 /// Does a stored build (`sha`, maybe `-dirty`) name the commit `want`? Either
 /// may be the shorter prefix (runs keep 7 hex digits, paired_results 12).
 fn same_build(stored: Option<&str>, want: &str) -> bool {
     let Some(s) = stored else { return false };
-    let s = s.strip_suffix("-dirty").unwrap_or(s);
+    let s = commit(s);
     let n = s.len().min(want.len());
-    n >= 7 && s[..n].eq_ignore_ascii_case(&want[..n])
+    n >= MIN_ABBREV && s[..n].eq_ignore_ascii_case(&want[..n])
+}
+
+/// The stored build names exactly one distinct runs.git_sha, with at least
+/// the 7 hex digits runs keep.
+fn linked(stored: Option<&str>, run_shas: &[String]) -> bool {
+    let Some(s) = stored else { return false };
+    commit(s).len() >= RUNS_SHA_LEN && run_shas.iter().filter(|r| same_build(Some(s), r)).count() == 1
 }
 
 /// The stored paired result backing row `ra` (build a) vs build b: same shape,
@@ -194,6 +227,7 @@ fn same_build(stored: Option<&str>, want: &str) -> bool {
 /// they are counted in the second value.
 fn paired_evidence(
     results: &[view::PairedResult],
+    run_shas: &[String],
     sel: &Selection,
     (sha_a, sha_b): (&str, &str),
     ra: &view::Measurement,
@@ -228,13 +262,25 @@ fn paired_evidence(
     let ev = hits.last().map(|&(p, inverted)| {
         let (ratio, lo, hi) = if inverted { (1.0 / p.ratio, 1.0 / p.ci_hi, 1.0 / p.ci_lo) } else { (p.ratio, p.ci_lo, p.ci_hi) };
         let dirty = |s: &Option<String>| s.as_deref().is_some_and(|s| s.ends_with("-dirty"));
+        let dirty = dirty(&p.sha_a) || dirty(&p.sha_b);
+        let linked = linked(p.sha_a.as_deref(), run_shas) && linked(p.sha_b.as_deref(), run_shas);
+        let (provenance, provenance_label) = if dirty {
+            ("dirty", Some("unreproducible (dirty build)"))
+        } else if !linked {
+            ("unlinked", Some("unlinked build"))
+        } else {
+            ("clean", None)
+        };
         PairedEvidence {
             source: format!("paired_results #{}", p.id),
             id: p.id,
             sha_a: p.sha_a.clone(),
             sha_b: p.sha_b.clone(),
             inverted,
-            dirty: dirty(&p.sha_a) || dirty(&p.sha_b),
+            dirty,
+            linked,
+            provenance,
+            provenance_label,
             pairs: Some(p.pairs),
             ratio_median: ratio,
             ratio_ci_lo: lo,
@@ -266,7 +312,8 @@ pub struct CompareRow {
     pub flag: &'static str,
     /// What the shift amounts to (contract rule 6: never a single median):
     /// - "within": the medians moved less than 3%
-    /// - "unconfirmed": a > 3% shift with no paired result behind it
+    /// - "unconfirmed": a > 3% shift with no clean paired result behind it
+    ///   (a dirty or unlinked one is attached, labeled, but never decides)
     /// - "confirmed": a paired CI lies entirely on the flag's side of 1.0
     /// - "not_confirmed": a paired result exists and does not back the shift
     pub status: &'static str,
@@ -331,9 +378,10 @@ fn latest(rows: Vec<view::Measurement>) -> BTreeMap<Key, view::Measurement> {
     rows.into_iter().map(|r| (key(&r), r)).collect()
 }
 
-/// The status of one median shift, given any paired evidence (b / a).
+/// The status of one median shift, given any paired evidence (b / a). Only
+/// usable (clean, linked) evidence confirms or rules out a shift.
 pub fn status(flag: &str, paired: Option<&PairedEvidence>) -> &'static str {
-    match (flag, paired) {
+    match (flag, paired.filter(|p| p.usable())) {
         ("within", _) => "within",
         (_, None) => "unconfirmed",
         ("slower", Some(p)) if p.ratio_ci_lo > 1.0 => "confirmed",
@@ -441,8 +489,12 @@ pub fn compare(con: &Connection, sha_a: &str, sha_b: &str, f: &Filter) -> Result
     let (b_rows, excluded_b) = get(sha_b)?;
     let sel = base.sel;
     let stored = view::paired_results(con, &view::PairedResultFilter::default())?;
-    let (rows, not_comparable) =
-        compare_rows(sha_a, sha_b, a_rows, b_rows, |ra, _| paired_evidence(&stored, &sel, (sha_a, sha_b), ra));
+    let mut run_shas: Vec<String> = view::runs(con)?.into_iter().filter_map(|r| r.git_sha).collect();
+    run_shas.sort();
+    run_shas.dedup();
+    let (rows, not_comparable) = compare_rows(sha_a, sha_b, a_rows, b_rows, |ra, _| {
+        paired_evidence(&stored, &run_shas, &sel, (sha_a, sha_b), ra)
+    });
     let count = |flag: &str, status: &str| rows.iter().filter(|r| r.flag == flag && r.status == status).count();
     Ok(Compare {
         sha_a: sha_a.to_string(),
@@ -525,6 +577,9 @@ mod tests {
             sha_b: None,
             inverted: false,
             dirty: false,
+            linked: true,
+            provenance: "clean",
+            provenance_label: None,
             pairs: Some(30),
             ratio_median: (lo + hi) / 2.0,
             ratio_ci_lo: lo,
@@ -548,6 +603,12 @@ mod tests {
         assert_eq!((r[0].flag, r[0].status), ("slower", "confirmed"));
         let (r, _) = compare_rows("a", "b", a(), b(), |_, _| (Some(ev(0.98, 1.04)), 0));
         assert_eq!((r[0].flag, r[0].status), ("slower", "not_confirmed"));
+        // A dirty or unlinked result neither confirms nor rules out.
+        for (provenance, ci) in [("dirty", (1.06, 1.12)), ("unlinked", (1.06, 1.12)), ("dirty", (0.98, 1.04))] {
+            let p = PairedEvidence { provenance, ..ev(ci.0, ci.1) };
+            let (r, _) = compare_rows("a", "b", a(), b(), |_, _| (Some(p.clone()), 0));
+            assert_eq!((r[0].flag, r[0].status), ("slower", "unconfirmed"), "{provenance}");
+        }
         // Within 3%: no call either way, evidence or not.
         let (r, _) = compare_rows("a", "b", a(), vec![row("rb", "k_old", "mma_x", 10.2)], |_, _| (None, 0));
         assert_eq!((r[0].flag, r[0].status), ("within", "within"));
