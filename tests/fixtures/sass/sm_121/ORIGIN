@@ -1,0 +1,5 @@
+# Where the .sass listings in this directory come from (read by
+# custos-perf/src/kernel.rs; see tests/fixtures/README.md, "SASS").
+# A directory without this file is Core's own dump (artifacts/sass/).
+compiled_from_tag=aegis-perf-v0.3.0
+source=src/gemm/mma_pipe.cu

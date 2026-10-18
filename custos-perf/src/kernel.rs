@@ -29,6 +29,28 @@ pub struct Sass {
     pub lines: usize,
     /// Raw SASS as cuobjdump prints it; control codes are not parsed.
     pub text: String,
+    pub origin: SassOrigin,
+}
+
+/// Where the listing comes from: Core's dump (`artifacts/sass/`), or
+/// compiled by Custos from a Core tag (an `ORIGIN` file in the directory, as
+/// in tests/fixtures/sass/: Core's dump has no usable listing, core-requests #6).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SassOrigin {
+    CoreArtifact,
+    CompiledFromTag { tag: String, source: Option<String> },
+}
+
+fn sass_origin(dir: &Path) -> SassOrigin {
+    let Ok(text) = std::fs::read_to_string(dir.join("ORIGIN")) else { return SassOrigin::CoreArtifact };
+    let get = |key: &str| {
+        text.lines().find_map(|l| l.trim().strip_prefix(key)?.strip_prefix('=').map(|v| v.trim().to_string()))
+    };
+    match get("compiled_from_tag") {
+        Some(tag) => SassOrigin::CompiledFromTag { tag, source: get("source") },
+        None => SassOrigin::CoreArtifact,
+    }
 }
 
 /// ptxas resource usage for the kernel (`resource-usage.txt`, cuobjdump -res-usage).
@@ -124,7 +146,8 @@ fn sass(dir: &Path, sym: &str) -> Result<(Option<Sass>, Option<String>)> {
     match &hits[..] {
         [(p, s)] => {
             let text = std::fs::read_to_string(p)?;
-            Ok((Some(Sass { path: p.display().to_string(), symbol: s.clone(), lines: text.lines().count(), text }), None))
+            let origin = sass_origin(dir);
+            Ok((Some(Sass { path: p.display().to_string(), symbol: s.clone(), lines: text.lines().count(), text, origin }), None))
         }
         [] => Ok((None, Some("no SASS listing of the row-major instantiation in the dump".into()))),
         _ => Ok((None, Some(format!("{} listings claim this kernel; showing none", hits.len())))),

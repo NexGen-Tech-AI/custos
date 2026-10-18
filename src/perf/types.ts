@@ -319,7 +319,7 @@ export interface KernelDetail {
   measurements: { m: number; n: number; k: number; median_us: number; run_id: string; git_sha: string | null }[];
   artifacts: {
     sm: number;
-    sass: { path: string; symbol: string; lines: number; text: string } | null;
+    sass: { path: string; symbol: string; lines: number; text: string; origin: SassOrigin } | null;
     sass_note: string | null;
     /** Lines with each opcode, counted in the SASS listing. */
     instruction_mix: Record<string, number> | null;
@@ -341,3 +341,8 @@ export interface LtAlgo {
   inner_shape: number;
   cluster_shape: number;
 }
+
+/** Core's own dump (artifacts/sass/), or compiled by Custos from a Core tag. */
+export type SassOrigin =
+  | { kind: 'core_artifact' }
+  | { kind: 'compiled_from_tag'; tag: string; source: string | null };

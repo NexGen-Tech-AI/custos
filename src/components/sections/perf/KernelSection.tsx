@@ -80,6 +80,23 @@ function Detail({ k }: { k: KernelDetail }) {
           <h3 className="text-lg font-semibold mb-1">SASS, sm_{a.sm}</h3>
           {a.sass ? (
             <>
+              <p className="text-sm mb-1" data-col="sass-origin">
+                Source:{' '}
+                {a.sass.origin.kind === 'core_artifact' ? (
+                  <>Core artifact (artifacts/sass, Core&apos;s dump)</>
+                ) : (
+                  <>
+                    compiled from tag <span className="font-mono">{a.sass.origin.tag}</span>
+                    {a.sass.origin.source && (
+                      <>
+                        {' '}
+                        (<span className="font-mono">{a.sass.origin.source}</span>)
+                      </>
+                    )}{' '}
+                    by Custos, not Core&apos;s dump
+                  </>
+                )}
+              </p>
               <p className={`${muted} mb-3 break-all`}>
                 <span className="font-mono">{a.sass.path}</span>
                 <br />

@@ -14,7 +14,8 @@ Pinned Core: tag **`aegis-perf-v0.4.0`** = aegis-core commit
 | `golden/report-121.txt` | `aegis-perf report --arch 121` (report and roof tables) | v0.4.0 CLI on the trimmed fixture (`make_golden.sh`) |
 | `golden/roofline-121.txt`, `golden/roofline-sm121.svg` | `aegis-perf roofline --arch 121` (stdout point list, SVG) | same |
 | `golden/emit-header-sm_121.h` | `aegis-perf emit-header --arch 121` | same |
-| `sass/sm_121/mma_pipe_64x64x32_2x2_s4.sass`, `mma_pipe_128x64x32_2x2_s2.sass` | SASS of two winner kernels | compiled from the tag (below) |
+| `sass/sm_121/mma_pipe_64x64x32_2x2_s4.sass`, `mma_pipe_128x64x32_2x2_s2.sass` | SASS of two winner kernels | compiled by Custos from tag v0.3.0, not Core's dump (below) |
+| `sass/sm_121/ORIGIN` | where those listings come from | written with them (below) |
 | `manifest-spark-5822.json` | `aegis_manifest` output (SM count, memory, toolchain) | Core `results/` (not in git); byte-identical to the 2026-10-14 copy |
 | `aegis_perf_full.db` | full snapshot (gitignored) | `sqlite3 .backup` |
 
@@ -69,6 +70,13 @@ rows as the tag's `winners/sm_121.h` (tested): the tag's header was generated
 from the tune this fixture holds.
 
 ## SASS
+
+**Provenance: the fixture SASS was compiled by Custos from tag
+aegis-perf-v0.3.0 (`src/gemm/mma_pipe.cu`), not taken from Core's dump**,
+because of the `tools/sass_dump.sh` name collision below (core-requests #6).
+`sass/sm_121/ORIGIN` records this (`compiled_from_tag=`, `source=`); the
+Kernel view reads it and shows "compiled from tag". A SASS directory without
+that file (Core's `artifacts/sass/`) is shown as "Core artifact".
 
 Core's `artifacts/sass/sm_121/` (gitignored, so not in the tag) has no usable
 SASS for the measured kernels. The 2026-10-13 files predate the `xor` smem

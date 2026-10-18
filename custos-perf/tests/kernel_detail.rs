@@ -2,6 +2,7 @@
 //! spills and shared memory; the SASS listing of the measured (row-major)
 //! instantiation, found by its symbol; the instruction mix counted in it as
 //! tools/sass_dump.sh counts; ptxas resource usage; Nsight: not profiled.
+use custos_perf::kernel::SassOrigin;
 use custos_perf::Sources;
 
 fn src() -> Sources {
@@ -25,6 +26,11 @@ fn winner_kernel_with_sass_and_instruction_mix() {
     assert!(sass.symbol.contains("TileILi64ELi64ELi32ELi2ELi2ELNS0_6LayoutE0ELS5_0EEELi4EE"), "row-major A and B");
     assert_eq!(sass.lines, 13864);
     assert!(a.sass_note.is_none());
+    // Compiled by Custos from the tag, not Core's dump (tests/fixtures/README.md).
+    assert_eq!(
+        sass.origin,
+        SassOrigin::CompiledFromTag { tag: "aegis-perf-v0.3.0".into(), source: Some("src/gemm/mma_pipe.cu".into()) }
+    );
     // `grep -cE '\bOP'` on the same file: HMMA 48, LDSM 24, LDGSTS 64, LDG. 558, STS 62.
     let mix = a.instruction_mix.as_ref().unwrap();
     assert_eq!((mix["HMMA"], mix["LDSM"], mix["LDGSTS"], mix["LDG"], mix["STS"]), (48, 24, 64, 558, 62));
@@ -69,4 +75,20 @@ fn missing_and_other_instantiations_show_nothing() {
     assert!(lt.baseline && lt.regs.is_none());
     assert!(lt.artifacts.iter().all(|a| a.sass.is_none() && a.instruction_mix.is_none()));
     assert_eq!(lt.artifacts[0].sass_note.as_deref(), Some("a cuBLAS baseline: no AEGIS SASS"));
+}
+
+/// A SASS directory without an ORIGIN file is Core's own dump.
+#[test]
+fn core_dump_listing_is_a_core_artifact() {
+    let s = src();
+    let con = s.open().unwrap();
+    let dir = std::env::temp_dir().join(format!("custos-sass-core-{}", std::process::id()));
+    let sm = dir.join("sm_121");
+    std::fs::create_dir_all(&sm).unwrap();
+    std::fs::copy(s.sass_dir.join("sm_121/mma_pipe_64x64x32_2x2_s4.sass"), sm.join("mma_pipe_64x64x32_2x2_s4.sass")).unwrap();
+    let mut core = src();
+    core.sass_dir = dir.clone();
+    let k = custos_perf::kernel_detail(&core, &con, "be0c6688d651513b").unwrap().unwrap();
+    assert_eq!(k.artifacts[0].sass.as_ref().unwrap().origin, SassOrigin::CoreArtifact);
+    std::fs::remove_dir_all(dir).ok();
 }

@@ -81,3 +81,21 @@ describe('KernelSection', () => {
     responses.kernel_detail = kernel;
   });
 });
+
+describe('KernelSection: SASS source', () => {
+  const origin = async () => (await screen.findByRole('table', { name: 'Instruction mix' })) && document.querySelector('[data-col="sass-origin"]')!.textContent;
+
+  it('the fixture listing: compiled from the tag by Custos', async () => {
+    render(<KernelSection />);
+    expect(await origin()).toBe('Source: compiled from tag aegis-perf-v0.3.0 (src/gemm/mma_pipe.cu) by Custos, not Core\'s dump');
+  });
+
+  it('a listing from Core\'s dump: Core artifact', async () => {
+    const k = structuredClone(kernel) as unknown as KernelDetail;
+    k.artifacts[0].sass!.origin = { kind: 'core_artifact' };
+    responses.kernel_detail = k;
+    render(<KernelSection />);
+    expect(await origin()).toBe('Source: Core artifact (artifacts/sass, Core\'s dump)');
+    responses.kernel_detail = kernel;
+  });
+});
