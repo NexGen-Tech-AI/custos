@@ -316,6 +316,8 @@ export interface Winner {
   roof: RoofMetrics | null;
   paired_ab: PairedAb;
   decode_spotlight: DecodeSpotlight | null;
+  /** Set on the one shape the win chain view explains. */
+  win_chain: ChainPick | null;
 }
 
 /** Kernel detail (custos-perf kernel.rs). */
@@ -359,7 +361,7 @@ export interface LtAlgo {
 /** Core's own dump (artifacts/sass/), or compiled by Custos from a Core tag. */
 export type SassOrigin =
   | { kind: 'core_artifact' }
-  | { kind: 'compiled_from_tag'; tag: string; source: string | null };
+  | { kind: 'compiled_from_tag'; tag: string; source: string | null; note: string | null };
 
 /** A stored paired-ab result against cublaslt_best, as % of its speed
  *  (custos-perf winners.rs AbResult). Confirmed only from a clean build. */
@@ -413,4 +415,23 @@ export interface DecodeSpotlight {
   split_k: number | null;
   /** Only where Core's docs state one. */
   diagnosis: Diagnosis | null;
+}
+
+/** Why a shape is the win chain's (custos-perf winners.rs ChainPick). */
+export interface ChainPick {
+  clean: boolean;
+  basis: string;
+  source: string;
+  ci_lo_pct: number;
+}
+
+/** The win chain (custos-perf win_chain.rs): one decode win on one page. */
+export interface WinChain {
+  sm: number;
+  shape_bucket: string;
+  pick: ChainPick | null;
+  winner: Winner;
+  roofline: Roofline | null;
+  kernel: KernelDetail | null;
+  docs: DocRef[];
 }

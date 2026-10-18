@@ -1,6 +1,6 @@
 //! Print a perf command's JSON, as the Tauri app returns it:
 //!     cargo run --example dump -- devices | arch_model SM | roofline SM | winners SM
-//!         | kernel KERNEL_ID [SASS_LINES] | status
+//!         | win_chain SM [SHAPE|-] [SASS_LINES] | kernel KERNEL_ID [SASS_LINES] | status
 //! (status: perf_status; any other command on a DB the app refuses prints
 //! {"error": "..."}, the string the Tauri command returns, and exits 2.)
 //! (kernel: SASS_LINES keeps only the first lines of each listing, to keep a
@@ -31,6 +31,18 @@ fn main() -> Result<()> {
         Some("arch_model") => serde_json::to_string_pretty(&custos_perf::arch_model(&src, &con, sm()?)?)?,
         Some("roofline") => serde_json::to_string_pretty(&custos_perf::roofline(&src, &con, sm()?)?)?,
         Some("winners") => serde_json::to_string_pretty(&custos_perf::winners(&src, &con, sm()?)?)?,
+        Some("win_chain") => {
+            // win_chain SM [SHAPE|-] [SASS_LINES]
+            let shape = args.get(2).filter(|s| s.as_str() != "-");
+            let mut c = custos_perf::win_chain(&src, &con, sm()?, shape.map(String::as_str))?;
+            if let (Some(k), Some(n)) = (c.as_mut().and_then(|c| c.kernel.as_mut()), args.get(3)) {
+                let n: usize = n.parse()?;
+                for s in k.artifacts.iter_mut().filter_map(|a| a.sass.as_mut()) {
+                    s.text = s.text.lines().take(n).collect::<Vec<_>>().join("\n");
+                }
+            }
+            serde_json::to_string_pretty(&c)?
+        }
         Some("kernel") => {
             let Some(id) = args.get(1) else { bail!("usage: dump kernel KERNEL_ID [SASS_LINES]") };
             let mut k = custos_perf::kernel_detail(&src, &con, id)?;
@@ -42,7 +54,7 @@ fn main() -> Result<()> {
             }
             serde_json::to_string_pretty(&k)?
         }
-        _ => bail!("usage: dump devices | arch_model SM | roofline SM | winners SM | kernel KERNEL_ID [SASS_LINES]"),
+        _ => bail!("usage: dump devices | arch_model SM | roofline SM | winners SM | win_chain SM [SHAPE|-] [SASS_LINES] | kernel KERNEL_ID [SASS_LINES]"),
     };
     let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").canonicalize()?;
     println!("{}", json.replace(&format!("{}/", repo.display()), ""));

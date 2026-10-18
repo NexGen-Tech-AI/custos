@@ -108,7 +108,8 @@ export function Hover({ active, payload }: { active?: boolean; payload?: { paylo
   );
 }
 
-function Chart({ r }: { r: Roofline }) {
+/** The roofline chart; `focus` (a shape) plots only that shape's points, on the same axes. */
+export function Chart({ r, focus }: { r: Roofline; focus?: string }) {
   const { resolvedTheme } = useTheme();
   const c = SERIES[resolvedTheme];
   const { winners, baselines, xDomain, yDomain } = useMemo(() => {
@@ -119,13 +120,14 @@ function Chart({ r }: { r: Roofline }) {
     const x1 = 10 ** Math.ceil(Math.log10(Math.max(r.roofs.ridge_copy, r.roofs.ridge_read, ...ais) * 2));
     const y0 = 10 ** Math.floor(Math.log10(Math.min(...tf) / 2));
     const y1 = r.roofs.peak_tflops * 2;
+    const shown = pts.filter((d) => d.kind === 'point' && (!focus || d.p.shape_bucket === focus));
     return {
-      winners: pts.filter((d) => d.kind === 'point' && d.p.series === 'winner'),
-      baselines: pts.filter((d) => d.kind === 'point' && d.p.series === 'cublaslt_best'),
+      winners: shown.filter((d) => d.kind === 'point' && d.p.series === 'winner'),
+      baselines: shown.filter((d) => d.kind === 'point' && d.p.series === 'cublaslt_best'),
       xDomain: [x0, x1] as [number, number],
       yDomain: [y0, y1] as [number, number],
     };
-  }, [r]);
+  }, [r, focus]);
   const copy = roofLine(r.roofs, r.roofs.copy_bw_gbps, ...xDomain);
   const read = roofLine(r.roofs, r.roofs.read_bw_gbps, ...xDomain);
   const tick = { fill: c.ink, fontSize: 12 };

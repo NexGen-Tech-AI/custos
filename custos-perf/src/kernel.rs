@@ -39,16 +39,34 @@ pub struct Sass {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SassOrigin {
     CoreArtifact,
-    CompiledFromTag { tag: String, source: Option<String> },
+    /// `note`: what differs from the measured kernel, as recorded with it
+    /// (e.g. the tag's code is not the build the tune measured).
+    CompiledFromTag { tag: String, source: Option<String>, note: Option<String> },
 }
 
-fn sass_origin(dir: &Path) -> SassOrigin {
+/// The ORIGIN entry for `file`: keys before the first `[file]` section apply
+/// to every listing; a `[<file name>]` section overrides them for that file.
+fn sass_origin(dir: &Path, file: &str) -> SassOrigin {
     let Ok(text) = std::fs::read_to_string(dir.join("ORIGIN")) else { return SassOrigin::CoreArtifact };
-    let get = |key: &str| {
-        text.lines().find_map(|l| l.trim().strip_prefix(key)?.strip_prefix('=').map(|v| v.trim().to_string()))
-    };
+    let mut section: Option<String> = None;
+    let mut keys: BTreeMap<(bool, String), String> = BTreeMap::new();
+    for l in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+        if let Some(name) = l.strip_prefix('[').and_then(|l| l.strip_suffix(']')) {
+            section = Some(name.trim().to_string());
+        } else if let Some((k, v)) = l.split_once('=') {
+            match &section {
+                None => keys.insert((false, k.trim().to_string()), v.trim().to_string()),
+                Some(s) if s == file => keys.insert((true, k.trim().to_string()), v.trim().to_string()),
+                Some(_) => None,
+            };
+        }
+    }
+    let get = |k: &str| keys.get(&(true, k.to_string())).or_else(|| keys.get(&(false, k.to_string()))).cloned();
+    // A file section names its own provenance: a default note never carries over.
+    let own = keys.keys().any(|(in_section, _)| *in_section);
+    let note = keys.get(&(own, "note".to_string())).cloned();
     match get("compiled_from_tag") {
-        Some(tag) => SassOrigin::CompiledFromTag { tag, source: get("source") },
+        Some(tag) => SassOrigin::CompiledFromTag { tag, source: get("source"), note },
         None => SassOrigin::CoreArtifact,
     }
 }
@@ -107,21 +125,48 @@ pub struct KernelDetail {
     pub nsight_stalls: Option<Value>,
 }
 
-/// The mangled-name fragment of the measured (row-major) instantiation of an
-/// mma_pipe config at aegis-perf-v0.3.0:
-/// `gemm_mma_pipe_kernel<Tile<BM, BN, BK, WM, WN, Layout 0, Layout 0>, STAGES>(KParams, bool, bool)`.
+/// Mangled-name fragments of the measured (row-major A and B, `Layout 0, 0`)
+/// instantiation of a config; a listing matches if its symbol contains any.
+/// - mma_pipe: `gemm_mma_pipe_kernel<Tile<BM, BN, BK, WM, WN, Layout 0, Layout 0>, STAGES>(KParams, bool, bool)`;
+///   the layout back-reference is `S5_` up to aegis-perf-v0.4.0 and `S6_` from
+///   v0.5.0 (the kernel moved into `mma_pipe_detail`).
+/// - gemv_tc: `gemv_tc_kernel<DecTile<BN, BK, WARPS_N, Layout 0, Layout 0>, STAGES>(KParams, TcArgs, bool)`;
+///   split-K is a launch argument, so `_k1` and `_k3` of a tile share a kernel.
+/// - mma_tma: `gemm_mma_tma_kernel<TmaTile<BM, BN, BK, WM, WN, Layout 0, Layout 0>, STAGES>(CUtensorMap, CUtensorMap, KParams, bool)`.
+///
 /// Other impl families: None (no symbol known for them yet).
-fn symbol(impl_: &str, cfg: &Value) -> Option<String> {
-    if !impl_.starts_with("mma_pipe_") {
-        return None;
-    }
+fn symbol(impl_: &str, cfg: &Value) -> Option<Vec<String>> {
     let g = |k: &str| cfg.get(k).and_then(Value::as_i64);
-    let t = [g("BM")?, g("BN")?, g("BK")?, g("WARPS_M")?, g("WARPS_N")?];
-    let li: String = t.iter().map(|x| format!("Li{x}E")).collect();
-    Some(format!(
-        "gemm_mma_pipe_kernelINS0_10mma_detail4TileI{li}LNS0_6LayoutE0ELS5_0EEELi{}EEEvNS0_7KParamsEbb",
-        g("STAGES")?
-    ))
+    let li = |keys: &[&str]| -> Option<String> { keys.iter().map(|k| g(k).map(|x| format!("Li{x}E"))).collect() };
+    if impl_.starts_with("mma_pipe_") {
+        let t = li(&["BM", "BN", "BK", "WARPS_M", "WARPS_N"])?;
+        let s = g("STAGES")?;
+        return Some(
+            ["S5_", "S6_"]
+                .iter()
+                .map(|r| format!("gemm_mma_pipe_kernelINS0_10mma_detail4TileI{t}LNS0_6LayoutE0EL{r}0EEELi{s}EEEvNS0_7KParamsEbb"))
+                .collect(),
+        );
+    }
+    if impl_.starts_with("gemv_tc_") {
+        let t = li(&["BN", "BK", "WARPS_N"])?;
+        return Some(vec![format!(
+            "gemv_tc_kernelINS1_7DecTileI{t}LNS0_6LayoutE0ELS4_0EEELi{}EEEvNS0_7KParamsENS1_6TcArgsEb",
+            g("STAGES")?
+        )]);
+    }
+    if impl_.starts_with("mma_tma_") {
+        let t = li(&["BM", "BN", "BK", "WARPS_M", "WARPS_N"])?;
+        return Some(vec![format!(
+            "gemm_mma_tma_kernelINS1_7TmaTileI{t}LNS0_6LayoutE0ELS4_0EEELi{}EEEv14CUtensorMap_stS6_NS0_7KParamsEb",
+            g("STAGES")?
+        )]);
+    }
+    None
+}
+
+fn matches(symbol: &str, sym: &[String]) -> bool {
+    sym.iter().any(|s| symbol.contains(s.as_str()))
 }
 
 /// The kernel symbol a SASS listing is for (its first `Function :` line).
@@ -132,7 +177,7 @@ fn listing_symbol(path: &Path) -> Option<String> {
     })
 }
 
-fn sass(dir: &Path, sym: &str) -> Result<(Option<Sass>, Option<String>)> {
+fn sass(dir: &Path, sym: &[String]) -> Result<(Option<Sass>, Option<String>)> {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return Ok((None, Some(format!("no SASS dump ({} missing)", dir.display()))));
     };
@@ -140,13 +185,13 @@ fn sass(dir: &Path, sym: &str) -> Result<(Option<Sass>, Option<String>)> {
         .flatten()
         .map(|e| e.path())
         .filter(|p| p.extension().is_some_and(|e| e == "sass"))
-        .filter_map(|p| listing_symbol(&p).filter(|s| s.contains(sym)).map(|s| (p, s)))
+        .filter_map(|p| listing_symbol(&p).filter(|s| matches(s, sym)).map(|s| (p, s)))
         .collect();
     hits.sort();
     match &hits[..] {
         [(p, s)] => {
             let text = std::fs::read_to_string(p)?;
-            let origin = sass_origin(dir);
+            let origin = sass_origin(dir, &p.file_name().unwrap_or_default().to_string_lossy());
             Ok((Some(Sass { path: p.display().to_string(), symbol: s.clone(), lines: text.lines().count(), text, origin }), None))
         }
         [] => Ok((None, Some("no SASS listing of the row-major instantiation in the dump".into()))),
@@ -167,11 +212,11 @@ fn instruction_mix(s: &Sass) -> BTreeMap<String, i64> {
         .collect()
 }
 
-fn resource_usage(dir: &Path, sym: &str) -> Result<Option<ResourceUsage>> {
+fn resource_usage(dir: &Path, sym: &[String]) -> Result<Option<ResourceUsage>> {
     let Ok(text) = std::fs::read_to_string(dir.join("resource-usage.txt")) else { return Ok(None) };
     let lines: Vec<&str> = text.lines().collect();
     let found: Vec<usize> = (0..lines.len())
-        .filter(|&i| lines[i].trim_start().starts_with("Function ") && lines[i].contains(sym))
+        .filter(|&i| lines[i].trim_start().starts_with("Function ") && matches(lines[i], sym))
         .collect();
     let [i] = found[..] else { return Ok(None) };
     let Some(usage) = lines.get(i + 1) else { return Ok(None) };
@@ -245,7 +290,7 @@ pub fn kernel_detail(src: &Sources, con: &Connection, kernel_id: &str) -> Result
                 sass_note: Some(if aegis_perf::db::is_baseline(&k.impl_) {
                     "a cuBLAS baseline: no AEGIS SASS".into()
                 } else {
-                    format!("no kernel symbol known for {} (only the mma_pipe family)", k.impl_)
+                    format!("no kernel symbol known for {} (only the mma_pipe, gemv_tc and mma_tma families)", k.impl_)
                 }),
                 instruction_mix: None,
                 resource_usage: None,

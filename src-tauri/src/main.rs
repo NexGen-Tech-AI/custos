@@ -1959,6 +1959,7 @@ fn main() {
                 perf::measurements,
                 perf::kernel_detail,
                 perf::roofline,
+                perf::win_chain,
                 perf::compare,
                 $($legacy,)*
             ]

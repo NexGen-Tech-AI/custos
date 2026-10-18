@@ -387,6 +387,51 @@ pub struct Winner {
     pub paired_ab: PairedAb,
     /// Decode shapes only.
     pub decode_spotlight: Option<DecodeSpotlight>,
+    /// Set on the one shape the win chain view explains (`chain_pick`).
+    pub win_chain: Option<ChainPick>,
+}
+
+/// Why a shape is the win chain's: the decode win with the strongest clean
+/// paired-ab result (highest CI lower bound vs cublaslt_best); when no decode
+/// win is clean, the strongest one regardless, labeled.
+#[derive(Clone, Debug, Serialize)]
+pub struct ChainPick {
+    pub clean: bool,
+    /// "strongest clean paired result" or "no clean paired result: strongest
+    /// unreproducible one (dirty build)" (or "(unlinked build)").
+    pub basis: String,
+    /// The paired-ab result it was picked on.
+    pub source: String,
+    pub ci_lo_pct: f64,
+}
+
+fn best(pool: Vec<(usize, &AbResult)>) -> Option<(usize, &AbResult)> {
+    pool.into_iter().max_by(|a, b| a.1.ci_lo_pct.total_cmp(&b.1.ci_lo_pct))
+}
+
+/// The win chain's shape among `ws` (decode wins with a paired-ab result).
+pub fn chain_pick(ws: &[Winner]) -> Option<(usize, ChainPick)> {
+    let wins: Vec<(usize, &AbResult)> = ws
+        .iter()
+        .enumerate()
+        .filter(|(_, w)| w.decode)
+        .filter_map(|(i, w)| Some((i, w.paired_ab.kernel.as_ref().filter(|a| a.verdict == "win")?)))
+        .collect();
+
+    let clean: Vec<_> = wins.iter().copied().filter(|(_, a)| a.confirmed).collect();
+    let (i, a, clean) = match best(clean) {
+        Some((i, a)) => (i, a, true),
+        None => {
+            let (i, a) = best(wins)?;
+            (i, a, false)
+        }
+    };
+    let basis = if clean {
+        "strongest clean paired result".to_string()
+    } else {
+        format!("no clean paired result: strongest {}", a.provenance_label.unwrap_or("unconfirmed"))
+    };
+    Some((i, ChainPick { clean, basis, source: a.source.clone(), ci_lo_pct: a.ci_lo_pct }))
 }
 
 /// Negative register counts mark baselines Core cannot inspect.
@@ -466,6 +511,7 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>
         lt_algo,
         paired_ab: PairedAb { kernel: None, dispatch: None },
         decode_spotlight: None,
+        win_chain: None,
     }
 }
 
@@ -476,7 +522,7 @@ pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> 
     let header = StoredDispatch::load(src, sm);
     let ab = view::paired_results(con, &view::PairedResultFilter::default())?;
     let run_shas = crate::measure::run_shas(con)?;
-    Ok(view::winners(con, Some(sm))?
+    let mut ws: Vec<Winner> = view::winners(con, Some(sm))?
         .into_iter()
         .map(|w| {
             let r = params.as_ref().map(|p| roof::metrics(p, w.m, w.n, w.k, w.median_us));
@@ -495,7 +541,11 @@ pub fn winners(src: &Sources, con: &Connection, sm: i64) -> Result<Vec<Winner>> 
             }
             x
         })
-        .collect())
+        .collect();
+    if let Some((i, pick)) = chain_pick(&ws) {
+        ws[i].win_chain = Some(pick);
+    }
+    Ok(ws)
 }
 
 #[cfg(test)]

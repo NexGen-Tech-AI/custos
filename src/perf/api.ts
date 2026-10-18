@@ -1,6 +1,6 @@
 // invoke() wrappers for the AEGIS Custos perf commands (src-tauri/src/perf.rs).
 import { invoke } from '@tauri-apps/api/core';
-import type { ArchModel, DbStatus, Device, KernelDetail, PerfSources, Roofline, Winner } from './types';
+import type { ArchModel, DbStatus, Device, KernelDetail, PerfSources, Roofline, WinChain, Winner } from './types';
 
 export const perfApi = {
   status: () => invoke<DbStatus>('perf_status'),
@@ -10,4 +10,5 @@ export const perfApi = {
   roofline: (sm: number) => invoke<Roofline | null>('roofline', { sm }),
   winners: (sm: number) => invoke<Winner[]>('winners', { sm }),
   kernelDetail: (kernelId: string) => invoke<KernelDetail | null>('kernel_detail', { kernelId }),
+  winChain: (sm: number, shape: string | null) => invoke<WinChain | null>('win_chain', { sm, shape }),
 };

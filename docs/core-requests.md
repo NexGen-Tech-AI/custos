@@ -295,8 +295,20 @@ those builds, that device and that shape.
 
 ## 6. SASS and Nsight artifacts keyed by kernel
 
-**Status:** open, 2026-10-17. Custos shows what it can identify and says why
-for the rest.
+**Status:** open, 2026-10-17; still open at aegis-perf-v0.5.0 (2026-10-18:
+`tools/sass_dump.sh` unchanged). Custos shows what it can identify and says
+why for the rest. The fixture listings of the new families (gemv_tc,
+mma_tma) are compiled from the tag, and one shows the next gap:
+
+3. **The listing's build is not recorded, and the tag is not the measured
+   build.** `gemv_tc_16x64x64_1x4_s4_k1` compiled from v0.5.0 uses 70
+   registers; the perf DB records 72 for it, because the decode tune that
+   chose it (`c2b937d8adca`) ran build 1084490 and Phase C step 3 (0bd0f22)
+   changed the reducer afterwards (compiled at 1084490: 72). Requested: a
+   dump per measured build (or the build SHA in the dump's index and the
+   `kernels` row), so a listing can be tied to the run it explains. The
+   Kernel view and the win chain flag the mismatch today
+   (`InstructionMix`, "the listing's build is not the measured one").
 
 ### What Custos needs
 

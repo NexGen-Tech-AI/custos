@@ -29,7 +29,7 @@ fn winner_kernel_with_sass_and_instruction_mix() {
     // Compiled by Custos from the tag, not Core's dump (tests/fixtures/README.md).
     assert_eq!(
         sass.origin,
-        SassOrigin::CompiledFromTag { tag: "aegis-perf-v0.3.0".into(), source: Some("src/gemm/mma_pipe.cu".into()) }
+        SassOrigin::CompiledFromTag { tag: "aegis-perf-v0.3.0".into(), source: Some("src/gemm/mma_pipe.cu".into()), note: None }
     );
     // `grep -cE '\bOP'` on the same file: HMMA 48, LDSM 24, LDGSTS 64, LDG. 558, STS 62.
     let mix = a.instruction_mix.as_ref().unwrap();
@@ -91,4 +91,39 @@ fn core_dump_listing_is_a_core_artifact() {
     let k = custos_perf::kernel_detail(&core, &con, "be0c6688d651513b").unwrap().unwrap();
     assert_eq!(k.artifacts[0].sass.as_ref().unwrap().origin, SassOrigin::CoreArtifact);
     std::fs::remove_dir_all(dir).ok();
+}
+
+/// The Phase C families, compiled from tag aegis-perf-v0.5.0 (sass_dump.sh
+/// still truncates names, core-requests #6), each found by its row-major
+/// symbol, with the provenance ORIGIN records for that file.
+#[test]
+fn gemv_tc_and_mma_tma_listings_from_the_tag() {
+    let s = src();
+    let con = s.open().unwrap();
+    // gemv_tc_16x64x64_1x4_s4_k1: the decode winner at 1x896x896, 16x896x896, 16x4864x896.
+    let k = custos_perf::kernel_detail(&s, &con, "9bbc014a0c4cfd97").unwrap().unwrap();
+    assert_eq!(k.impl_, "gemv_tc_16x64x64_1x4_s4_k1");
+    assert_eq!(k.winner_of, ["sm_121 1x896x896", "sm_121 16x896x896", "sm_121 16x4864x896"]);
+    let a = &k.artifacts[0];
+    let sass = a.sass.as_ref().unwrap();
+    assert!(sass.path.ends_with("tests/fixtures/sass/sm_121/gemv_tc_16x64x64_1x4_s4_k1.sass"));
+    assert!(sass.symbol.contains("DecTileILi64ELi64ELi4ELNS0_6LayoutE0ELS4_0EEELi4EE"));
+    assert_eq!(sass.lines, 7304);
+    let SassOrigin::CompiledFromTag { tag, source, note } = &sass.origin else { panic!("{:?}", sass.origin) };
+    assert_eq!((tag.as_str(), source.as_deref()), ("aegis-perf-v0.5.0", Some("src/gemm/gemv_tc.cu")));
+    assert!(note.as_deref().unwrap().contains("build 1084490 (REG 72"));
+    // The tag's kernel is not the tuned build: ptxas 70 registers, the perf DB 72.
+    assert_eq!((a.resource_usage.as_ref().unwrap().regs, k.regs), (Some(70), Some(72)));
+    let mix = a.instruction_mix.as_ref().unwrap();
+    assert_eq!((mix["HMMA"], mix["LDSM"], mix["LDGSTS"], mix["LDG"], mix["STS"]), (24, 24, 72, 361, 69));
+
+    // mma_tma_128x256x32_2x4_s4: the 4096^3 winner (dispatched to cuBLASLt).
+    let k = custos_perf::kernel_detail(&s, &con, "03869dd12bf12c08").unwrap().unwrap();
+    let a = &k.artifacts[0];
+    let sass = a.sass.as_ref().unwrap();
+    assert!(sass.symbol.contains("gemm_mma_tma_kernelINS1_7TmaTileILi128ELi256ELi32ELi2ELi4ELNS0_6LayoutE0ELS4_0EEELi4EE"));
+    assert_eq!(sass.origin, SassOrigin::CompiledFromTag { tag: "aegis-perf-v0.5.0".into(), source: Some("src/gemm/mma_tma.cu".into()), note: None });
+    assert_eq!((a.resource_usage.as_ref().unwrap().regs, k.regs), (Some(166), Some(166)));
+    let mix = a.instruction_mix.as_ref().unwrap();
+    assert_eq!((mix["HMMA"], mix["LDSM"], mix["LDGSTS"], mix["LDG"], mix["STS"]), (64, 16, 0, 768, 0), "TMA: no LDGSTS");
 }

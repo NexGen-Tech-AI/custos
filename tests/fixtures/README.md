@@ -17,7 +17,7 @@ aegis-perf library is unchanged from v0.4.0).
 | `golden/roofline-121.txt`, `golden/roofline-sm121.svg` | `aegis-perf roofline --arch 121` (stdout point list, SVG) | same |
 | `golden/emit-header-sm_121.h` | `aegis-perf emit-header --arch 121` | same |
 | `golden/regress-<run>.txt` | `aegis-perf regress --run <run> --header winners/9157a34/sm_121.h`, per nightly | same |
-| `sass/sm_121/mma_pipe_64x64x32_2x2_s4.sass`, `mma_pipe_128x64x32_2x2_s2.sass` | SASS of two winner kernels | compiled by Custos from tag v0.3.0, not Core's dump (below) |
+| `sass/sm_121/*.sass` | SASS of four winner kernels (mma_pipe x2, gemv_tc, mma_tma) | compiled by Custos from tags v0.3.0 and v0.5.0, not Core's dump (below) |
 | `sass/sm_121/ORIGIN` | where those listings come from | written with them (below) |
 | `docs/LOG.md`, `docs/analysis/gemm-large.md` | Core's run log and analysis, which Custos cites (stated diagnoses, the win chain's sources) | the tag: `docs/` (`git show aegis-perf-v0.5.0:docs/...`) |
 | `manifest-spark-5822.json` | `aegis_manifest` output (SM count, memory, toolchain) | Core `results/` (not in git); byte-identical to the 2026-10-14 copy |
@@ -118,35 +118,53 @@ from the tune this fixture holds.
 
 ## SASS
 
-**Provenance: the fixture SASS was compiled by Custos from tag
-aegis-perf-v0.3.0 (`src/gemm/mma_pipe.cu`), not taken from Core's dump**,
-because of the `tools/sass_dump.sh` name collision below (core-requests #6).
-`sass/sm_121/ORIGIN` records this (`compiled_from_tag=`, `source=`); the
-Kernel view reads it and shows "compiled from tag". A SASS directory without
-that file (Core's `artifacts/sass/`) is shown as "Core artifact".
+**Provenance: every fixture listing was compiled by Custos from a Core tag,
+not taken from Core's dump**, because of the `tools/sass_dump.sh` name
+collision below (core-requests #6; `sass_dump.sh` is unchanged at
+aegis-perf-v0.5.0). `sass/sm_121/ORIGIN` records it per file
+(`compiled_from_tag=`, `source=`, and a `note=` on what differs from the
+measured kernel); the Kernel view and the win chain read it and show
+"compiled from tag". A SASS directory without that file (Core's
+`artifacts/sass/`) is shown as "Core artifact".
+
+| listing | tag | source | ptxas REG | perf DB regs |
+|---|---|---|---|---|
+| `mma_pipe_64x64x32_2x2_s4.sass` | aegis-perf-v0.3.0 | `src/gemm/mma_pipe.cu` | 74 | 74 |
+| `mma_pipe_128x64x32_2x2_s2.sass` | aegis-perf-v0.3.0 | `src/gemm/mma_pipe.cu` | 126 | 126 |
+| `gemv_tc_16x64x64_1x4_s4_k1.sass` | aegis-perf-v0.5.0 | `src/gemm/gemv_tc.cu` | **70** | **72** |
+| `mma_tma_128x256x32_2x4_s4.sass` | aegis-perf-v0.5.0 | `src/gemm/mma_tma.cu` | 166 | 166 |
+
+The gemv_tc listing is the tag's code, not the tuned build's: the decode tune
+`c2b937d8adca` ran build 1084490, and Phase C step 3 (0bd0f22, in the tag)
+changed the split-K reducer afterwards. Compiling `gemv_tc.cu` at 1084490
+with the same flags gives REG 72, the perf DB's. ORIGIN's note says so, and
+the Kernel view flags the register mismatch. (The step 4 paired-ab results
+ran 0bd0f22-dirty, i.e. the tag's kernel.)
 
 Core's `artifacts/sass/sm_121/` (gitignored, so not in the tag) has no usable
 SASS for the measured kernels. The 2026-10-13 files predate the `xor` smem
 layout, and in the 2026-10-17 dump `tools/sass_dump.sh` cuts names at 120
 characters, so the row- and column-major instantiations of a config share a
 file name. Each file keeps whichever was written last (the column-major one).
-The two files here were compiled from aegis-perf-v0.3.0, CPU only;
-`src/gemm/` and `include/aegis/gemm.h` are unchanged in v0.4.0:
+Compiled CPU only (no GPU), as tools/sass_dump.sh extracts listings:
 
 ```sh
-cd CORE   # at aegis-perf-v0.3.0 (same kernel source as v0.4.0)
+cd CORE   # at the listing's tag
 nvcc -cubin -arch=sm_121 -std=c++20 -O3 -DNDEBUG -lineinfo --expt-relaxed-constexpr \
-     -Iinclude -Isrc src/gemm/mma_pipe.cu -o mma_pipe.cubin
-cuobjdump -sass -fun <symbol> mma_pipe.cubin > <impl>.sass   # as tools/sass_dump.sh does
+     -Iinclude -Isrc src/gemm/mma_pipe.cu -o mma_pipe.cubin          # v0.3.0
+nvcc ... src/gemm/gemv_tc.cu -o gemv_tc.cubin                        # v0.5.0
+nvcc ... -DAEGIS_TMA=1 src/gemm/mma_tma.cu -o mma_tma.cubin          # v0.5.0 (CMake sets AEGIS_TMA)
+cuobjdump -sass -fun <symbol> <file>.cubin > <impl>.sass
 ```
 
 Symbols (`Layout 0, 0` = row-major A and B, what bench_gemm measures):
 
 - `mma_pipe_64x64x32_2x2_s4`: `..gemm_mma_pipe_kernelINS0_10mma_detail4TileILi64ELi64ELi32ELi2ELi2ELNS0_6LayoutE0ELS5_0EEELi4EEEvNS0_7KParamsEbb`
+  (from v0.5.0 the kernel lives in `mma_pipe_detail` and the back-reference is `S6_0`)
 - `mma_pipe_128x64x32_2x2_s2`: `..TileILi128ELi64ELi32ELi2ELi2ELNS0_6LayoutE0ELS5_0EEELi2EEEvNS0_7KParamsEbb`
+- `gemv_tc_16x64x64_1x4_s4_k1`: `..gemv_tc_kernelINS1_7DecTileILi64ELi64ELi4ELNS0_6LayoutE0ELS4_0EEELi4EEEvNS0_7KParamsENS1_6TcArgsEb`
+  (split-K is a launch argument: `_k1` and `_kauto` of a tile share this kernel)
+- `mma_tma_128x256x32_2x4_s4`: `..gemm_mma_tma_kernelINS1_7TmaTileILi128ELi256ELi32ELi2ELi4ELNS0_6LayoutE0ELS4_0EEELi4EEEv14CUtensorMap_stS6_NS0_7KParamsEb`
 
-`cuobjdump -res-usage` gives REG 74 and 126, the `regs` the perf DB records
-for these kernels.
-
-`sass/sm_121/resource-usage.txt` is `cuobjdump -res-usage mma_pipe.cubin` (the
-same cubin), the two kernels' entries only, in Core's resource-usage format.
+`sass/sm_121/resource-usage.txt` is `cuobjdump -res-usage` of the same
+cubins, the four kernels' entries only, in Core's resource-usage format.

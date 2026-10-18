@@ -96,3 +96,13 @@ pub async fn perf_status(state: State<'_, PerfState>) -> Result<custos_perf::DbS
     let src = state.0.clone();
     tauri::async_runtime::spawn_blocking(move || custos_perf::db_status(&src)).await.map_err(|e| e.to_string())
 }
+
+/// The win chain for `shape` on arch `sm` (None: the shape the chain picks).
+#[tauri::command]
+pub async fn win_chain(
+    state: State<'_, PerfState>,
+    sm: i64,
+    shape: Option<String>,
+) -> Result<Option<custos_perf::win_chain::WinChain>, String> {
+    run(&state, move |s, c| custos_perf::win_chain(s, c, sm, shape.as_deref())).await
+}

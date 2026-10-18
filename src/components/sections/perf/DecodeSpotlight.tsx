@@ -46,7 +46,7 @@ const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4 whi
 const td = 'py-2 pr-4 align-top text-xs';
 const muted = 'text-xs text-gray-500 dark:text-gray-400';
 
-function Row({ r, onChain }: { r: SpotRow; onChain?: (shape: string) => void }) {
+function Row({ r }: { r: SpotRow }) {
   const s = r.spot;
   const k = r.ab?.kernel ?? null;
   const d = r.ab?.dispatch ?? null;
@@ -54,13 +54,6 @@ function Row({ r, onChain }: { r: SpotRow; onChain?: (shape: string) => void }) 
     <tr className="border-b border-gray-100 dark:border-gray-700/50" data-shape={r.shape}>
       <td className={`${td} font-mono whitespace-nowrap`}>
         {r.shape}
-        {onChain && (
-          <div>
-            <button type="button" className="text-blue-700 dark:text-blue-300 underline" onClick={() => onChain(r.shape)}>
-              win chain
-            </button>
-          </div>
-        )}
       </td>
       <td className={td} data-col="spot-roof">
         <span className="text-sm">{pct(s.pct_of_read_roof) ?? <NotMeasured />}</span>
@@ -113,7 +106,7 @@ function Row({ r, onChain }: { r: SpotRow; onChain?: (shape: string) => void }) 
   );
 }
 
-export function DecodeSpotlightPanel({ rows, onChain }: { rows: SpotRow[]; onChain?: (shape: string) => void }) {
+export function DecodeSpotlightPanel({ rows }: { rows: SpotRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div data-panel="decode-spotlight">
@@ -131,7 +124,7 @@ export function DecodeSpotlightPanel({ rows, onChain }: { rows: SpotRow[]; onCha
           </thead>
           <tbody>
             {rows.map((r) => (
-              <Row key={r.shape} r={r} onChain={onChain} />
+              <Row key={r.shape} r={r} />
             ))}
           </tbody>
         </table>

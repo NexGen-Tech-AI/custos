@@ -51,8 +51,129 @@ function Listing({ text, lines }: { text: string; lines: number }) {
   );
 }
 
-function Detail({ k }: { k: KernelDetail }) {
+type Artifacts = KernelDetail['artifacts'][number];
+
+/** Config, registers, spills and shared memory (perf DB). */
+export function KernelFacts({ k }: { k: KernelDetail }) {
   const cfg = typeof k.config === 'string' ? { config: k.config } : k.config;
+  return (
+    <>
+      <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Fact label="Registers / thread" value={k.regs?.toString() ?? null} />
+        <Fact label="Spills (local memory)" value={spills(k.local_bytes)} />
+        <Fact label="Shared memory / block" value={bytes(k.smem_bytes)} />
+        <Fact label="Baseline" value={k.baseline ? 'yes (cuBLAS)' : 'no'} />
+      </dl>
+      <h4 className="text-sm font-semibold mt-5 mb-2">Config</h4>
+      <dl className="grid grid-cols-3 md:grid-cols-7 gap-3">
+        {Object.entries(cfg).map(([key, v]) => (
+          <Fact key={key} label={key} value={String(v)} />
+        ))}
+      </dl>
+    </>
+  );
+}
+
+/** Lines of the listing with each opcode, and ptxas resource usage. */
+export function InstructionMix({ k, a }: { k: KernelDetail; a: Artifacts }) {
+  if (!a.instruction_mix) return <NotMeasured label={`instruction mix not measured: ${a.sass_note ?? 'no SASS listing'}`} />;
+  const ru = a.resource_usage;
+  return (
+    <>
+      <table className="text-sm mb-1" aria-label="Instruction mix">
+        <thead>
+          <tr>
+            {Object.keys(a.instruction_mix).map((op) => (
+              <th key={op} className="text-left font-medium text-gray-500 dark:text-gray-400 pr-6 font-mono">
+                {op}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {Object.entries(a.instruction_mix).map(([op, n]) => (
+              <td key={op} className="pr-6" data-op={op}>
+                {n}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <p className={`${muted} mb-4`}>
+        Lines of the listing with each opcode (static counts, as tools/sass_dump.sh counts them).
+        {ru && (
+          <>
+            {' '}
+            ptxas: {ru.regs ?? '?'} registers, {ru.local ?? '?'} B local, {ru.stack ?? '?'} B stack, {ru.shared ?? '?'} B static
+            shared.
+          </>
+        )}
+      </p>
+      {ru && ru.regs !== null && k.regs !== null && ru.regs !== k.regs && (
+        <p className="text-xs text-amber-700 dark:text-amber-400 mb-3" data-col="regs-mismatch">
+          ⚠ the listing&apos;s build is not the measured one: ptxas {ru.regs} registers, the perf DB {k.regs}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Where the listing comes from. */
+export function SassOriginLine({ a }: { a: Artifacts }) {
+  if (!a.sass) return null;
+  const o = a.sass.origin;
+  return (
+    <>
+      <p className="text-sm mb-1" data-col="sass-origin">
+        Source:{' '}
+        {o.kind === 'core_artifact' ? (
+          <>Core artifact (artifacts/sass, Core&apos;s dump)</>
+        ) : (
+          <>
+            compiled from tag <span className="font-mono">{o.tag}</span>
+            {o.source && (
+              <>
+                {' '}
+                (<span className="font-mono">{o.source}</span>)
+              </>
+            )}{' '}
+            by Custos, not Core&apos;s dump
+          </>
+        )}
+      </p>
+      {o.kind === 'compiled_from_tag' && o.note && (
+        <p className="text-xs text-amber-700 dark:text-amber-400 mb-1" data-col="sass-note">
+          {o.note}
+        </p>
+      )}
+      <p className={`${muted} mb-3 break-all`}>
+        <span className="font-mono">{a.sass.path}</span>
+        <br />
+        <span className="font-mono">{a.sass.symbol}</span>
+      </p>
+    </>
+  );
+}
+
+/** The SASS listing with its provenance, or why there is none. */
+export function SassListing({ a }: { a: Artifacts }) {
+  if (!a.sass) {
+    return (
+      <p className="text-sm">
+        <NotMeasured label={`no SASS: ${a.sass_note ?? 'not dumped'}`} />
+      </p>
+    );
+  }
+  return (
+    <>
+      <SassOriginLine a={a} />
+      <Listing text={a.sass.text} lines={a.sass.lines} />
+    </>
+  );
+}
+
+function Detail({ k }: { k: KernelDetail }) {
   return (
     <div className="space-y-6">
       <div className={panel}>
@@ -61,18 +182,7 @@ function Detail({ k }: { k: KernelDetail }) {
           kernel {k.kernel_id} · {k.op}
           {k.winner_of.length > 0 && <> · winner of {k.winner_of.length} shapes: {k.winner_of.join(', ')}</>}
         </p>
-        <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Fact label="Registers / thread" value={k.regs?.toString() ?? null} />
-          <Fact label="Spills (local memory)" value={spills(k.local_bytes)} />
-          <Fact label="Shared memory / block" value={bytes(k.smem_bytes)} />
-          <Fact label="Baseline" value={k.baseline ? 'yes (cuBLAS)' : 'no'} />
-        </dl>
-        <h4 className="text-sm font-semibold mt-5 mb-2">Config</h4>
-        <dl className="grid grid-cols-3 md:grid-cols-7 gap-3">
-          {Object.entries(cfg).map(([key, v]) => (
-            <Fact key={key} label={key} value={String(v)} />
-          ))}
-        </dl>
+        <KernelFacts k={k} />
       </div>
 
       {k.artifacts.map((a) => (
@@ -80,65 +190,13 @@ function Detail({ k }: { k: KernelDetail }) {
           <h3 className="text-lg font-semibold mb-1">SASS, sm_{a.sm}</h3>
           {a.sass ? (
             <>
-              <p className="text-sm mb-1" data-col="sass-origin">
-                Source:{' '}
-                {a.sass.origin.kind === 'core_artifact' ? (
-                  <>Core artifact (artifacts/sass, Core&apos;s dump)</>
-                ) : (
-                  <>
-                    compiled from tag <span className="font-mono">{a.sass.origin.tag}</span>
-                    {a.sass.origin.source && (
-                      <>
-                        {' '}
-                        (<span className="font-mono">{a.sass.origin.source}</span>)
-                      </>
-                    )}{' '}
-                    by Custos, not Core&apos;s dump
-                  </>
-                )}
-              </p>
-              <p className={`${muted} mb-3 break-all`}>
-                <span className="font-mono">{a.sass.path}</span>
-                <br />
-                <span className="font-mono">{a.sass.symbol}</span>
-              </p>
+              <SassOriginLine a={a} />
               <h4 className="text-sm font-semibold mb-2">Instruction mix</h4>
-              <table className="text-sm mb-1" aria-label="Instruction mix">
-                <thead>
-                  <tr>
-                    {Object.keys(a.instruction_mix ?? {}).map((op) => (
-                      <th key={op} className="text-left font-medium text-gray-500 dark:text-gray-400 pr-6 font-mono">
-                        {op}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    {Object.entries(a.instruction_mix ?? {}).map(([op, n]) => (
-                      <td key={op} className="pr-6" data-op={op}>
-                        {n}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-              <p className={`${muted} mb-4`}>
-                Lines of the listing with each opcode (static counts, as tools/sass_dump.sh counts them).
-                {a.resource_usage && (
-                  <>
-                    {' '}
-                    ptxas: {a.resource_usage.regs ?? '?'} registers, {a.resource_usage.local ?? '?'} B local,{' '}
-                    {a.resource_usage.stack ?? '?'} B stack, {a.resource_usage.shared ?? '?'} B static shared.
-                  </>
-                )}
-              </p>
+              <InstructionMix k={k} a={a} />
               <Listing text={a.sass.text} lines={a.sass.lines} />
             </>
           ) : (
-            <p className="text-sm">
-              <NotMeasured label={`no SASS: ${a.sass_note ?? 'not dumped'}`} />
-            </p>
+            <SassListing a={a} />
           )}
         </div>
       ))}

@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import { DecodeSpotlightPanel, spotRowsFromWinners } from './DecodeSpotlight';
+import { WinChainView } from './WinChain';
 import type { Bars, Winner } from '../../../perf/types';
 import {
   DisagreeWarning,
@@ -56,7 +57,7 @@ function gap(w: Winner): string | null {
   return g === null ? null : `${g >= 0 ? '+' : ''}${g.toFixed(2)}%`;
 }
 
-function Row({ w }: { w: Winner }) {
+function Row({ w, onChain }: { w: Winner; onChain: (shape: string) => void }) {
   const routed = w.dispatch.target === 'cublaslt';
   const disagree = w.vs_cublaslt_best.disagreement !== null;
   return (
@@ -66,6 +67,16 @@ function Row({ w }: { w: Winner }) {
         <div className={muted}>
           {w.decode ? 'decode' : 'non-decode'} · {w.roof ? `${w.roof.roof} roof` : <NotMeasured label="roof not measured" />}
         </div>
+        {w.win_chain && (
+          <button
+            type="button"
+            data-col="win-chain"
+            className="mt-1 text-xs text-blue-700 dark:text-blue-300 underline"
+            onClick={() => onChain(w.shape_bucket)}
+          >
+            win chain →
+          </button>
+        )}
       </td>
       <td className={`${td} font-mono text-xs`}>
         {w.impl}
@@ -124,6 +135,7 @@ export function WinnersSection() {
   const [sm, setSm] = useState<number | null>(null);
   const [rows, setRows] = useState<Winner[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chain, setChain] = useState<string | null>(null);
 
   useEffect(() => {
     perfApi
@@ -144,6 +156,7 @@ export function WinnersSection() {
   if (error) return <div className={`${panel} text-red-700 dark:text-red-300`}>Perf DB: {error}</div>;
   if (archs === null) return <div className={panel}>Loading…</div>;
   if (archs.length === 0) return <div className={panel}><NotMeasured label="no arch files in Core" /></div>;
+  if (chain !== null && sm !== null) return <WinChainView sm={sm} shape={chain} onBack={() => setChain(null)} />;
 
   return (
     <div className="space-y-6">
@@ -194,7 +207,7 @@ export function WinnersSection() {
                 </thead>
                 <tbody>
                   {rows.map((w) => (
-                    <Row key={`${w.op}-${w.dtype}-${w.shape_bucket}`} w={w} />
+                    <Row key={`${w.op}-${w.dtype}-${w.shape_bucket}`} w={w} onChain={setChain} />
                   ))}
                 </tbody>
               </table>

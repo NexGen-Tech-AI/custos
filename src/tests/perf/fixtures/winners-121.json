@@ -104,7 +104,8 @@
       "kernel": null,
       "dispatch": null
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -211,7 +212,8 @@
       "kernel": null,
       "dispatch": null
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -318,7 +320,8 @@
       "kernel": null,
       "dispatch": null
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -460,7 +463,8 @@
         "excluded": 0
       }
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -602,7 +606,8 @@
         "excluded": 1
       }
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -759,7 +764,8 @@
           "why": null
         }
       }
-    }
+    },
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -907,7 +913,8 @@
       "path": "tensor_core",
       "split_k": 1,
       "diagnosis": null
-    }
+    },
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1063,7 +1070,8 @@
       "path": "tensor_core",
       "split_k": 3,
       "diagnosis": null
-    }
+    },
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1220,6 +1228,12 @@
           "why": null
         }
       }
+    },
+    "win_chain": {
+      "clean": false,
+      "basis": "no clean paired result: strongest unreproducible (dirty build)",
+      "source": "paired_results #36",
+      "ci_lo_pct": 113.53965775772157
     }
   },
   {
@@ -1368,7 +1382,8 @@
       "path": "tensor_core",
       "split_k": 1,
       "diagnosis": null
-    }
+    },
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1517,7 +1532,8 @@
       "path": "tensor_core",
       "split_k": 3,
       "diagnosis": null
-    }
+    },
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1624,7 +1640,8 @@
       "kernel": null,
       "dispatch": null
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1755,7 +1772,8 @@
         "excluded": 0
       }
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   },
   {
     "sm_arch": 121,
@@ -1863,6 +1881,7 @@
       "kernel": null,
       "dispatch": null
     },
-    "decode_spotlight": null
+    "decode_spotlight": null,
+    "win_chain": null
   }
 ]

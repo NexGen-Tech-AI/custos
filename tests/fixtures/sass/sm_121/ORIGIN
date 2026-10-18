@@ -1,5 +1,16 @@
 # Where the .sass listings in this directory come from (read by
 # custos-perf/src/kernel.rs; see tests/fixtures/README.md, "SASS").
 # A directory without this file is Core's own dump (artifacts/sass/).
+# Keys before the first [file] section apply to every listing; a section
+# overrides them for that one file.
 compiled_from_tag=aegis-perf-v0.3.0
 source=src/gemm/mma_pipe.cu
+
+[gemv_tc_16x64x64_1x4_s4_k1.sass]
+compiled_from_tag=aegis-perf-v0.5.0
+source=src/gemm/gemv_tc.cu
+note=the tag's kernel: REG 70; the decode tune c2b937d8adca measured build 1084490 (REG 72 in the perf DB)
+
+[mma_tma_128x256x32_2x4_s4.sass]
+compiled_from_tag=aegis-perf-v0.5.0
+source=src/gemm/mma_tma.cu
