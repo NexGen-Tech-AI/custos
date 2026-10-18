@@ -529,3 +529,42 @@ Contract rule 12 (the rule and its inputs come from Core) and rule 6.
 - `custos-perf/src/core_fallbacks.rs::build_header`,
   `custos-perf/src/regression.rs` (`is_sweep`, `RegressionRun::kind`).
 - Tests: `custos-perf/tests/regression.rs`.
+
+---
+
+## 12. aegis-hw discovery: a published schema
+
+**Status:** open, 2026-10-18. No fallback: the Device view has an empty,
+labeled slot ("aegis-hw discovery not available"), and nothing is queried.
+
+### What Custos needs
+
+Core's LOG (2026-10-17, "Paused here", on main after aegis-perf-v0.5.0)
+plans aegis-hw: a discovery API (C++ with a C ABI, "exposed as a struct and
+as JSON"; GPU from cudaDeviceProp plus NVML or Tegra sysfs; CPU clusters,
+core types, cpufreq ranges, HWCAP; memory size and thermal zones), profiles
+(`arch/<sm>.json`, or conservative defaults on an unknown device), and a
+telemetry thread with throttle state on every measurement row (a schema
+bump). There is no schema or design doc yet, so Custos defines no type from
+it. Requested, when aegis-hw lands:
+
+1. The discovery JSON's schema (a versioned format, like
+   `aegis-arch-params/3`), or a typed reader in aegis-perf
+   (`hw::discover()` / `hw::load(path)`), covering GPU, CPU, memory, thermal
+   and, if Core records them, the video engines (NVENC/NVDEC; not in the
+   plan today: say whether they are in scope).
+2. Per row: whether a measured profile backs it (`profile: measured |
+   unmeasured`) and the throttle state, as stored, never inferred.
+3. Where the JSON lives (a path under `results/` or `include/aegis/`), so
+   `Sources` can name it, and a fixture-sized example to commit.
+
+### Why
+
+Contract rules 9 and 18: no value without a source, every view per arch
+(the Jetson's sm_87 arrives through the same discovery).
+
+### Custos code waiting on it
+
+- `src/components/sections/perf/HwDiscoverySlot.tsx` (the slot and the
+  planned per-row state `HwRowState`; TODO there).
+- Then: a custos-perf reader, a perf command, and the types from the schema.

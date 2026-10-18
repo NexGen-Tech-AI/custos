@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import type { ArchModel, Device, HistoryRun, Latency, SourceRun } from '../../../perf/types';
 import { NotMeasured, V, bytes, cudaVersion, date, num } from '../../../perf/format';
+import { HwDiscoverySlot } from './HwDiscoverySlot';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
 const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4';
@@ -288,6 +289,7 @@ export function DeviceSection() {
           </div>
         ) : null,
       )}
+      <HwDiscoverySlot />
     </div>
   );
 }

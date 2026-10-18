@@ -68,6 +68,23 @@ describe('DeviceSection', () => {
     expect(within(l2).getByText(/SM 2407 MHz, clock lock not recorded · 335\.4 cycles = 139\.4 ns/)).toBeInTheDocument();
   });
 
+  it('has an empty, labeled aegis-hw discovery slot (nothing queried)', async () => {
+    render(<DeviceSection />);
+    expect(await screen.findByText('Hardware discovery (aegis-hw)')).toBeInTheDocument();
+    const slot = document.querySelector('[data-panel="aegis-hw"]')!;
+    expect(slot.querySelector('[data-col="hw-state"]')!.textContent).toBe('aegis-hw discovery not available');
+    const cats = Array.from(slot.querySelectorAll('[data-hw]')).map((e) => [(e as HTMLElement).dataset.hw, e.querySelector('dd')!.textContent]);
+    expect(cats).toEqual([
+      ['GPU', 'not available'],
+      ['CPU', 'not available'],
+      ['Memory', 'not available'],
+      ['Thermal', 'not available'],
+      ['Video engines', 'not available'],
+    ]);
+    expect(slot.textContent).toContain('docs/core-requests.md #12');
+    expect(invoke).not.toHaveBeenCalledWith(expect.stringMatching(/hw/), expect.anything());
+  });
+
   it('lists replaced runs as history, not as a warning', async () => {
     const { container } = render(<DeviceSection />);
     const l2 = (await screen.findByText('L2 latency')).closest('tr')!;
