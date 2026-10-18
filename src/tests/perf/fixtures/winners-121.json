@@ -37,7 +37,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -135,7 +136,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -233,7 +235,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_128x64x32_2x2_s2"
+      "tested_impl": "mma_pipe_128x64x32_2x2_s2",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -331,7 +334,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_128x128x32_2x4_s3"
+      "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -429,7 +433,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_128x128x32_2x4_s3"
+      "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+      "disagreement": null
     },
     "dispatch": {
       "target": "cublaslt",
@@ -528,7 +533,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -626,7 +632,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -724,7 +731,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "cublaslt",
@@ -822,7 +830,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -920,7 +929,8 @@
         "contains_one": false
       },
       "verdict": "faster",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -1019,7 +1029,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "cublaslt",
@@ -1117,7 +1128,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",
@@ -1215,7 +1227,15 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_128x64x32_2x2_s2"
+      "tested_impl": "mma_pipe_128x64x32_2x2_s2",
+      "disagreement": {
+        "median_pct": 82.21005393387952,
+        "ci_lo_pct": 78.509,
+        "ci_hi_pct": 79.03099999999999,
+        "off_by_pts": 3.17905393387953,
+        "threshold_pts": 2.0,
+        "provisional": true
+      }
     },
     "dispatch": {
       "target": "cublaslt",
@@ -1313,7 +1333,8 @@
         "contains_one": false
       },
       "verdict": "slower",
-      "tested_impl": "mma_pipe_64x64x32_2x2_s4"
+      "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+      "disagreement": null
     },
     "dispatch": {
       "target": "aegis",

@@ -211,3 +211,21 @@ fn dispatch_is_cores() {
         assert_eq!(x.dispatch.floor, tune::DISPATCH_FLOOR);
     }
 }
+
+/// The unpaired median % and the paired CI disagree by more than 2 points
+/// only at 512x4864x896 in this fixture (run 7e94c009266f: header 82.2%,
+/// paired CI [78.5, 79.0]); 256x256x256 (88.66% against [88.69, 88.97]) is
+/// consistent.
+#[test]
+fn paired_and_unpaired_disagree() {
+    let ws = winners();
+    let flagged: Vec<&str> = ws.iter().filter(|w| w.vs_cublaslt_best.disagreement.is_some()).map(|w| w.shape_bucket.as_str()).collect();
+    assert_eq!(flagged, ["512x4864x896"]);
+    let w = ws.iter().find(|w| w.shape_bucket == "512x4864x896").unwrap();
+    let d = w.vs_cublaslt_best.disagreement.as_ref().unwrap();
+    assert!((d.median_pct - 82.21).abs() < 0.01, "{}", d.median_pct);
+    assert!((d.ci_lo_pct - 78.509).abs() < 1e-6 && (d.ci_hi_pct - 79.031).abs() < 1e-6);
+    assert!((d.off_by_pts - 3.18).abs() < 0.01 && d.provisional);
+    let c = ws.iter().find(|w| w.shape_bucket == "256x256x256").unwrap();
+    assert!(c.vs_cublaslt_best.ci.is_some() && c.vs_cublaslt_best.disagreement.is_none());
+}

@@ -55,6 +55,29 @@ export function vsBaseline(v: VsBaseline | null): string {
   return `${pct}, ratio CI ${ci(v.ci)}: ${verdict}`;
 }
 
+/** "paired and unpaired disagree: median 82.2%, paired CI [78.5, 79.0]". */
+export function disagreeText(v: VsBaseline | null): string | null {
+  const d = v?.disagreement;
+  if (!d) return null;
+  return `paired and unpaired disagree: median ${d.median_pct.toFixed(1)}%, paired CI [${d.ci_lo_pct.toFixed(1)}, ${d.ci_hi_pct.toFixed(1)}]`;
+}
+
+/** The warning on a row whose median % lies outside its paired CI. */
+export function DisagreeWarning({ v }: { v: VsBaseline | null }) {
+  const text = disagreeText(v);
+  if (!text) return null;
+  const d = v!.disagreement!;
+  return (
+    <div role="note" data-col="disagree" className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+      <div className="font-medium">⚠ {text}</div>
+      <div className="text-gray-500 dark:text-gray-400">
+        the paired CI is the number of record; the median is secondary (&gt; {d.threshold_pts} points apart
+        {d.provisional ? ', provisional threshold' : ''})
+      </div>
+    </div>
+  );
+}
+
 export function tieText(t: Tie | null): string {
   if (!t) return NOT_MEASURED;
   if (t.method === 'band') return t.tied ? 'tied (p10-p90 band, no paired test)' : 'not tied (p10-p90 band, no paired test)';

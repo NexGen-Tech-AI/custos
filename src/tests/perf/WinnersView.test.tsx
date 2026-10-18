@@ -107,3 +107,20 @@ describe('WinnersSection: stored cuBLASLt algorithm', () => {
     expect(cell(byShape(rs, '256x256x256'), 'baseline-algo')).toBe('not stored');
   });
 });
+
+describe('WinnersSection: paired and unpaired disagree', () => {
+  it('flags 512x4864x896 (median outside the paired CI by > 2 points), not 256x256x256', async () => {
+    const rs = await rows();
+    const flagged = rs.filter((r) => r.querySelector('[data-col="disagree"]'));
+    expect(flagged.map((r) => r.dataset.shape)).toEqual(['512x4864x896']);
+    const f = flagged[0];
+    expect(cell(f, 'disagree')).toContain('paired and unpaired disagree: median 82.2%, paired CI [78.5, 79.0]');
+    expect(cell(f, 'disagree')).toContain('the paired CI is the number of record');
+    // The median stays visible, marked secondary.
+    expect(cell(f, 'kernel-pct')).toBe('82.2%');
+    expect(f.textContent).toContain('unpaired median (secondary)');
+    const c = byShape(rs, '256x256x256');
+    expect(c.querySelector('[data-col="disagree"]')).toBeNull();
+    expect(c.textContent).not.toContain('secondary');
+  });
+});

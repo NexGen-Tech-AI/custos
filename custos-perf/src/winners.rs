@@ -38,6 +38,40 @@ pub struct VsBaseline {
     /// The config the paired test ran (the fastest config; differs from the
     /// pick only when a tie-break chose the runner-up).
     pub tested_impl: Option<String>,
+    /// The unpaired median % lies outside the paired CI by more than
+    /// `core_fallbacks::DISAGREE_PTS` points. The paired CI is the number of
+    /// record; the median is secondary.
+    pub disagreement: Option<Disagreement>,
+}
+
+/// "paired and unpaired disagree: median X%, paired CI [a, b]". Provisional:
+/// the 2-point threshold is a core_fallbacks constant.
+#[derive(Clone, Debug, Serialize)]
+pub struct Disagreement {
+    pub median_pct: f64,
+    pub ci_lo_pct: f64,
+    pub ci_hi_pct: f64,
+    /// Distance from the median to the nearer CI bound, in points of %.
+    pub off_by_pts: f64,
+    pub threshold_pts: f64,
+    pub provisional: bool,
+}
+
+/// Compared only when the paired test ran the pick itself (a tie-break pick
+/// was not paired, so its median and the CI are of different configs).
+fn disagreement(pct: Option<f64>, ci: Option<&Ci>, same_config: bool) -> Option<Disagreement> {
+    let (p, c) = (pct?, ci?);
+    let (lo, hi) = (c.lo * 100.0, c.hi * 100.0);
+    let off = if p < lo { lo - p } else if p > hi { p - hi } else { 0.0 };
+    let threshold = core_fallbacks::DISAGREE_PTS;
+    (same_config && off > threshold).then_some(Disagreement {
+        median_pct: p,
+        ci_lo_pct: lo,
+        ci_hi_pct: hi,
+        off_by_pts: off,
+        threshold_pts: threshold,
+        provisional: true,
+    })
 }
 
 /// The tie call against the runner-up: ratio = runner-up time / fastest time.
@@ -218,6 +252,11 @@ fn from_view(w: view::Winner, roof: Option<RoofMetrics>, lt_algo: Option<LtAlgo>
         dispatch: dispatch(w.lt_ratio_ci, w.pct_of_cublaslt_best),
         bars: bars(w.m, w.n, w.k, w.lt_ratio_ci, w.pct_of_cublaslt_best),
         vs_cublaslt_best: VsBaseline {
+            disagreement: disagreement(
+                w.pct_of_cublaslt_best,
+                lt_ci.as_ref(),
+                lt.is_some_and(|p| p.a_impl == pick),
+            ),
             pct_of_cublaslt_best: w.pct_of_cublaslt_best,
             ci: lt_ci,
             verdict,
@@ -337,5 +376,29 @@ mod tests {
         assert!(w.vs_cublaslt_best.ci.is_none() && w.vs_cublaslt_best.verdict.is_none());
         assert!(w.vs_cublaslt_best.tested_impl.is_none());
         assert_eq!(w.vs_cublaslt_best.pct_of_cublaslt_best, Some(88.0));
+        assert!(w.vs_cublaslt_best.disagreement.is_none());
+    }
+
+    /// 256x256x256 as the v0.3.0 fixture had it (run 41cc8ffb03fd): header
+    /// 98.24% against a paired CI of [0.8985, 0.9018], 8 points apart.
+    #[test]
+    fn median_outside_the_paired_ci_is_flagged() {
+        let mut v = winner(Some((0.8985, 0.9018)), vec![paired("pick", "cublaslt_best", 0.90)]);
+        v.pct_of_cublaslt_best = Some(98.24);
+        let d = from_view(v, None, None).vs_cublaslt_best.disagreement.unwrap();
+        assert_eq!((d.median_pct, d.threshold_pts), (98.24, 2.0));
+        assert!((d.off_by_pts - 8.06).abs() < 1e-9 && d.provisional);
+        // Within 2 points of the CI: not flagged.
+        let mut v = winner(Some((0.8985, 0.9018)), vec![paired("pick", "cublaslt_best", 0.90)]);
+        v.pct_of_cublaslt_best = Some(92.0);
+        assert!(from_view(v, None, None).vs_cublaslt_best.disagreement.is_none());
+    }
+
+    /// The paired test ran another config of the tie: no comparison.
+    #[test]
+    fn a_tie_break_pick_is_not_compared() {
+        let mut v = winner(Some((0.8985, 0.9018)), vec![paired("fast", "cublaslt_best", 0.90)]);
+        v.pct_of_cublaslt_best = Some(98.24);
+        assert!(from_view(v, None, None).vs_cublaslt_best.disagreement.is_none());
     }
 }

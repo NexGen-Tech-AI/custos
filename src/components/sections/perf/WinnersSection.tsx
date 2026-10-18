@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { perfApi } from '../../../perf/api';
 import type { Bars, Winner } from '../../../perf/types';
-import { NotMeasured, ci, dispatchPct, dispatchTarget, dispatchWhy, ltAlgoText, pct } from '../../../perf/format';
+import { DisagreeWarning, NotMeasured, ci, dispatchPct, dispatchTarget, dispatchWhy, ltAlgoText, pct } from '../../../perf/format';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
 const th = 'text-left font-medium text-gray-500 dark:text-gray-400 py-2 pr-4 whitespace-nowrap align-bottom';
@@ -46,6 +46,7 @@ function gap(w: Winner): string | null {
 
 function Row({ w }: { w: Winner }) {
   const routed = w.dispatch.target === 'cublaslt';
+  const disagree = w.vs_cublaslt_best.disagreement !== null;
   return (
     <tr className="border-b border-gray-100 dark:border-gray-700/50" data-shape={w.shape_bucket}>
       <td className={`${td} font-mono whitespace-nowrap`}>
@@ -61,8 +62,11 @@ function Row({ w }: { w: Winner }) {
           {w.git_sha && <> · {w.git_sha}</>}
         </div>
       </td>
-      <td className={`${td} whitespace-nowrap`} data-col="kernel-pct">
-        {pct(w.vs_cublaslt_best.pct_of_cublaslt_best) ?? <NotMeasured />}
+      <td className={`${td} whitespace-nowrap`}>
+        <span data-col="kernel-pct" className={disagree ? 'text-gray-500 dark:text-gray-400' : ''}>
+          {pct(w.vs_cublaslt_best.pct_of_cublaslt_best) ?? <NotMeasured />}
+        </span>
+        {disagree && <div className={muted}>unpaired median (secondary)</div>}
       </td>
       <td className={`${td} text-xs`} data-col="dispatch">
         <span className={routed ? 'font-medium' : ''}>{dispatchTarget(w.dispatch)}</span>
@@ -80,7 +84,8 @@ function Row({ w }: { w: Winner }) {
         {w.lt_algo ? ltAlgoText(w.lt_algo) : <NotMeasured label="not stored" />}
       </td>
       <td className={`${td} text-xs whitespace-nowrap`} data-col="paired">
-        {pairedRatio(w) ?? <NotMeasured label="no paired test" />}
+        <span className={disagree ? 'font-medium' : ''}>{pairedRatio(w) ?? <NotMeasured label="no paired test" />}</span>
+        <DisagreeWarning v={w.vs_cublaslt_best} />
       </td>
       <td className={`${td} text-xs`} data-col="tied">
         {tied(w)}
@@ -185,6 +190,8 @@ export function WinnersSection() {
               (large: every dim ≥ 1024, ≥ 90%; decode M ≤ 16, ≥ 100%; floor 80%, Core&apos;s), a shape failing a bar when
               its CI lies entirely below it.
               A cuBLASLt route&apos;s dispatch % is not measured: no row times aegis::matmul&apos;s cuBLASLt path yet.
+              A warning marks a shape whose kernel % (unpaired medians) lies more than 2 points outside its paired CI
+              (provisional threshold); the paired CI is the number of record.
               cublaslt_best algorithm: the cuBLASLt algorithm Core stored for the shape (perf DB schema v4); a shape
               dispatched to cuBLASLt runs that algorithm.
             </p>

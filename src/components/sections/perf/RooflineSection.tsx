@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 import { perfApi } from '../../../perf/api';
 import type { ArchRoofs, Roofline, RooflinePoint } from '../../../perf/types';
-import { NotMeasured, dispatchTarget, dispatchWhy, num, pct, tieText, vsBaseline } from '../../../perf/format';
+import { DisagreeWarning, NotMeasured, dispatchTarget, dispatchWhy, num, pct, tieText, vsBaseline } from '../../../perf/format';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 const panel = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5';
@@ -69,6 +69,7 @@ export function Hover({ active, payload }: { active?: boolean; payload?: { paylo
         {p.series === 'winner' ? (
           <>
             <div>{vsBaseline(p.hover.vs_cublaslt_best)}</div>
+            <DisagreeWarning v={p.hover.vs_cublaslt_best} />
             {p.hover.vs_cublaslt_best?.tested_impl && p.hover.vs_cublaslt_best.tested_impl !== p.impl && (
               <div>paired test ran {p.hover.vs_cublaslt_best.tested_impl} (tied with the pick)</div>
             )}
@@ -211,7 +212,7 @@ function PointTable({ r }: { r: Roofline }) {
             const b = r.points.find((p) => p.shape_bucket === s && p.series === 'cublaslt_best');
             const any = (w ?? b)!;
             return (
-              <tr key={s} className="border-b border-gray-100 dark:border-gray-700/50">
+              <tr key={s} data-shape={s} className="border-b border-gray-100 dark:border-gray-700/50">
                 <td className={`${td} font-mono`}>{s}</td>
                 <td className={td}>
                   {any.roof.roof} ({any.roof.roof_gbps.toFixed(1)} GB/s)
@@ -222,7 +223,10 @@ function PointTable({ r }: { r: Roofline }) {
                 <td className={td}>{pct(w?.roof.pct_roof) ?? <NotMeasured />}</td>
                 <td className={td}>{num(b?.roof.tflops, 2) ?? <NotMeasured />}</td>
                 <td className={td}>{pct(b?.roof.pct_roof) ?? <NotMeasured />}</td>
-                <td className="py-2 pr-4 align-top text-xs min-w-[14rem]">{vsBaseline(w?.hover.vs_cublaslt_best ?? null)}</td>
+                <td className="py-2 pr-4 align-top text-xs min-w-[14rem]" data-col="vs-baseline">
+                  {vsBaseline(w?.hover.vs_cublaslt_best ?? null)}
+                  <DisagreeWarning v={w?.hover.vs_cublaslt_best ?? null} />
+                </td>
                 <td className="py-2 pr-4 align-top text-xs min-w-[14rem] break-all">{tieText(w?.hover.tie ?? null)}</td>
                 <td className="py-2 pr-4 align-top text-xs min-w-[12rem]">
                   {dispatchTarget(any.hover.dispatch)}

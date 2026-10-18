@@ -196,6 +196,18 @@ export interface VsBaseline {
   ci: Ci | null;
   verdict: 'tie' | 'faster' | 'slower' | null;
   tested_impl: string | null;
+  /** The unpaired median lies > threshold points outside the paired CI. */
+  disagreement: Disagreement | null;
+}
+
+/** Provisional: the threshold is a custos-perf fallback (core-requests #4). */
+export interface Disagreement {
+  median_pct: number;
+  ci_lo_pct: number;
+  ci_hi_pct: number;
+  off_by_pts: number;
+  threshold_pts: number;
+  provisional: boolean;
 }
 
 export interface Tie {

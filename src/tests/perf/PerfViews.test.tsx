@@ -171,3 +171,30 @@ describe('Roofline data and hover', () => {
     expect(dec).toHaveTextContent('dispatch: AEGIS kernel');
   });
 });
+
+describe('Roofline: paired and unpaired disagree', () => {
+  const warning = 'paired and unpaired disagree: median 82.2%, paired CI [78.5, 79.0]';
+
+  it('the table flags 512x4864x896 and no consistent shape (256x256x256)', async () => {
+    render(
+      <ThemeProvider>
+        <RooflineSection />
+      </ThemeProvider>,
+    );
+    const table = (await screen.findByText('Points')).parentElement!.querySelector('table')!;
+    const flagged = Array.from(table.querySelectorAll('tr[data-shape]')).filter((r) => r.querySelector('[data-col="disagree"]'));
+    expect(flagged.map((r) => (r as HTMLElement).dataset.shape)).toEqual(['512x4864x896']);
+    expect(flagged[0].querySelector('[data-col="disagree"]')!.textContent).toContain(warning);
+    expect(flagged[0].querySelector('[data-col="disagree"]')!.textContent).toContain('provisional threshold');
+    const c = table.querySelector('tr[data-shape="256x256x256"]')!;
+    expect(c.querySelector('[data-col="disagree"]')).toBeNull();
+    expect(c.textContent).toContain('ratio CI [0.887, 0.890]');
+  });
+
+  it('the hover carries the same warning', () => {
+    const r = roofline as unknown as Roofline;
+    const p = r.points.find((x) => x.shape_bucket === '512x4864x896' && x.series === 'winner')!;
+    render(<Hover active payload={[{ payload: { kind: 'point', x: p.roof.ai, y: p.roof.tflops, p } }]} />);
+    expect(screen.getByRole('note')).toHaveTextContent(warning);
+  });
+});

@@ -29,6 +29,11 @@ pub const LARGE_BAR: f64 = 0.90;
 pub const DECODE_BAR: f64 = 1.00;
 // Every shape: not below the floor, aegis_perf::tune::DISPATCH_FLOOR (Core's).
 
+/// A winner's unpaired median % of cublaslt_best (Core's report and header)
+/// and its paired CI disagree when the median lies more than this many points
+/// outside the CI. Core has no such rule. docs/core-requests.md #4.
+pub const DISAGREE_PTS: f64 = 2.0;
+
 /// The cuBLASLt algorithm cublaslt_best picked at a shape (schema v4
 /// `winners.lt_algo`), as aegis-perf renders it: an
 /// `aegis::detail::LtAlgoConfig` (`tune::lt_config`).
