@@ -110,9 +110,9 @@ describe('RooflineSection', () => {
       const m = Number(shape.split('x')[0]);
       expect(row.textContent).toContain(m <= 16 ? 'read (257.8 GB/s)' : 'copy (236.7 GB/s)');
     }
-    const tied = rows.find((row) => row.textContent!.startsWith('16x4864x896'))!;
-    expect(tied.textContent).toContain('tied vs mma_pipe_64x128x32_2x4_s4, runner-up/pick CI [0.992, 1.002]');
-    expect(tied.textContent).toContain('99.2% of cublaslt_best, ratio CI [1.001, 1.004]: faster');
+    const tied = rows.find((row) => row.textContent!.startsWith('1x896x4864'))!;
+    expect(tied.textContent).toContain('tied vs gemv_tc_16x64x32_1x4_s6_k4, runner-up/pick CI [1.000, 1.002]');
+    expect(tied.textContent).toContain('109.6% of cublaslt_best, ratio CI [1.054, 1.059]: faster');
     expect(invoke).toHaveBeenCalledWith('roofline', { sm: 121 });
   });
 
@@ -150,12 +150,12 @@ describe('Roofline data and hover', () => {
 
   it('hover: config, % of cublaslt_best with the paired CI, dispatch target', () => {
     const r = roofline as unknown as Roofline;
-    const p = r.points.find((x) => x.label === '4096x4096x4096 mma_pipe_128x128x32_2x4_s3')!;
+    const p = r.points.find((x) => x.label === '4096x4096x4096 mma_tma_128x256x32_2x4_s4')!;
     render(<Hover active payload={[{ payload: { kind: 'point', x: p.roof.ai, y: p.roof.tflops, p } }]} />);
-    expect(screen.getByText(/72\.2% of cublaslt_best, ratio CI \[0\.720, 0\.724\]: slower/)).toBeInTheDocument();
+    expect(screen.getByText(/73\.3% of cublaslt_best, ratio CI \[0\.734, 0\.743\]: slower/)).toBeInTheDocument();
     expect(screen.getByText(/BM=128/)).toBeInTheDocument();
     expect(screen.getByText(/dispatch: cuBLASLt/)).toBeInTheDocument();
-    expect(screen.getByText(/paired CI upper bound 0\.724 < 80% floor/)).toBeInTheDocument();
+    expect(screen.getByText(/paired CI upper bound 0\.743 < 80% floor/)).toBeInTheDocument();
   });
 
   it('table: the dispatch target per shape', async () => {
@@ -175,7 +175,7 @@ describe('Roofline data and hover', () => {
 describe('Roofline: paired and unpaired disagree', () => {
   const warning = 'paired and unpaired disagree: median 82.2%, paired CI [78.5, 79.0]';
 
-  it('the table flags 512x4864x896 and no consistent shape (256x256x256)', async () => {
+  it('the table flags 1x896x4864 and 512x4864x896, and no consistent shape (256x256x256)', async () => {
     render(
       <ThemeProvider>
         <RooflineSection />
@@ -183,9 +183,10 @@ describe('Roofline: paired and unpaired disagree', () => {
     );
     const table = (await screen.findByText('Points')).parentElement!.querySelector('table')!;
     const flagged = Array.from(table.querySelectorAll('tr[data-shape]')).filter((r) => r.querySelector('[data-col="disagree"]'));
-    expect(flagged.map((r) => (r as HTMLElement).dataset.shape)).toEqual(['512x4864x896']);
-    expect(flagged[0].querySelector('[data-col="disagree"]')!.textContent).toContain(warning);
-    expect(flagged[0].querySelector('[data-col="disagree"]')!.textContent).toContain('provisional threshold');
+    expect(flagged.map((r) => (r as HTMLElement).dataset.shape)).toEqual(['1x896x4864', '512x4864x896']);
+    expect(flagged[0].querySelector('[data-col="disagree"]')!.textContent).toContain('paired and unpaired disagree: median 109.6%, paired CI [105.4, 105.9]');
+    expect(flagged[1].querySelector('[data-col="disagree"]')!.textContent).toContain(warning);
+    expect(flagged[1].querySelector('[data-col="disagree"]')!.textContent).toContain('provisional threshold');
     const c = table.querySelector('tr[data-shape="256x256x256"]')!;
     expect(c.querySelector('[data-col="disagree"]')).toBeNull();
     expect(c.textContent).toContain('ratio CI [0.887, 0.890]');

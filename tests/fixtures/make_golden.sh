@@ -18,4 +18,9 @@ cd "$work"
 "$cli" --db db.db report --arch 121 > "$here/golden/report-121.txt"
 "$cli" --db db.db roofline --arch 121 --out "$here/golden/roofline-sm121.svg" > "$here/golden/roofline-121.txt"
 "$cli" --db db.db emit-header --arch 121 --out "$here/golden/emit-header-sm_121.h" > /dev/null
+# The nightly regression check of each nightly sweep, against the winners header
+# that nightly ran (its build, 9157a34 = tag aegis-perf-v0.3.0).
+for run in d1504a45376d b34425e97d6d eb5bcee294d4; do
+  "$cli" --db db.db regress --run "$run" --header "$here/winners/9157a34/sm_121.h" > "$here/golden/regress-$run.txt"
+done
 echo "golden outputs regenerated with $("$cli" --version) at $(git -C "$core" rev-parse HEAD)"

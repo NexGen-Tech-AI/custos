@@ -52,13 +52,23 @@ fn fixture_covers_the_contract_cases() {
     assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Valid));
     assert!(mb.iter().any(|m| m.status == MicrobenchStatus::Replaced));
     let pr = view::paired_results(&con, &PairedResultFilter::default()).unwrap();
-    assert_eq!(pr.len(), 18);
+    assert_eq!(pr.len(), 44);
     assert!(pr.iter().any(|p| p.disturbed == Some(true)), "a disturbed paired result");
+    // The Phase C families: a decode winner on the tensor-core GEMV with
+    // split-K (S = 3), and a tier 5 TMA winner.
+    let impl_of = |b: &str| w.iter().find(|x| x.shape_bucket == b).unwrap().kernel.impl_.clone();
+    assert_eq!(impl_of("1x896x4864"), "gemv_tc_16x64x64_1x4_s5_k3");
+    assert_eq!(impl_of("2048x2048x2048"), "mma_tma_128x128x32_2x4_s3");
+    // Nightly regression sweeps (runs without paired tests): two clean, one
+    // disturbed by the in-run watch.
+    for (run, disturbed) in [("b34425e97d6d", Some(false)), ("eb5bcee294d4", Some(false)), ("d1504a45376d", Some(true))] {
+        assert_eq!(runs.iter().find(|r| r.run_id == run).unwrap().disturbed, disturbed, "{run}");
+    }
     // The stored cuBLASLt algorithm (schema v4 lt_algo), as Core renders it:
-    // 4096^3 dispatches to cuBLASLt algo 67 (tile 412, stages 35, custom 31).
+    // 4096^3 (mma_tma) dispatches to cuBLASLt algo 67 (tile 412, stages 35, custom 31).
     let (header, n) = aegis_perf::tune::header_text(&con, 121, "fixture").unwrap();
     assert_eq!(n, 14);
-    assert!(header.contains("{4096, 4096, 4096, \"mma_pipe_128x128x32_2x4_s3\", aegis::detail::Dispatch::Cublaslt, 72.2, 0.7198, 0.7244, {67, 412, 35, 1, 0, 0, 31, 0, 0}}"));
+    assert!(header.contains("{4096, 4096, 4096, \"mma_tma_128x256x32_2x4_s4\", aegis::detail::Dispatch::Cublaslt, 73.3, 0.7337, 0.7428, {67, 412, 35, 1, 0, 0, 31, 0, 0}}"));
 }
 
 #[test]
@@ -70,7 +80,7 @@ fn devices_lists_the_spark_with_manifest() {
     let spark = &d[0];
     assert_eq!((spark.device_id.as_str(), spark.sm_arch), ("spark-5822", 121));
     assert_eq!(spark.gpu_name.as_deref(), Some("NVIDIA GB10"));
-    assert_eq!(spark.runs, 31);
+    assert_eq!(spark.runs, 40);
     let m = spark.manifest.as_ref().expect("manifest-spark-5822.json");
     assert_eq!((m.sm_count, m.l2_bytes, m.integrated), (Some(48), Some(25165824), Some(true)));
     assert_eq!(m.global_mem_bytes, Some(130663591936));
@@ -136,15 +146,19 @@ fn winners_carry_ci_tie_call_and_roof() {
     assert_eq!(w.len(), 14);
     let get = |b: &str| w.iter().find(|x| x.shape_bucket == b).unwrap();
 
-    // 16x4864x896: runner-up CI [0.99234, 1.00174] contains 1.0 -> tied;
-    // against cublaslt_best the CI [1.00121, 1.00384] lies above 1: faster.
-    let t = get("16x4864x896");
+    // 1x896x4864: runner-up CI [0.99968, 1.00222] contains 1.0 -> tied;
+    // against cublaslt_best the CI [1.05417, 1.05927] lies above 1: faster.
+    let t = get("1x896x4864");
     assert!(t.tie.tied && t.tie.ci.as_ref().unwrap().contains_one);
     assert_eq!(t.tie.method.as_deref(), Some("paired"));
-    assert_eq!(t.tie.contender.as_deref(), Some("mma_pipe_64x128x32_2x4_s4"));
+    assert_eq!(t.tie.contender.as_deref(), Some("gemv_tc_16x64x32_1x4_s6_k4"));
     assert_eq!(t.vs_cublaslt_best.verdict, Some("faster"));
+    assert!(close(t.vs_cublaslt_best.ci.as_ref().unwrap().lo, 1.05417));
     assert!(t.decode);
     assert_eq!(t.roof.as_ref().unwrap().roof, "read");
+    // 16x4864x896 was tied under mma_pipe; the gemv_tc winner is a clear
+    // win over its runner-up (CI [1.00113, 1.00348]).
+    assert!(!get("16x4864x896").tie.tied);
 
     // 256^3: runner-up CI [1.02543, 1.02718] -> a clear win over the
     // runner-up; against cublaslt_best the paired CI [0.88687, 0.88967]:
@@ -163,12 +177,17 @@ fn winners_carry_ci_tie_call_and_roof() {
     assert!(!c.decode);
     assert_eq!(c.regs, Some(74));
 
-    // A tie the tie-break settled: 4096^3 picks the s3 config over the
-    // runner-up (CI [0.99554, 1.00021]); a gap below zero is inside the CI.
+    // A tie the tie-break settled: 512x896x4864 picks the s3 config over the
+    // s4 runner-up (CI [0.99928, 1.00408], fewer registers).
+    let t = get("512x896x4864");
+    assert!(t.tie.tied);
+    assert_eq!(t.impl_, "mma_pipe_64x64x32_2x2_s3");
+    assert_eq!(t.tie.contender.as_deref(), Some("mma_pipe_64x64x32_2x2_s4"));
+    // 4096^3: the mma_tma winner, a clear win over the old mma_pipe tie.
     let big = get("4096x4096x4096");
-    assert!(big.tie.tied);
-    assert_eq!(big.impl_, "mma_pipe_128x128x32_2x4_s3");
-    assert!(big.tie.runner_up_gap_pct.unwrap() < 0.0);
+    assert!(!big.tie.tied);
+    assert_eq!(big.impl_, "mma_tma_128x256x32_2x4_s4");
+    assert_eq!(big.config["load"], "tma");
 }
 
 #[test]
@@ -176,15 +195,17 @@ fn measurements_default_to_v2_cold_clean() {
     let s = src();
     let con = s.open().unwrap();
     let rows = custos_perf::measurements(&s, &con, &Filter::default()).unwrap();
-    // The three clean tune runs' cold rows (7e94c009266f, 41cc8ffb03fd: 378
-    // each; 9fd0eab14f18: 81); the disturbed run's are excluded.
-    assert_eq!(rows.len(), 378 + 378 + 81);
+    // The clean runs' cold rows: tunes 7e94c009266f and 41cc8ffb03fd (378
+    // each), 9fd0eab14f18 (81), 2d261d8defab (72), c2b937d8adca (516); the
+    // nightlies b34425e97d6d and eb5bcee294d4 (84 each). The disturbed runs'
+    // (60959720261a, nightly d1504a45376d) are excluded.
+    assert_eq!(rows.len(), 378 + 378 + 81 + 72 + 516 + 84 + 84);
     assert!(rows.iter().all(|r| r.protocol_version == 2 && r.cache_mode.as_deref() == Some("cold") && !r.allow_busy));
-    assert!(rows.iter().all(|r| r.run_id != "60959720261a"));
+    assert!(rows.iter().all(|r| r.run_id != "60959720261a" && r.run_id != "d1504a45376d"));
     assert!(rows.iter().all(|r| !r.history && r.roof.is_some()));
 
     let busy = custos_perf::measurements(&s, &con, &Filter { include_busy: true, ..Default::default() }).unwrap();
-    assert_eq!(busy.len(), 378 + 378 + 81 + 81, "on request, the disturbed run's rows too");
+    assert_eq!(busy.len(), 1593 + 81 + 84, "on request, the disturbed runs' rows too");
 
     let v1 = custos_perf::measurements(&s, &con, &Filter { protocol: Some(1), ..Default::default() }).unwrap();
     assert_eq!(v1.len(), 9);
@@ -202,10 +223,10 @@ fn measurements_default_to_v2_cold_clean() {
 fn kernel_detail_joins_db_and_artifacts() {
     let s = src();
     let con = s.open().unwrap();
-    // mma_pipe_64x64x32_2x2_s4: winner of 10 shapes, never profiled.
+    // mma_pipe_64x64x32_2x2_s4: winner of 3 shapes, never profiled.
     let k = custos_perf::kernel_detail(&s, &con, "be0c6688d651513b").unwrap().unwrap();
     assert_eq!(k.impl_, "mma_pipe_64x64x32_2x2_s4");
-    assert_eq!(k.winner_of.len(), 10);
+    assert_eq!(k.winner_of.len(), 3);
     assert_eq!((k.regs, k.smem_bytes, k.local_bytes), (Some(74), Some(32768), Some(0)));
     assert!(!k.measurements.is_empty());
     assert!(k.nsight_reports.is_empty(), "not profiled");
@@ -315,10 +336,10 @@ fn roofline_hover_carries_dispatch() {
         assert_eq!((d.target, d.pct_of_cublaslt_best, d.basis), ("cublaslt", None, "paired"));
         assert_eq!(p.hover.config.as_ref().unwrap()["BM"], 128);
         let lt = p.hover.vs_cublaslt_best.as_ref().unwrap();
-        assert!(close(lt.ci.as_ref().unwrap().hi, 0.72437));
+        assert!(close(lt.ci.as_ref().unwrap().hi, 0.74275));
     }
     // A decode shape on the read roof, dispatched to the kernel.
-    let dec = r.points.iter().find(|p| p.label == "1x4864x896 mma_pipe_64x64x32_2x2_s4").unwrap();
+    let dec = r.points.iter().find(|p| p.label == "1x4864x896 gemv_tc_16x128x64_1x4_s4_k1").unwrap();
     assert_eq!(dec.roof.roof, "read");
     assert_eq!(dec.hover.dispatch.as_ref().unwrap().target, "aegis");
 }

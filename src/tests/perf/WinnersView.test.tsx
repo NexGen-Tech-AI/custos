@@ -47,16 +47,16 @@ describe('WinnersSection', () => {
   it('a cuBLASLt-dispatched shape never shows a dispatch % as the kernel %', async () => {
     const rs = await rows();
     const routed = rs.filter((r) => cell(r, 'dispatch').startsWith('dispatch: cuBLASLt'));
-    expect(routed.map((r) => r.dataset.shape)).toEqual(['4096x4096x4096', '1x896x4864', '16x896x4864', '512x4864x896']);
+    expect(routed.map((r) => r.dataset.shape)).toEqual(['4096x4096x4096', '512x4864x896']);
     for (const r of routed) {
       expect(cell(r, 'dispatch-pct')).toBe('cuBLASLt path: not measured');
       expect(cell(r, 'dispatch-pct')).not.toContain(cell(r, 'kernel-pct'));
       expect(cell(r, 'kernel-pct')).toMatch(/^\d+\.\d%$/);
     }
     const big = byShape(rs, '4096x4096x4096');
-    expect(cell(big, 'kernel-pct')).toBe('72.2%');
+    expect(cell(big, 'kernel-pct')).toBe('73.3%');
     expect(cell(big, 'dispatch')).not.toContain('provisional');
-    expect(cell(big, 'dispatch')).toContain('paired CI upper bound 0.724 < 80% floor');
+    expect(cell(big, 'dispatch')).toContain('paired CI upper bound 0.743 < 80% floor');
     // A kernel route: the dispatch % is the kernel's own.
     const k = byShape(rs, '1024x1024x1024');
     expect(cell(k, 'dispatch-pct')).toBe(cell(k, 'kernel-pct'));
@@ -69,8 +69,8 @@ describe('WinnersSection', () => {
     expect(cell(c, 'tied')).toBe('no · [1.025, 1.027] vs mma_pipe_64x64x32_2x2_s3');
     expect(cell(c, 'gap')).toBe('+2.70%');
     expect(cell(c, 'bars')).toBe('pass · other bar 80% · clearprovisional');
-    const t = byShape(rs, '16x4864x896');
-    expect(cell(t, 'tied')).toBe('tied · [0.992, 1.002] vs mma_pipe_64x128x32_2x4_s4');
+    const t = byShape(rs, '1x896x4864');
+    expect(cell(t, 'tied')).toBe('tied · [1.000, 1.002] vs gemv_tc_16x64x32_1x4_s6_k4');
     expect(cell(t, 'bars')).toContain('pass · decode bar 100% · clear');
     expect(cell(byShape(rs, '2048x2048x2048'), 'bars')).toContain('fail · large bar 90% · clear');
     expect(cell(byShape(rs, '4096x4096x4096'), 'bars')).toContain('fail · large bar 90% · clear; below 80% floor');
@@ -85,10 +85,9 @@ describe('WinnersSection: stored cuBLASLt algorithm', () => {
     const big = byShape(rs, '4096x4096x4096');
     expect(cell(big, 'dispatch-algo')).toBe('runs cuBLASLt algo 67 · tile 412 · stages 35 · custom 31');
     expect(cell(big, 'baseline-algo')).toBe('algo 67 · tile 412 · stages 35 · custom 31');
-    // A split-K algorithm: its non-default fields are shown.
-    expect(cell(byShape(rs, '1x896x4864'), 'dispatch-algo')).toBe(
-      'runs cuBLASLt algo 13 · tile 0 · stages 0 · split-K 16 · reduction 2 · custom 102',
-    );
+    expect(cell(byShape(rs, '512x4864x896'), 'dispatch-algo')).toBe('runs cuBLASLt algo 21 · tile 23 · stages 9 · custom 0');
+    // A split-K algorithm (a baseline here): its non-default fields are shown.
+    expect(cell(byShape(rs, '16x896x4864'), 'baseline-algo')).toBe('algo 21 · tile 15 · stages 12 · split-K 3 · reduction 2 · custom 0');
     // A kernel route names no dispatched algorithm, but its baseline still has one.
     const k = byShape(rs, '1024x1024x1024');
     expect(k.querySelector('[data-col="dispatch-algo"]')).toBeNull();
@@ -109,11 +108,12 @@ describe('WinnersSection: stored cuBLASLt algorithm', () => {
 });
 
 describe('WinnersSection: paired and unpaired disagree', () => {
-  it('flags 512x4864x896 (median outside the paired CI by > 2 points), not 256x256x256', async () => {
+  it('flags 1x896x4864 and 512x4864x896 (median outside the paired CI by > 2 points), not 256x256x256', async () => {
     const rs = await rows();
     const flagged = rs.filter((r) => r.querySelector('[data-col="disagree"]'));
-    expect(flagged.map((r) => r.dataset.shape)).toEqual(['512x4864x896']);
-    const f = flagged[0];
+    expect(flagged.map((r) => r.dataset.shape)).toEqual(['1x896x4864', '512x4864x896']);
+    expect(cell(flagged[0], 'disagree')).toContain('paired and unpaired disagree: median 109.6%, paired CI [105.4, 105.9]');
+    const f = flagged[1];
     expect(cell(f, 'disagree')).toContain('paired and unpaired disagree: median 82.2%, paired CI [78.5, 79.0]');
     expect(cell(f, 'disagree')).toContain('the paired CI is the number of record');
     // The median stays visible, marked secondary.

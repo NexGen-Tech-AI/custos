@@ -1,0 +1,15 @@
+  256x256x256 kernel mma_pipe_64x64x32_2x2_s4: 96.5% of cublaslt_best, before 97.1% (run b34425e97d6d); dispatch aegis: not measured
+  512x512x512 kernel mma_pipe_64x64x32_2x2_s4: 89.7% of cublaslt_best, before 86.2% (run b34425e97d6d); dispatch aegis: not measured
+  1x896x896 kernel mma_pipe_64x64x32_2x2_s4: 85.8% of cublaslt_best, before 84.5% (run b34425e97d6d); dispatch aegis: not measured
+  16x896x896 kernel mma_pipe_64x64x32_2x2_s4: 95.1% of cublaslt_best, before 96.8% (run b34425e97d6d); dispatch aegis: not measured
+  512x896x896 kernel mma_pipe_64x64x32_2x2_s4: 92.3% of cublaslt_best, before 90.2% (run b34425e97d6d); dispatch aegis: not measured
+  1x896x4864 kernel mma_pipe_64x64x32_2x2_s4: 71.6% of cublaslt_best, before 73.0% (run b34425e97d6d); dispatch aegis: not measured
+  16x896x4864 kernel mma_pipe_64x64x32_2x2_s4: 75.4% of cublaslt_best, before 71.3% (run b34425e97d6d); dispatch aegis: not measured
+  512x896x4864 kernel mma_pipe_64x64x32_2x2_s4: 83.8% of cublaslt_best, before 81.1% (run b34425e97d6d); dispatch aegis: not measured
+  1024x1024x1024 kernel mma_pipe_128x64x32_2x2_s2: 100.1% of cublaslt_best, before 98.6% (run b34425e97d6d); dispatch aegis: not measured
+  2048x2048x2048 kernel mma_pipe_128x128x32_2x4_s3: 83.1% of cublaslt_best, before 83.4% (run b34425e97d6d); dispatch aegis: not measured
+  4096x4096x4096 kernel mma_pipe_256x128x32_4x2_s4: 71.2% of cublaslt_best, before 71.2% (run b34425e97d6d); dispatch aegis: not measured
+  1x4864x896 kernel mma_pipe_64x64x32_2x2_s4: 94.0% of cublaslt_best, before 98.1% (run b34425e97d6d); dispatch aegis: not measured  watch (one unpaired drop; a regression if the next run or a paired-ab confirms it)
+  16x4864x896 kernel mma_pipe_64x64x32_2x2_s4: 99.3% of cublaslt_best, before 96.1% (run b34425e97d6d); dispatch aegis: not measured
+  512x4864x896 kernel mma_pipe_128x64x32_2x2_s2: 81.3% of cublaslt_best, before 81.4% (run b34425e97d6d); dispatch aegis: not measured
+run eb5bcee294d4: 14/14 shapes measured, kernel min 71.2% (4096x4096x4096) of cublaslt_best, dispatch min not measured; 0 regression(s) >3%; 1 watch: 1x4864x896 98.1->94.0%

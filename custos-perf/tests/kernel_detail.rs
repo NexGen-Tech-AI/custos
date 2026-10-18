@@ -18,7 +18,7 @@ fn winner_kernel_with_sass_and_instruction_mix() {
     assert_eq!(k.config["STAGES"], 4);
     assert_eq!(k.config["smem"], "xor");
     assert_eq!((k.regs, k.smem_bytes, k.local_bytes), (Some(74), Some(32768), Some(0)), "no spills");
-    assert_eq!(k.winner_of.len(), 10);
+    assert_eq!(k.winner_of.len(), 3);
     let a = &k.artifacts[0];
     assert_eq!(a.sm, 121);
     let sass = a.sass.as_ref().expect("SASS listing in tests/fixtures/sass/sm_121");

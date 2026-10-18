@@ -67,14 +67,15 @@ fn threshold_is_cores_regression_gate() {
     assert_eq!(compare(&Sources::repo_fixtures(), &Filter::default()).threshold_pct, 3.0);
 }
 
-/// The fixture as committed: its 10 paired results are other builds or
-/// other impl pairs (cublaslt_best vs aegis_matmul), so no shift between
-/// 7fe7a84 and 9157a34 is backed: every one is unconfirmed.
+/// The fixture as committed: its 44 paired results are other builds or
+/// other impl pairs (cublaslt_best vs aegis_matmul, kernel vs kernel), so no
+/// shift between 7fe7a84 and 9157a34 is backed: every one is unconfirmed.
+/// Build B includes the 9157a34 nightly sweeps (b34425e97d6d, eb5bcee294d4).
 #[test]
 fn fixture_shifts_are_unconfirmed() {
     let c = compare(&Sources::repo_fixtures(), &Filter::default());
-    assert_eq!(c.rows.len(), 81);
-    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower, c.faster, c.within), (0, 0, 11, 2, 68));
+    assert_eq!(c.rows.len(), 147);
+    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower, c.faster, c.within), (0, 0, 23, 6, 118));
     for r in c.rows.iter().filter(|r| r.flag != "within") {
         assert_eq!(r.status, "unconfirmed", "{}", r.impl_);
         assert!(r.paired.is_none() && r.paired_excluded == 0);
@@ -113,7 +114,7 @@ fn matching_paired_results_confirm_or_not() {
     assert!(p.inverted && p.usable());
     assert!((p.ratio_ci_lo - 1.0 / 1.19).abs() < 1e-12 && (p.ratio_ci_hi - 1.0 / 1.17).abs() < 1e-12);
 
-    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (1, 1, 9));
+    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (1, 1, 21));
     std::fs::remove_dir_all(s.db.parent().unwrap()).ok();
 }
 
@@ -187,6 +188,6 @@ fn dirty_and_unlinked_results_never_confirm() {
     assert_eq!((r.flag, r.status), ("faster", "unconfirmed"));
     assert_eq!(r.paired.as_ref().unwrap().provenance_label, Some("unreproducible (dirty build)"));
 
-    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (0, 0, 11));
+    assert_eq!((c.confirmed_slower, c.not_confirmed_slower, c.unconfirmed_slower), (0, 0, 23));
     std::fs::remove_dir_all(s.db.parent().unwrap()).ok();
 }

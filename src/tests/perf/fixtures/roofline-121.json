@@ -152,73 +152,72 @@
       }
     },
     {
-      "label": "16x4864x896 mma_pipe_64x64x32_2x2_s4",
+      "label": "16x4864x896 gemv_tc_16x64x64_1x4_s4_k1",
       "shape_bucket": "16x4864x896",
       "m": 16,
       "n": 4864,
       "k": 896,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "impl": "gemv_tc_16x64x64_1x4_s4_k1",
       "series": "winner",
-      "median_us": 38.33,
+      "median_us": 37.773,
       "roof": {
         "ai": 15.668660837551771,
-        "tflops": 3.638419201669711,
-        "gbps": 232.20996608400736,
+        "tflops": 3.692071267836815,
+        "gbps": 235.63413019881926,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 2.8968997680435926,
-        "pct_bw": 90.05936452465177,
-        "pct_roof": 90.05936452465177,
+        "pct_peak": 2.939617401559603,
+        "pct_bw": 91.38737834511163,
+        "pct_roof": 91.38737834511163,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "9bbc014a0c4cfd97",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 99.1755804852596,
+          "pct_of_cublaslt_best": 102.30852725491752,
           "ci": {
-            "ratio_median": 1.00199,
-            "lo": 1.00121,
-            "hi": 1.00384,
+            "ratio_median": 1.00598,
+            "lo": 1.00457,
+            "hi": 1.00895,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "faster",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 99.1755804852596,
-          "decided_on": 1.00384,
+          "pct_of_cublaslt_best": 102.30852725491752,
+          "decided_on": 1.00895,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
           "method": "paired",
-          "tied": true,
+          "tied": false,
           "tie_set": [
-            "mma_pipe_64x128x32_2x4_s4",
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x128x32_2x4_s4",
+          "contender": "gemv_tc_16x64x64_1x4_s4_kauto",
           "ci": {
-            "ratio_median": 0.99921,
-            "lo": 0.99234,
-            "hi": 1.00174,
+            "ratio_median": 1.00274,
+            "lo": 1.00113,
+            "hi": 1.00348,
             "pairs": 30,
-            "contains_one": true
+            "contains_one": false
           },
-          "runner_up_gap_pct": -0.07899999999999574,
-          "pick_reason": "tie-break: neighbors (1 of 2 neighboring shapes)"
+          "runner_up_gap_pct": 0.27399999999999647,
+          "pick_reason": "fastest"
         }
       }
     },
@@ -230,117 +229,46 @@
       "k": 896,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 38.014,
+      "median_us": 38.645,
       "roof": {
         "ai": 15.668660837551771,
-        "tflops": 3.668664386804861,
-        "gbps": 234.14026411322146,
+        "tflops": 3.60876201319705,
+        "gbps": 230.31719497994564,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 2.9209809046433124,
-        "pct_bw": 90.80800342584052,
-        "pct_roof": 90.80800342584051,
+        "pct_peak": 2.87328679283506,
+        "pct_bw": 89.3252799127934,
+        "pct_roof": 89.3252799127934,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "9bbc014a0c4cfd97",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 99.1755804852596,
+          "pct_of_cublaslt_best": 102.30852725491752,
           "ci": {
-            "ratio_median": 1.00199,
-            "lo": 1.00121,
-            "hi": 1.00384,
+            "ratio_median": 1.00598,
+            "lo": 1.00457,
+            "hi": 1.00895,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "faster",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 99.1755804852596,
-          "decided_on": 1.00384,
-          "basis": "paired",
-          "floor": 0.8
-        },
-        "tie": {
-          "method": "paired",
-          "tied": true,
-          "tie_set": [
-            "mma_pipe_64x128x32_2x4_s4",
-            "mma_pipe_64x64x32_2x2_s4"
-          ],
-          "contender": "mma_pipe_64x128x32_2x4_s4",
-          "ci": {
-            "ratio_median": 0.99921,
-            "lo": 0.99234,
-            "hi": 1.00174,
-            "pairs": 30,
-            "contains_one": true
-          },
-          "runner_up_gap_pct": -0.07899999999999574,
-          "pick_reason": "tie-break: neighbors (1 of 2 neighboring shapes)"
-        }
-      }
-    },
-    {
-      "label": "16x896x4864 mma_pipe_64x64x32_2x2_s4",
-      "shape_bucket": "16x896x4864",
-      "m": 16,
-      "n": 896,
-      "k": 4864,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
-      "series": "winner",
-      "median_us": 51.836,
-      "roof": {
-        "ai": 15.668660837551771,
-        "tflops": 2.690419939810171,
-        "gbps": 171.7070761632842,
-        "roof": "read",
-        "roof_gbps": 257.841,
-        "pct_peak": 2.142105257140036,
-        "pct_bw": 66.59417088953433,
-        "pct_roof": 66.59417088953433,
-        "bound": "memory"
-      },
-      "hover": {
-        "kernel_id": "be0c6688d651513b",
-        "config": {
-          "BK": 32,
-          "BM": 64,
-          "BN": 64,
-          "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
-        },
-        "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 75.44370707616328,
-          "ci": {
-            "ratio_median": 0.76132,
-            "lo": 0.75918,
-            "hi": 0.76264,
-            "pairs": 30,
-            "contains_one": false
-          },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
-          "disagreement": null
-        },
-        "dispatch": {
-          "target": "cublaslt",
-          "pct_of_cublaslt_best": null,
-          "decided_on": 0.76264,
+          "pct_of_cublaslt_best": 102.30852725491752,
+          "decided_on": 1.00895,
           "basis": "paired",
           "floor": 0.8
         },
@@ -348,18 +276,89 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x64x64_1x4_s4_kauto",
           "ci": {
-            "ratio_median": 1.16274,
-            "lo": 1.16175,
-            "hi": 1.16553,
+            "ratio_median": 1.00274,
+            "lo": 1.00113,
+            "hi": 1.00348,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 16.27400000000001,
+          "runner_up_gap_pct": 0.27399999999999647,
           "pick_reason": "fastest"
+        }
+      }
+    },
+    {
+      "label": "16x896x4864 gemv_tc_16x64x64_1x4_s5_k3",
+      "shape_bucket": "16x896x4864",
+      "m": 16,
+      "n": 896,
+      "k": 4864,
+      "impl": "gemv_tc_16x64x64_1x4_s5_k3",
+      "series": "winner",
+      "median_us": 38.612,
+      "roof": {
+        "ai": 15.668660837551771,
+        "tflops": 3.6118462654097168,
+        "gbps": 230.51403708691598,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.875742466308683,
+        "pct_bw": 89.401622351339,
+        "pct_roof": 89.40162235133899,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "8055702ef262a741",
+        "config": {
+          "BK": 64,
+          "BM": 16,
+          "BN": 64,
+          "S": 3,
+          "STAGES": 5,
+          "WARPS_N": 4,
+          "path": "tensor_core"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 102.01232777374909,
+          "ci": {
+            "ratio_median": 1.0074,
+            "lo": 1.00525,
+            "hi": 1.01128,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+          "disagreement": null
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 102.01232777374909,
+          "decided_on": 1.01128,
+          "basis": "paired",
+          "floor": 0.8
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "gemv_tc_16x64x64_1x4_s5_k3",
+            "gemv_tc_16x64x32_1x4_s6_k4"
+          ],
+          "contender": "gemv_tc_16x64x32_1x4_s6_k4",
+          "ci": {
+            "ratio_median": 1.00117,
+            "lo": 0.99964,
+            "hi": 1.00234,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": 0.11699999999998933,
+          "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
         }
       }
     },
@@ -371,116 +370,117 @@
       "k": 4864,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 39.107,
+      "median_us": 39.389,
       "roof": {
         "ai": 15.668660837551771,
-        "tflops": 3.566129030608331,
-        "gbps": 227.5962871097246,
+        "tflops": 3.5405978318819975,
+        "gbps": 225.9668435349971,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 2.839342524589227,
-        "pct_bw": 88.27001412099882,
-        "pct_roof": 88.27001412099884,
+        "pct_peak": 2.8190146515298915,
+        "pct_bw": 87.6380573822616,
+        "pct_roof": 87.63805738226158,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "8055702ef262a741",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
-          "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "S": 3,
+          "STAGES": 5,
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 75.44370707616328,
+          "pct_of_cublaslt_best": 102.01232777374909,
           "ci": {
-            "ratio_median": 0.76132,
-            "lo": 0.75918,
-            "hi": 0.76264,
+            "ratio_median": 1.0074,
+            "lo": 1.00525,
+            "hi": 1.01128,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
-          "disagreement": null
-        },
-        "dispatch": {
-          "target": "cublaslt",
-          "pct_of_cublaslt_best": null,
-          "decided_on": 0.76264,
-          "basis": "paired",
-          "floor": 0.8
-        },
-        "tie": {
-          "method": "paired",
-          "tied": false,
-          "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
-          ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
-          "ci": {
-            "ratio_median": 1.16274,
-            "lo": 1.16175,
-            "hi": 1.16553,
-            "pairs": 30,
-            "contains_one": false
-          },
-          "runner_up_gap_pct": 16.27400000000001,
-          "pick_reason": "fastest"
-        }
-      }
-    },
-    {
-      "label": "16x896x896 mma_pipe_64x64x32_2x2_s4",
-      "shape_bucket": "16x896x896",
-      "m": 16,
-      "n": 896,
-      "k": 896,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
-      "series": "winner",
-      "median_us": 10.85,
-      "roof": {
-        "ai": 15.448275862068966,
-        "tflops": 2.3677522580645163,
-        "gbps": 153.26967741935485,
-        "roof": "read",
-        "roof_gbps": 257.841,
-        "pct_peak": 1.8851981003244633,
-        "pct_bw": 59.44348548886905,
-        "pct_roof": 59.44348548886905,
-        "bound": "memory"
-      },
-      "hover": {
-        "kernel_id": "be0c6688d651513b",
-        "config": {
-          "BK": 32,
-          "BM": 64,
-          "BN": 64,
-          "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
-        },
-        "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 98.3410138248848,
-          "ci": {
-            "ratio_median": 0.97758,
-            "lo": 0.97497,
-            "hi": 0.98014,
-            "pairs": 30,
-            "contains_one": false
-          },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s5_k3",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 98.3410138248848,
-          "decided_on": 0.98014,
+          "pct_of_cublaslt_best": 102.01232777374909,
+          "decided_on": 1.01128,
+          "basis": "paired",
+          "floor": 0.8
+        },
+        "tie": {
+          "method": "paired",
+          "tied": true,
+          "tie_set": [
+            "gemv_tc_16x64x64_1x4_s5_k3",
+            "gemv_tc_16x64x32_1x4_s6_k4"
+          ],
+          "contender": "gemv_tc_16x64x32_1x4_s6_k4",
+          "ci": {
+            "ratio_median": 1.00117,
+            "lo": 0.99964,
+            "hi": 1.00234,
+            "pairs": 30,
+            "contains_one": true
+          },
+          "runner_up_gap_pct": 0.11699999999998933,
+          "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
+        }
+      }
+    },
+    {
+      "label": "16x896x896 gemv_tc_16x64x64_1x4_s4_k1",
+      "shape_bucket": "16x896x896",
+      "m": 16,
+      "n": 896,
+      "k": 896,
+      "impl": "gemv_tc_16x64x64_1x4_s4_k1",
+      "series": "winner",
+      "median_us": 9.535,
+      "roof": {
+        "ai": 15.448275862068966,
+        "tflops": 2.694295962244363,
+        "gbps": 174.40755112742528,
+        "roof": "read",
+        "roof_gbps": 257.841,
+        "pct_peak": 2.1451913359748747,
+        "pct_bw": 67.6415120665159,
+        "pct_roof": 67.6415120665159,
+        "bound": "memory"
+      },
+      "hover": {
+        "kernel_id": "9bbc014a0c4cfd97",
+        "config": {
+          "BK": 64,
+          "BM": 16,
+          "BN": 64,
+          "S": 1,
+          "STAGES": 4,
+          "WARPS_N": 4,
+          "path": "tensor_core"
+        },
+        "vs_cublaslt_best": {
+          "pct_of_cublaslt_best": 110.7603565810173,
+          "ci": {
+            "ratio_median": 1.11091,
+            "lo": 1.10918,
+            "hi": 1.11622,
+            "pairs": 30,
+            "contains_one": false
+          },
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
+          "disagreement": null
+        },
+        "dispatch": {
+          "target": "aegis",
+          "pct_of_cublaslt_best": 110.7603565810173,
+          "decided_on": 1.11622,
           "basis": "paired",
           "floor": 0.8
         },
@@ -488,17 +488,17 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x128x64_1x4_s4_k1",
           "ci": {
-            "ratio_median": 1.15824,
-            "lo": 1.15665,
-            "hi": 1.16019,
+            "ratio_median": 1.02143,
+            "lo": 1.01697,
+            "hi": 1.02344,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 15.823999999999995,
+          "runner_up_gap_pct": 2.143000000000006,
           "pick_reason": "fastest"
         }
       }
@@ -511,46 +511,46 @@
       "k": 896,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 10.67,
+      "median_us": 10.561,
       "roof": {
         "ai": 15.448275862068966,
-        "tflops": 2.407695595126523,
-        "gbps": 155.85529522024368,
+        "tflops": 2.432545402897453,
+        "gbps": 157.46387652684405,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 1.9170008798988218,
-        "pct_bw": 60.44628093291744,
-        "pct_roof": 60.44628093291745,
+        "pct_peak": 1.9367862312773816,
+        "pct_bw": 61.070146534819536,
+        "pct_roof": 61.070146534819536,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "9bbc014a0c4cfd97",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 98.3410138248848,
+          "pct_of_cublaslt_best": 110.7603565810173,
           "ci": {
-            "ratio_median": 0.97758,
-            "lo": 0.97497,
-            "hi": 0.98014,
+            "ratio_median": 1.11091,
+            "lo": 1.10918,
+            "hi": 1.11622,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 98.3410138248848,
-          "decided_on": 0.98014,
+          "pct_of_cublaslt_best": 110.7603565810173,
+          "decided_on": 1.11622,
           "basis": "paired",
           "floor": 0.8
         },
@@ -558,69 +558,69 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x128x64_1x4_s4_k1",
           "ci": {
-            "ratio_median": 1.15824,
-            "lo": 1.15665,
-            "hi": 1.16019,
+            "ratio_median": 1.02143,
+            "lo": 1.01697,
+            "hi": 1.02344,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 15.823999999999995,
+          "runner_up_gap_pct": 2.143000000000006,
           "pick_reason": "fastest"
         }
       }
     },
     {
-      "label": "1x4864x896 mma_pipe_64x64x32_2x2_s4",
+      "label": "1x4864x896 gemv_tc_16x128x64_1x4_s4_k1",
       "shape_bucket": "1x4864x896",
       "m": 1,
       "n": 4864,
       "k": 896,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "impl": "gemv_tc_16x128x64_1x4_s4_k1",
       "series": "winner",
-      "median_us": 37.183,
+      "median_us": 36.666,
       "roof": {
         "ai": 0.9986800809550348,
-        "tflops": 0.23441594276954522,
-        "gbps": 234.7257617728532,
+        "tflops": 0.237721267659412,
+        "gbps": 238.03545519009438,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.1866413551036611,
-        "pct_bw": 91.03508044603193,
-        "pct_roof": 91.03508044603193,
+        "pct_peak": 0.1892730460595492,
+        "pct_bw": 92.31869841882958,
+        "pct_roof": 92.31869841882958,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "cd9e27547bd41e04",
         "config": {
-          "BK": 32,
-          "BM": 64,
-          "BN": 64,
+          "BK": 64,
+          "BM": 16,
+          "BN": 128,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 99.59658983944276,
+          "pct_of_cublaslt_best": 101.24093165330281,
           "ci": {
-            "ratio_median": 0.98233,
-            "lo": 0.98021,
-            "hi": 0.98421,
+            "ratio_median": 1.00889,
+            "lo": 1.0074,
+            "hi": 1.01047,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x128x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 99.59658983944276,
-          "decided_on": 0.98421,
+          "pct_of_cublaslt_best": 101.24093165330281,
+          "decided_on": 1.01047,
           "basis": "paired",
           "floor": 0.8
         },
@@ -628,17 +628,17 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x128x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "contender": "gemv_tc_16x64x64_1x4_s4_k1",
           "ci": {
-            "ratio_median": 1.01007,
-            "lo": 1.00751,
-            "hi": 1.01211,
+            "ratio_median": 1.00342,
+            "lo": 1.00173,
+            "hi": 1.006,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 1.0070000000000023,
+          "runner_up_gap_pct": 0.34199999999999786,
           "pick_reason": "fastest"
         }
       }
@@ -651,46 +651,46 @@
       "k": 896,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 37.033,
+      "median_us": 37.121,
       "roof": {
         "ai": 0.9986800809550348,
-        "tflops": 0.23536543083196065,
-        "gbps": 235.67650473901654,
+        "tflops": 0.2348074674712427,
+        "gbps": 235.1178039384715,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.1873973349936389,
-        "pct_bw": 91.40381271365553,
-        "pct_roof": 91.40381271365553,
+        "pct_peak": 0.18695308603807634,
+        "pct_bw": 91.18712847781055,
+        "pct_roof": 91.18712847781055,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "cd9e27547bd41e04",
         "config": {
-          "BK": 32,
-          "BM": 64,
-          "BN": 64,
+          "BK": 64,
+          "BM": 16,
+          "BN": 128,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 99.59658983944276,
+          "pct_of_cublaslt_best": 101.24093165330281,
           "ci": {
-            "ratio_median": 0.98233,
-            "lo": 0.98021,
-            "hi": 0.98421,
+            "ratio_median": 1.00889,
+            "lo": 1.0074,
+            "hi": 1.01047,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x128x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 99.59658983944276,
-          "decided_on": 0.98421,
+          "pct_of_cublaslt_best": 101.24093165330281,
+          "decided_on": 1.01047,
           "basis": "paired",
           "floor": 0.8
         },
@@ -698,88 +698,96 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x128x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x128x32_2x4_s3",
+          "contender": "gemv_tc_16x64x64_1x4_s4_k1",
           "ci": {
-            "ratio_median": 1.01007,
-            "lo": 1.00751,
-            "hi": 1.01211,
+            "ratio_median": 1.00342,
+            "lo": 1.00173,
+            "hi": 1.006,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 1.0070000000000023,
+          "runner_up_gap_pct": 0.34199999999999786,
           "pick_reason": "fastest"
         }
       }
     },
     {
-      "label": "1x896x4864 mma_pipe_64x64x32_2x2_s4",
+      "label": "1x896x4864 gemv_tc_16x64x64_1x4_s5_k3",
       "shape_bucket": "1x896x4864",
       "m": 1,
       "n": 896,
       "k": 4864,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "impl": "gemv_tc_16x64x64_1x4_s5_k3",
       "series": "winner",
-      "median_us": 50.81,
+      "median_us": 36.646,
       "roof": {
         "ai": 0.9986800809550348,
-        "tflops": 0.17154670340484154,
-        "gbps": 171.77343042708128,
+        "tflops": 0.2378510069311794,
+        "gbps": 238.16536593352615,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.13658503260813679,
-        "pct_bw": 66.61990545610716,
-        "pct_roof": 66.61990545610716,
+        "pct_peak": 0.1893763441254006,
+        "pct_bw": 92.3690824707964,
+        "pct_roof": 92.3690824707964,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "8055702ef262a741",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
-          "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "S": 3,
+          "STAGES": 5,
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 78.53375319818933,
+          "pct_of_cublaslt_best": 109.59995633902746,
           "ci": {
-            "ratio_median": 0.78196,
-            "lo": 0.7809,
-            "hi": 0.78275,
+            "ratio_median": 1.05572,
+            "lo": 1.05417,
+            "hi": 1.05927,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
-          "disagreement": null
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+          "disagreement": {
+            "median_pct": 109.59995633902746,
+            "ci_lo_pct": 105.417,
+            "ci_hi_pct": 105.92699999999999,
+            "off_by_pts": 3.672956339027465,
+            "threshold_pts": 2.0,
+            "provisional": true
+          }
         },
         "dispatch": {
-          "target": "cublaslt",
-          "pct_of_cublaslt_best": null,
-          "decided_on": 0.78275,
+          "target": "aegis",
+          "pct_of_cublaslt_best": 109.59995633902746,
+          "decided_on": 1.05927,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
           "method": "paired",
-          "tied": false,
+          "tied": true,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s5_k3",
+            "gemv_tc_16x64x32_1x4_s6_k4"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x64x32_1x4_s6_k4",
           "ci": {
-            "ratio_median": 1.18217,
-            "lo": 1.18079,
-            "hi": 1.1847,
+            "ratio_median": 1.00085,
+            "lo": 0.99968,
+            "hi": 1.00222,
             "pairs": 30,
-            "contains_one": false
+            "contains_one": true
           },
-          "runner_up_gap_pct": 18.216999999999995,
-          "pick_reason": "fastest"
+          "runner_up_gap_pct": 0.08500000000000174,
+          "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
         }
       }
     },
@@ -791,135 +799,143 @@
       "k": 4864,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 39.903,
+      "median_us": 40.164,
       "roof": {
         "ai": 0.9986800809550348,
-        "tflops": 0.218436909505551,
-        "gbps": 218.725609603288,
+        "tflops": 0.21701742854297382,
+        "gbps": 217.30425256448564,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.17391889098111502,
-        "pct_bw": 84.82964679910798,
-        "pct_roof": 84.82964679910798,
+        "pct_peak": 0.17278870398415075,
+        "pct_bw": 84.2783934923017,
+        "pct_roof": 84.27839349230169,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "8055702ef262a741",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
-          "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "S": 3,
+          "STAGES": 5,
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 78.53375319818933,
+          "pct_of_cublaslt_best": 109.59995633902746,
           "ci": {
-            "ratio_median": 0.78196,
-            "lo": 0.7809,
-            "hi": 0.78275,
+            "ratio_median": 1.05572,
+            "lo": 1.05417,
+            "hi": 1.05927,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
-          "disagreement": null
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s5_k3",
+          "disagreement": {
+            "median_pct": 109.59995633902746,
+            "ci_lo_pct": 105.417,
+            "ci_hi_pct": 105.92699999999999,
+            "off_by_pts": 3.672956339027465,
+            "threshold_pts": 2.0,
+            "provisional": true
+          }
         },
         "dispatch": {
-          "target": "cublaslt",
-          "pct_of_cublaslt_best": null,
-          "decided_on": 0.78275,
+          "target": "aegis",
+          "pct_of_cublaslt_best": 109.59995633902746,
+          "decided_on": 1.05927,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
           "method": "paired",
-          "tied": false,
+          "tied": true,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s5_k3",
+            "gemv_tc_16x64x32_1x4_s6_k4"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x64x32_1x4_s6_k4",
           "ci": {
-            "ratio_median": 1.18217,
-            "lo": 1.18079,
-            "hi": 1.1847,
+            "ratio_median": 1.00085,
+            "lo": 0.99968,
+            "hi": 1.00222,
             "pairs": 30,
-            "contains_one": false
+            "contains_one": true
           },
-          "runner_up_gap_pct": 18.216999999999995,
-          "pick_reason": "fastest"
+          "runner_up_gap_pct": 0.08500000000000174,
+          "pick_reason": "tie-break: fewer registers (70), neighbors tied at 1"
         }
       }
     },
     {
-      "label": "1x896x896 mma_pipe_64x64x32_2x2_s4",
+      "label": "1x896x896 gemv_tc_16x64x64_1x4_s4_k1",
       "shape_bucket": "1x896x896",
       "m": 1,
       "n": 896,
       "k": 896,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "impl": "gemv_tc_16x64x64_1x4_s4_k1",
       "series": "winner",
-      "median_us": 11.141,
+      "median_us": 9.554,
       "roof": {
         "ai": 0.9977728285077951,
-        "tflops": 0.14411919935373846,
-        "gbps": 144.44089399515303,
+        "tflops": 0.16805861419300816,
+        "gbps": 168.4337450282604,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.11474732625280737,
-        "pct_bw": 56.019366196668884,
-        "pct_roof": 56.019366196668905,
+        "pct_peak": 0.13380782518134043,
+        "pct_bw": 65.32465551570945,
+        "pct_roof": 65.32465551570947,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "9bbc014a0c4cfd97",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 86.63495197917601,
+          "pct_of_cublaslt_best": 101.29788570232363,
           "ci": {
-            "ratio_median": 0.86226,
-            "lo": 0.86085,
-            "hi": 0.86373,
+            "ratio_median": 1.01818,
+            "lo": 1.01645,
+            "hi": 1.01982,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 86.63495197917601,
-          "decided_on": 0.86373,
+          "pct_of_cublaslt_best": 101.29788570232363,
+          "decided_on": 1.01982,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
-          "method": "paired",
+          "method": "paired_swap",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x64x32_1x4_s8_k2",
           "ci": {
-            "ratio_median": 1.16451,
-            "lo": 1.16272,
-            "hi": 1.16656,
+            "ratio_median": null,
+            "lo": 1.0356469686613228,
+            "hi": 1.0411352538808316,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 16.450999999999993,
-          "pick_reason": "fastest"
+          "runner_up_gap_pct": null,
+          "pick_reason": "fastest in the paired test (lower unpaired median: the runner-up)"
         }
       }
     },
@@ -931,90 +947,90 @@
       "k": 896,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 9.652,
+      "median_us": 9.678,
       "roof": {
         "ai": 0.9977728285077951,
-        "tflops": 0.16635225859925407,
-        "gbps": 166.72358060505596,
+        "tflops": 0.16590535234552592,
+        "gbps": 166.27567679272573,
         "roof": "read",
         "roof_gbps": 257.841,
-        "pct_peak": 0.13244922935998,
-        "pct_bw": 64.66139233289351,
-        "pct_roof": 64.66139233289351,
+        "pct_peak": 0.13209340377996762,
+        "pct_bw": 64.48767914828353,
+        "pct_roof": 64.48767914828353,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "9bbc014a0c4cfd97",
         "config": {
-          "BK": 32,
-          "BM": 64,
+          "BK": 64,
+          "BM": 16,
           "BN": 64,
+          "S": 1,
           "STAGES": 4,
-          "WARPS_M": 2,
-          "WARPS_N": 2,
-          "smem": "xor"
+          "WARPS_N": 4,
+          "path": "tensor_core"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 86.63495197917601,
+          "pct_of_cublaslt_best": 101.29788570232363,
           "ci": {
-            "ratio_median": 0.86226,
-            "lo": 0.86085,
-            "hi": 0.86373,
+            "ratio_median": 1.01818,
+            "lo": 1.01645,
+            "hi": 1.01982,
             "pairs": 30,
             "contains_one": false
           },
-          "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "verdict": "faster",
+          "tested_impl": "gemv_tc_16x64x64_1x4_s4_k1",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 86.63495197917601,
-          "decided_on": 0.86373,
+          "pct_of_cublaslt_best": 101.29788570232363,
+          "decided_on": 1.01982,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
-          "method": "paired",
+          "method": "paired_swap",
           "tied": false,
           "tie_set": [
-            "mma_pipe_64x64x32_2x2_s4"
+            "gemv_tc_16x64x64_1x4_s4_k1"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "gemv_tc_16x64x32_1x4_s8_k2",
           "ci": {
-            "ratio_median": 1.16451,
-            "lo": 1.16272,
-            "hi": 1.16656,
+            "ratio_median": null,
+            "lo": 1.0356469686613228,
+            "hi": 1.0411352538808316,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 16.450999999999993,
-          "pick_reason": "fastest"
+          "runner_up_gap_pct": null,
+          "pick_reason": "fastest in the paired test (lower unpaired median: the runner-up)"
         }
       }
     },
     {
-      "label": "2048x2048x2048 mma_pipe_128x128x32_2x4_s3",
+      "label": "2048x2048x2048 mma_tma_128x128x32_2x4_s3",
       "shape_bucket": "2048x2048x2048",
       "m": 2048,
       "n": 2048,
       "k": 2048,
-      "impl": "mma_pipe_128x128x32_2x4_s3",
+      "impl": "mma_tma_128x128x32_2x4_s3",
       "series": "winner",
-      "median_us": 234.682,
+      "median_us": 230.904,
       "roof": {
         "ai": 682.6666666666666,
-        "tflops": 73.20488654434513,
-        "gbps": 107.23372052394305,
+        "tflops": 74.40264865052144,
+        "gbps": 108.98825485916227,
         "roof": "copy",
         "roof_gbps": 236.696,
-        "pct_peak": 58.28553750833629,
-        "pct_bw": 45.3044075624189,
-        "pct_roof": 58.28553750833629,
+        "pct_peak": 59.239192536861104,
+        "pct_bw": 46.04566822386617,
+        "pct_roof": 59.239192536861104,
         "bound": "compute"
       },
       "hover": {
-        "kernel_id": "ca2b8a7de83fc9df",
+        "kernel_id": "56e18f4e10ad3106",
         "config": {
           "BK": 32,
           "BM": 128,
@@ -1022,25 +1038,26 @@
           "STAGES": 3,
           "WARPS_M": 2,
           "WARPS_N": 4,
-          "smem": "xor"
+          "load": "tma",
+          "smem": "tma_swizzle"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 83.62507563426253,
+          "pct_of_cublaslt_best": 85.80535633856495,
           "ci": {
-            "ratio_median": 0.84022,
-            "lo": 0.83692,
-            "hi": 0.84272,
+            "ratio_median": 0.8583,
+            "lo": 0.85658,
+            "hi": 0.86212,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+          "tested_impl": "mma_tma_128x128x32_2x4_s3",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 83.62507563426253,
-          "decided_on": 0.84272,
+          "pct_of_cublaslt_best": 85.80535633856495,
+          "decided_on": 0.86212,
           "basis": "paired",
           "floor": 0.8
         },
@@ -1048,17 +1065,17 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_128x128x32_2x4_s3"
+            "mma_tma_128x128x32_2x4_s3"
           ],
-          "contender": "mma_pipe_128x64x32_2x2_s2",
+          "contender": "mma_tma_256x128x64_4x2_s2",
           "ci": {
-            "ratio_median": 1.05009,
-            "lo": 1.04652,
-            "hi": 1.05459,
+            "ratio_median": 1.01494,
+            "lo": 1.01291,
+            "hi": 1.01805,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 5.008999999999997,
+          "runner_up_gap_pct": 1.4939999999999953,
           "pick_reason": "fastest"
         }
       }
@@ -1071,20 +1088,20 @@
       "k": 2048,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 196.253,
+      "median_us": 198.128,
       "roof": {
         "ai": 682.6666666666666,
-        "tflops": 87.53939651368387,
-        "gbps": 128.23153786184162,
+        "tflops": 86.71096051037713,
+        "gbps": 127.01800856012277,
         "roof": "copy",
         "roof_gbps": 236.696,
-        "pct_peak": 69.69863652291366,
-        "pct_bw": 54.175625216244306,
-        "pct_roof": 69.69863652291366,
+        "pct_peak": 69.03903796299046,
+        "pct_bw": 53.662929901697865,
+        "pct_roof": 69.03903796299046,
         "bound": "compute"
       },
       "hover": {
-        "kernel_id": "ca2b8a7de83fc9df",
+        "kernel_id": "56e18f4e10ad3106",
         "config": {
           "BK": 32,
           "BM": 128,
@@ -1092,25 +1109,26 @@
           "STAGES": 3,
           "WARPS_M": 2,
           "WARPS_N": 4,
-          "smem": "xor"
+          "load": "tma",
+          "smem": "tma_swizzle"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 83.62507563426253,
+          "pct_of_cublaslt_best": 85.80535633856495,
           "ci": {
-            "ratio_median": 0.84022,
-            "lo": 0.83692,
-            "hi": 0.84272,
+            "ratio_median": 0.8583,
+            "lo": 0.85658,
+            "hi": 0.86212,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+          "tested_impl": "mma_tma_128x128x32_2x4_s3",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 83.62507563426253,
-          "decided_on": 0.84272,
+          "pct_of_cublaslt_best": 85.80535633856495,
+          "decided_on": 0.86212,
           "basis": "paired",
           "floor": 0.8
         },
@@ -1118,17 +1136,17 @@
           "method": "paired",
           "tied": false,
           "tie_set": [
-            "mma_pipe_128x128x32_2x4_s3"
+            "mma_tma_128x128x32_2x4_s3"
           ],
-          "contender": "mma_pipe_128x64x32_2x2_s2",
+          "contender": "mma_tma_256x128x64_4x2_s2",
           "ci": {
-            "ratio_median": 1.05009,
-            "lo": 1.04652,
-            "hi": 1.05459,
+            "ratio_median": 1.01494,
+            "lo": 1.01291,
+            "hi": 1.01805,
             "pairs": 30,
             "contains_one": false
           },
-          "runner_up_gap_pct": 5.008999999999997,
+          "runner_up_gap_pct": 1.4939999999999953,
           "pick_reason": "fastest"
         }
       }
@@ -1274,73 +1292,73 @@
       }
     },
     {
-      "label": "4096x4096x4096 mma_pipe_128x128x32_2x4_s3",
+      "label": "4096x4096x4096 mma_tma_128x256x32_2x4_s4",
       "shape_bucket": "4096x4096x4096",
       "m": 4096,
       "n": 4096,
       "k": 4096,
-      "impl": "mma_pipe_128x128x32_2x4_s3",
+      "impl": "mma_tma_128x256x32_2x4_s4",
       "series": "winner",
-      "median_us": 1995.792,
+      "median_us": 1972.448,
       "roof": {
         "ai": 1365.3333333333333,
-        "tflops": 68.86436736493583,
-        "gbps": 50.43776906611511,
+        "tflops": 69.67937987313228,
+        "gbps": 51.0347020555168,
         "roof": "copy",
         "roof_gbps": 236.696,
-        "pct_peak": 54.82962759057608,
-        "pct_bw": 21.309092281287015,
-        "pct_roof": 54.82962759057608,
+        "pct_peak": 55.47853839911166,
+        "pct_bw": 21.561286230234902,
+        "pct_roof": 55.47853839911166,
         "bound": "compute"
       },
       "hover": {
-        "kernel_id": "ca2b8a7de83fc9df",
+        "kernel_id": "03869dd12bf12c08",
         "config": {
           "BK": 32,
           "BM": 128,
-          "BN": 128,
-          "STAGES": 3,
+          "BN": 256,
+          "STAGES": 4,
           "WARPS_M": 2,
           "WARPS_N": 4,
-          "smem": "xor"
+          "load": "tma",
+          "smem": "tma_swizzle"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 72.24640643914798,
+          "pct_of_cublaslt_best": 73.29937215074871,
           "ci": {
-            "ratio_median": 0.72092,
-            "lo": 0.71975,
-            "hi": 0.72437,
+            "ratio_median": 0.73958,
+            "lo": 0.73368,
+            "hi": 0.74275,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+          "tested_impl": "mma_tma_128x256x32_2x4_s4",
           "disagreement": null
         },
         "dispatch": {
           "target": "cublaslt",
           "pct_of_cublaslt_best": null,
-          "decided_on": 0.72437,
+          "decided_on": 0.74275,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
           "method": "paired",
-          "tied": true,
+          "tied": false,
           "tie_set": [
-            "mma_pipe_128x128x32_2x4_s3",
-            "mma_pipe_256x128x32_4x2_s4"
+            "mma_tma_128x256x32_2x4_s4"
           ],
           "contender": "mma_pipe_256x128x32_4x2_s4",
           "ci": {
-            "ratio_median": 0.99794,
-            "lo": 0.99554,
-            "hi": 1.00021,
+            "ratio_median": 1.02624,
+            "lo": 1.02026,
+            "hi": 1.03597,
             "pairs": 30,
-            "contains_one": true
+            "contains_one": false
           },
-          "runner_up_gap_pct": -0.20599999999999508,
-          "pick_reason": "tie-break: neighbors (1 of 1 neighboring shapes)"
+          "runner_up_gap_pct": 2.624000000000004,
+          "pick_reason": "fastest"
         }
       }
     },
@@ -1352,66 +1370,66 @@
       "k": 4096,
       "impl": "cublaslt_best",
       "series": "cublaslt_best",
-      "median_us": 1441.888,
+      "median_us": 1445.792,
       "roof": {
         "ai": 1365.3333333333333,
-        "tflops": 95.31874422423934,
-        "gbps": 69.8135333673628,
+        "tflops": 95.06135977512673,
+        "gbps": 69.6250193665479,
         "roof": "copy",
         "roof_gbps": 236.696,
-        "pct_peak": 75.89253264348619,
-        "pct_bw": 29.495020349884577,
-        "pct_roof": 75.89253264348619,
+        "pct_peak": 75.68760382423683,
+        "pct_bw": 29.415376418083916,
+        "pct_roof": 75.68760382423683,
         "bound": "compute"
       },
       "hover": {
-        "kernel_id": "ca2b8a7de83fc9df",
+        "kernel_id": "03869dd12bf12c08",
         "config": {
           "BK": 32,
           "BM": 128,
-          "BN": 128,
-          "STAGES": 3,
+          "BN": 256,
+          "STAGES": 4,
           "WARPS_M": 2,
           "WARPS_N": 4,
-          "smem": "xor"
+          "load": "tma",
+          "smem": "tma_swizzle"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 72.24640643914798,
+          "pct_of_cublaslt_best": 73.29937215074871,
           "ci": {
-            "ratio_median": 0.72092,
-            "lo": 0.71975,
-            "hi": 0.72437,
+            "ratio_median": 0.73958,
+            "lo": 0.73368,
+            "hi": 0.74275,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_128x128x32_2x4_s3",
+          "tested_impl": "mma_tma_128x256x32_2x4_s4",
           "disagreement": null
         },
         "dispatch": {
           "target": "cublaslt",
           "pct_of_cublaslt_best": null,
-          "decided_on": 0.72437,
+          "decided_on": 0.74275,
           "basis": "paired",
           "floor": 0.8
         },
         "tie": {
           "method": "paired",
-          "tied": true,
+          "tied": false,
           "tie_set": [
-            "mma_pipe_128x128x32_2x4_s3",
-            "mma_pipe_256x128x32_4x2_s4"
+            "mma_tma_128x256x32_2x4_s4"
           ],
           "contender": "mma_pipe_256x128x32_4x2_s4",
           "ci": {
-            "ratio_median": 0.99794,
-            "lo": 0.99554,
-            "hi": 1.00021,
+            "ratio_median": 1.02624,
+            "lo": 1.02026,
+            "hi": 1.03597,
             "pairs": 30,
-            "contains_one": true
+            "contains_one": false
           },
-          "runner_up_gap_pct": -0.20599999999999508,
-          "pick_reason": "tie-break: neighbors (1 of 1 neighboring shapes)"
+          "runner_up_gap_pct": 2.624000000000004,
+          "pick_reason": "fastest"
         }
       }
     },
@@ -1710,53 +1728,53 @@
       }
     },
     {
-      "label": "512x896x4864 mma_pipe_64x64x32_2x2_s4",
+      "label": "512x896x4864 mma_pipe_64x64x32_2x2_s3",
       "shape_bucket": "512x896x4864",
       "m": 512,
       "n": 896,
       "k": 4864,
-      "impl": "mma_pipe_64x64x32_2x2_s4",
+      "impl": "mma_pipe_64x64x32_2x2_s3",
       "series": "winner",
-      "median_us": 89.674,
+      "median_us": 89.573,
       "roof": {
         "ai": 305.36322869955154,
-        "tflops": 49.766258402658515,
-        "gbps": 162.97397238887524,
+        "tflops": 49.822373438424535,
+        "gbps": 163.15773726457752,
         "roof": "copy",
         "roof_gbps": 236.696,
-        "pct_peak": 39.62376362704405,
-        "pct_bw": 68.85370787376011,
-        "pct_roof": 68.85370787376013,
+        "pct_peak": 39.668442270455934,
+        "pct_bw": 68.9313453816615,
+        "pct_roof": 68.93134538166152,
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "ee75d98e85c7c36b",
         "config": {
           "BK": 32,
           "BM": 64,
           "BN": 64,
-          "STAGES": 4,
+          "STAGES": 3,
           "WARPS_M": 2,
           "WARPS_N": 2,
           "smem": "xor"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 82.38173829649618,
+          "pct_of_cublaslt_best": 82.47462963169706,
           "ci": {
-            "ratio_median": 0.82242,
-            "lo": 0.8192,
-            "hi": 0.82749,
+            "ratio_median": 0.80362,
+            "lo": 0.79839,
+            "hi": 0.80655,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s3",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 82.38173829649618,
-          "decided_on": 0.82749,
+          "pct_of_cublaslt_best": 82.47462963169706,
+          "decided_on": 0.80655,
           "basis": "paired",
           "floor": 0.8
         },
@@ -1767,7 +1785,7 @@
             "mma_pipe_64x64x32_2x2_s3",
             "mma_pipe_64x64x32_2x2_s4"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "mma_pipe_64x64x32_2x2_s4",
           "ci": {
             "ratio_median": 1.0012,
             "lo": 0.99928,
@@ -1776,7 +1794,7 @@
             "contains_one": true
           },
           "runner_up_gap_pct": 0.12000000000000899,
-          "pick_reason": "tie-break: neighbors (2 of 2 neighboring shapes)"
+          "pick_reason": "tie-break: fewer registers (71), neighbors tied at 0"
         }
       }
     },
@@ -1801,33 +1819,33 @@
         "bound": "memory"
       },
       "hover": {
-        "kernel_id": "be0c6688d651513b",
+        "kernel_id": "ee75d98e85c7c36b",
         "config": {
           "BK": 32,
           "BM": 64,
           "BN": 64,
-          "STAGES": 4,
+          "STAGES": 3,
           "WARPS_M": 2,
           "WARPS_N": 2,
           "smem": "xor"
         },
         "vs_cublaslt_best": {
-          "pct_of_cublaslt_best": 82.38173829649618,
+          "pct_of_cublaslt_best": 82.47462963169706,
           "ci": {
-            "ratio_median": 0.82242,
-            "lo": 0.8192,
-            "hi": 0.82749,
+            "ratio_median": 0.80362,
+            "lo": 0.79839,
+            "hi": 0.80655,
             "pairs": 30,
             "contains_one": false
           },
           "verdict": "slower",
-          "tested_impl": "mma_pipe_64x64x32_2x2_s4",
+          "tested_impl": "mma_pipe_64x64x32_2x2_s3",
           "disagreement": null
         },
         "dispatch": {
           "target": "aegis",
-          "pct_of_cublaslt_best": 82.38173829649618,
-          "decided_on": 0.82749,
+          "pct_of_cublaslt_best": 82.47462963169706,
+          "decided_on": 0.80655,
           "basis": "paired",
           "floor": 0.8
         },
@@ -1838,7 +1856,7 @@
             "mma_pipe_64x64x32_2x2_s3",
             "mma_pipe_64x64x32_2x2_s4"
           ],
-          "contender": "mma_pipe_64x64x32_2x2_s3",
+          "contender": "mma_pipe_64x64x32_2x2_s4",
           "ci": {
             "ratio_median": 1.0012,
             "lo": 0.99928,
@@ -1847,7 +1865,7 @@
             "contains_one": true
           },
           "runner_up_gap_pct": 0.12000000000000899,
-          "pick_reason": "tie-break: neighbors (2 of 2 neighboring shapes)"
+          "pick_reason": "tie-break: fewer registers (71), neighbors tied at 0"
         }
       }
     },

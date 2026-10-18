@@ -99,7 +99,7 @@ fn matches_the_golden_report() {
 fn cublaslt_dispatch_never_shows_the_kernel_pct() {
     let w = winners();
     let routed: Vec<&Winner> = w.iter().filter(|x| x.dispatch.target == "cublaslt").collect();
-    assert_eq!(routed.len(), 4);
+    assert_eq!(routed.len(), 2);
     for x in routed {
         let kernel = x.vs_cublaslt_best.pct_of_cublaslt_best;
         assert!(kernel.is_some(), "{}: the kernel's own % stays beside it", x.shape_bucket);
@@ -130,21 +130,23 @@ fn production_bars() {
             ("1024x1024x1024", "large", "pass", "clear"),
             ("2048x2048x2048", "large", "fail", "clear"),
             ("4096x4096x4096", "large", "fail", "clear"),
-            ("1x896x896", "decode", "fail", "clear"),
-            ("1x4864x896", "decode", "fail", "clear"),
-            ("1x896x4864", "decode", "fail", "clear"),
-            ("16x896x896", "decode", "fail", "clear"),
-            // CI [1.00121, 1.00384] vs cublaslt_best: a win, meets the decode bar.
+            // Every decode shape (gemv_tc) wins against cublaslt_best: CIs above
+            // 1.0, e.g. 16x4864x896 [1.00457, 1.00895]; the decode bar is met.
+            ("1x896x896", "decode", "pass", "clear"),
+            ("1x4864x896", "decode", "pass", "clear"),
+            ("1x896x4864", "decode", "pass", "clear"),
+            ("16x896x896", "decode", "pass", "clear"),
             ("16x4864x896", "decode", "pass", "clear"),
-            ("16x896x4864", "decode", "fail", "clear"),
+            ("16x896x4864", "decode", "pass", "clear"),
             ("512x896x896", "other", "pass", "clear"),
             // CI [0.78509, 0.79031] entirely below the 80% floor.
             ("512x4864x896", "other", "fail", "clear"),
-            ("512x896x4864", "other", "pass", "clear"),
+            // CI [0.79839, 0.80655] straddles the floor: passes, within the CI.
+            ("512x896x4864", "other", "pass", "within CI"),
         ]
     );
     assert!(w.iter().all(|x| x.bars.basis == "paired"));
-    // The class bars are still Custos fallbacks (aegis-perf v0.4.0 has none);
+    // The class bars are still Custos fallbacks (aegis-perf v0.5.0 has none);
     // the floor is Core's.
     assert!(w.iter().all(|x| x.bars.provisional && x.bars.floor == aegis_perf::tune::DISPATCH_FLOOR));
     let decode = w.iter().find(|x| x.shape_bucket == "1x896x896").unwrap();
@@ -189,8 +191,8 @@ fn stored_cublaslt_algorithm() {
     assert_eq!(big.dispatch.target, "cublaslt");
     let a = big.lt_algo.unwrap();
     assert_eq!((a.algo_id, a.tile_id, a.stages_id, a.splitk, a.custom), (67, 412, 35, 1, 31));
-    let a = get("1x896x4864").lt_algo.unwrap();
-    assert_eq!((a.algo_id, a.splitk, a.reduction), (13, 16, 2), "a split-K algorithm");
+    let a = get("16x896x4864").lt_algo.unwrap();
+    assert_eq!((a.algo_id, a.splitk, a.reduction), (21, 3, 2), "a split-K algorithm");
 }
 
 /// Dispatch is Core's own decision (v0.4.0: tune::dispatch and
@@ -212,15 +214,19 @@ fn dispatch_is_cores() {
     }
 }
 
-/// The unpaired median % and the paired CI disagree by more than 2 points
-/// only at 512x4864x896 in this fixture (run 7e94c009266f: header 82.2%,
-/// paired CI [78.5, 79.0]); 256x256x256 (88.66% against [88.69, 88.97]) is
-/// consistent.
+/// The unpaired median % and the paired CI disagree by more than 2 points at
+/// two shapes in this fixture: 1x896x4864 (decode tune c2b937d8adca: header
+/// 109.6%, paired CI [105.4, 105.9]) and 512x4864x896 (run 7e94c009266f:
+/// 82.2%, paired CI [78.5, 79.0]); 256x256x256 (88.66% against
+/// [88.69, 88.97]) is consistent.
 #[test]
 fn paired_and_unpaired_disagree() {
     let ws = winners();
     let flagged: Vec<&str> = ws.iter().filter(|w| w.vs_cublaslt_best.disagreement.is_some()).map(|w| w.shape_bucket.as_str()).collect();
-    assert_eq!(flagged, ["512x4864x896"]);
+    assert_eq!(flagged, ["1x896x4864", "512x4864x896"]);
+    let d = ws.iter().find(|w| w.shape_bucket == "1x896x4864").unwrap().vs_cublaslt_best.disagreement.as_ref().unwrap();
+    assert!((d.median_pct - 109.60).abs() < 0.01 && (d.ci_lo_pct - 105.417).abs() < 1e-6 && (d.ci_hi_pct - 105.927).abs() < 1e-6);
+    assert!((d.off_by_pts - 3.673).abs() < 0.001);
     let w = ws.iter().find(|w| w.shape_bucket == "512x4864x896").unwrap();
     let d = w.vs_cublaslt_best.disagreement.as_ref().unwrap();
     assert!((d.median_pct - 82.21).abs() < 0.01, "{}", d.median_pct);

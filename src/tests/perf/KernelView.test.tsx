@@ -35,7 +35,7 @@ describe('KernelSection', () => {
     expect(fact('smem')).toBe('xor');
     // The kernel picker lists each winner kernel once.
     const options = within(screen.getByLabelText('Kernel')).getAllByRole('option');
-    expect(options.map((o) => o.textContent)).toContain('mma_pipe_64x64x32_2x2_s4 (10 shapes)');
+    expect(options.map((o) => o.textContent)).toContain('mma_pipe_64x64x32_2x2_s4 (3 shapes)');
   });
 
   it('instruction mix and the SASS listing of the row-major instantiation', async () => {
