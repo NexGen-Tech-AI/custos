@@ -1,0 +1,106 @@
+# CPU only: no GPU, no live Core data. Every test reads the committed fixtures
+# (tests/fixtures/, CLAUDE.md rule 19); aegis-perf builds from its pinned tag
+# (aegis-core is public, no token; no [patch], .cargo/config.toml is gitignored).
+name: CI
+
+on:
+  push:
+    branches: [custos]
+  pull_request:
+    branches: [custos]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  default-features:
+    name: default features (AEGIS)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries (Tauri 2, WebKitGTK 4.1)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libssl-dev libsqlite3-dev libdbus-1-dev libudev-dev \
+            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libgtk-3-dev \
+            librsvg2-dev libayatana-appindicator3-dev
+      - uses: dtolnay/rust-toolchain@1.91.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: default
+          workspaces: |
+            custos-perf -> target
+            src-tauri -> target
+            . -> target
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Frontend first: the Tauri build embeds dist/ (frontendDist).
+      - name: tsc
+        run: pnpm typecheck
+      - name: vitest
+        run: pnpm vitest run
+      - name: vite build
+        run: pnpm exec vite build
+
+      - name: custos-perf build, tests, clippy
+        run: |
+          cargo build --locked --manifest-path custos-perf/Cargo.toml --all-targets
+          cargo test --locked --manifest-path custos-perf/Cargo.toml
+          cargo clippy --locked --manifest-path custos-perf/Cargo.toml --all-targets -- -D warnings
+      - name: src-tauri build, tests, clippy
+        run: |
+          cargo build --locked --manifest-path src-tauri/Cargo.toml --all-targets
+          cargo test --locked --manifest-path src-tauri/Cargo.toml
+          cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - name: system-monitor (root crate) build, tests, clippy
+        run: |
+          cargo build --locked -p system-monitor --all-targets
+          cargo test --locked -p system-monitor
+          cargo clippy --locked -p system-monitor --all-targets -- -D warnings
+
+  no-default-features:
+    name: --no-default-features (system monitor)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries (Tauri 2, WebKitGTK 4.1)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libssl-dev libsqlite3-dev libdbus-1-dev libudev-dev \
+            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libgtk-3-dev \
+            librsvg2-dev libayatana-appindicator3-dev
+      - uses: dtolnay/rust-toolchain@1.91.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: no-default
+          workspaces: src-tauri -> target
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The monitor's frontend (no AEGIS views), which the Tauri build embeds.
+      - name: vite build (VITE_AEGIS=0)
+        run: VITE_AEGIS=0 pnpm exec vite build
+
+      - name: src-tauri build, tests, clippy (--no-default-features)
+        run: |
+          cargo build --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features
+          cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features
+          cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features -- -D warnings
