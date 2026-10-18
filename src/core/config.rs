@@ -5,6 +5,7 @@ use directories::ProjectDirs;
 use std::fs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AppConfig {
     pub monitoring: MonitoringConfig,
     pub alerts: AlertConfig,
@@ -97,17 +98,6 @@ pub struct UiConfig {
     pub temperature_unit: String,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            monitoring: MonitoringConfig::default(),
-            alerts: AlertConfig::default(),
-            storage: StorageConfig::default(),
-            logging: LoggingConfig::default(),
-            ui: UiConfig::default(),
-        }
-    }
-}
 
 impl Default for MonitoringConfig {
     fn default() -> Self {
@@ -332,7 +322,7 @@ impl ConfigManager {
                 if warn >= crit {
                     return Err(format!("{} warning threshold must be less than critical threshold", name));
                 }
-                if warn < 0.0 || warn > 100.0 || crit < 0.0 || crit > 100.0 {
+                if !(0.0..=100.0).contains(&warn) || !(0.0..=100.0).contains(&crit) {
                     return Err(format!("{} thresholds must be between 0 and 100", name));
                 }
             }

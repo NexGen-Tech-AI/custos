@@ -137,6 +137,12 @@ pub struct MonitorManager {
     monitors: Arc<RwLock<std::collections::HashMap<String, SharedMonitor>>>,
 }
 
+impl Default for MonitorManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MonitorManager {
     pub fn new() -> Self {
         Self {
