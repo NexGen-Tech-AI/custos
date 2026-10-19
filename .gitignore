@@ -9,3 +9,6 @@ tests/fixtures/*.db.tmp
 
 # Vite build output (pnpm build); never committed
 dist/
+
+# Local run logs (never committed)
+*.log

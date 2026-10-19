@@ -25,7 +25,7 @@ DCGM.
 | `Cargo.toml` (root) | workspace (`custos-ebpf`, `custos-ebpf-common`) **and** package `system-monitor` (`src/lib.rs`, `src/backend/*`) | `system-monitor` is not linked into the Tauri binary |
 | `custos-ebpf/`, `custos-ebpf-common/` | aya eBPF program + shared types | `src-tauri` feature `ebpf` |
 | `src/` (TS) | React 18 + Vite 5 + TypeScript + Tailwind 3 frontend | `src/main.tsx` → `App.tsx` → `AppWrapper.tsx` |
-| `system-monitor/`, `src/ui/`, `src/inference/`, `src-ml/`, `docs/archive/` (the old root status notes) | stale copies and notes | not built |
+| `system-monitor/`, `src/ui/`, `src/inference/`, `src-ml/`, `docs/archive/` (the old root status notes), `scripts/legacy/` (the old root launch scripts) | stale copies, notes and scripts | not built, not maintained |
 
 Commands (pnpm is the package manager; there is no package-lock.json):
 `pnpm install --frozen-lockfile`, `pnpm tauri:dev` (app), `pnpm typecheck`,

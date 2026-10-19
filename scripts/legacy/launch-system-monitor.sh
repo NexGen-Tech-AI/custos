@@ -9,7 +9,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # Navigate to the project directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../.."  # the repo root (moved from the root to scripts/legacy/)
 
 # Apply graphics workarounds for Linux
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
