@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Pre-commit checks (enable once per clone: git config core.hooksPath .githooks).
+#
+# actionlint on every staged GitHub workflow, as staged: an invalid workflow
+# runs no jobs at all, so CI looks quiet instead of red.
+set -euo pipefail
+
+mapfile -t workflows < <(git diff --cached --name-only --diff-filter=ACMR -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
+[[ ${#workflows[@]} -eq 0 ]] && exit 0
+
+if ! command -v actionlint >/dev/null; then
+  echo "pre-commit: actionlint not installed; it checks ${workflows[*]}." >&2
+  echo "  Install: https://github.com/rhysd/actionlint/releases (one binary, e.g. into ~/.local/bin)" >&2
+  exit 1
+fi
+status=0
+for f in "${workflows[@]}"; do
+  git show ":$f" | actionlint -stdin-filename "$f" - || status=1
+done
+[[ $status -eq 0 ]] || echo "pre-commit: actionlint failed (fix the workflow, or commit with --no-verify only if you know why)." >&2
+exit $status

@@ -234,3 +234,13 @@ Custos shows numbers Core has disowned.
     creates files in aegis-core), else Custos's own. Wait up to a configurable
     timeout, then report "GPU busy: <holder if known>". Nothing in the tests
     profiles.
+
+### Process
+
+30. **A step is not done until CI passes on its own commit.** Push each
+    step's commit and wait for its CI run (both jobs) to go green; a later
+    commit's green run does not count for an earlier one. The step's report
+    links that run. Workflow changes are checked by actionlint before they are
+    committed (`.githooks/pre-commit`; enable it once per clone with
+    `git config core.hooksPath .githooks`), since an invalid workflow runs no
+    jobs at all and reads as quiet, not red.
