@@ -21,11 +21,11 @@ use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use rusqlite::{Connection, OpenFlags};
-use serde::Deserialize;
 
 use crate::adapter::{command_availability, Adapter, Availability, Ingest, TOOL_DIRS};
 use crate::model::{Capture, Device, EventKind, Kernel, Launch, ProfilerTiming, Run, Timeline, TimelineEvent, Value};
-use crate::provenance::{Build, Clocks, Known, Provenance, Source};
+use crate::provenance::{Clocks, Known, Provenance, Source};
+pub use crate::sidecar::Sidecar;
 
 pub const SUPPORTED_MAJOR: u32 = 3;
 /// The newest minor version whose documented schema this adapter was written against.
@@ -53,29 +53,6 @@ const COLUMNS: &[(&str, &[&str], bool)] = &[
     ("TARGET_INFO_SESSION_START_TIME", &["utcTime"], true),
 ];
 
-/// What `tools/capture_fixtures.sh` records beside an export.
-#[derive(Clone, Debug, Default, Deserialize)]
-pub struct Sidecar {
-    /// `nsys --version`.
-    pub tool_version: Option<String>,
-    /// The profiled build (`bench_gemm --build-info`): 40 hex digits and dirty.
-    pub build_sha: Option<String>,
-    pub build_dirty: Option<bool>,
-    /// A hand-built fixture.
-    #[serde(default)]
-    pub synthetic: bool,
-}
-
-impl Sidecar {
-    pub fn for_export(export: &Path) -> Result<Option<Sidecar>> {
-        let p = export.with_extension("meta.json");
-        if !p.exists() {
-            return Ok(None);
-        }
-        let s = std::fs::read_to_string(&p).with_context(|| format!("read {}", p.display()))?;
-        Ok(Some(serde_json::from_str(&s).with_context(|| format!("parse {}", p.display()))?))
-    }
-}
 
 pub struct Nsys {
     /// The PATH to search (None: the process's).
@@ -171,7 +148,7 @@ pub fn ingest(export: &Path) -> Result<Capture> {
     let mut c = Capture::default();
     let tables = check_columns(&con, &mut c.notes)?;
     let has = |t: &str| tables.contains(&t);
-    let side = Sidecar::for_export(export)?.unwrap_or_default();
+    let side = Sidecar::for_file(export)?.unwrap_or_default();
     let file = export.file_name().map_or_else(|| "export".to_string(), |f| f.to_string_lossy().into_owned());
     let run_id = format!("nsys:{}", export.file_stem().map_or_else(String::new, |f| f.to_string_lossy().into_owned()));
 
@@ -184,10 +161,7 @@ pub fn ingest(export: &Path) -> Result<Capture> {
         &format!("{file} (export schema {major}.{minor}.{micro})"),
     );
     prov.synthetic = side.synthetic;
-    prov.build = match (&side.build_sha, side.build_dirty) {
-        (Some(s), Some(d)) => Build::full(s, d),
-        _ => None,
-    };
+    prov.build = side.build();
     prov.clocks = Clocks::unknown("Nsight Systems neither controls nor records GPU clocks");
     if has("TARGET_INFO_SESSION_START_TIME") {
         prov.captured_at = con.query_row("SELECT utcTime FROM TARGET_INFO_SESSION_START_TIME", [], |r| r.get(0)).ok().flatten();
@@ -212,7 +186,13 @@ pub fn ingest(export: &Path) -> Result<Capture> {
             });
         }
     }
-    c.runs.push(Run { id: run_id.clone(), kind: "nsys-capture".into(), device: c.devices.first().map(|d| d.id.clone()), provenance: prov.clone() });
+    c.runs.push(Run {
+        driver: side.driver(),
+        cuda_driver: side.cuda_driver(),
+        cuda_toolkit: side.cuda_toolkit(),
+        commands: side.commands.clone(),
+        ..Run::new(&run_id, "nsys-capture", c.devices.first().map(|d| d.id.clone()), prov.clone())
+    });
 
     let mut events = Vec::new();
     if has("CUPTI_ACTIVITY_KIND_KERNEL") {

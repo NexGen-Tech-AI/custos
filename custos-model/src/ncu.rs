@@ -28,6 +28,7 @@ use anyhow::{bail, Context, Result};
 use crate::adapter::{command_availability, Adapter, Availability, Ingest, TOOL_DIRS};
 use crate::model::{Capture, Counter, Device, Kernel, Launch, Quantity, Run, Value};
 use crate::provenance::{ClockControl, Clocks, Known, Provenance, Source};
+use crate::sidecar::Sidecar;
 
 /// A report's CSV pages (any may be missing but details).
 #[derive(Clone, Debug, Default)]
@@ -39,18 +40,23 @@ pub struct NcuCsv {
     pub session: Option<String>,
     /// A hand-built fixture.
     pub synthetic: bool,
+    /// The capture script's `<stem>.meta.json` (clock control as passed, build, driver, commands).
+    pub sidecar: Option<Sidecar>,
 }
 
 impl NcuCsv {
-    /// `<dir>/<stem>.details.csv` (+ `.raw.csv`, `.session.csv`, and a `.synthetic` marker file).
+    /// `<dir>/<stem>.details.csv` (+ `.raw.csv`, `.session.csv`, the sidecar
+    /// `<stem>.meta.json`, and a `.synthetic` marker file).
     pub fn load(dir: &Path, stem: &str) -> Result<NcuCsv> {
         let read = |p: &str| std::fs::read_to_string(dir.join(format!("{stem}.{p}.csv")));
+        let sidecar = Sidecar::load(dir, stem)?;
         Ok(NcuCsv {
             report: format!("{stem}.ncu-rep"),
             details: read("details").with_context(|| format!("read {stem}.details.csv in {}", dir.display()))?,
             raw: read("raw").ok(),
             session: read("session").ok(),
-            synthetic: dir.join(format!("{stem}.synthetic")).exists(),
+            synthetic: dir.join(format!("{stem}.synthetic")).exists() || sidecar.as_ref().is_some_and(|s| s.synthetic),
+            sidecar,
         })
     }
 }
@@ -126,11 +132,8 @@ fn get<'a>(t: &'a BTreeMap<String, Vec<(String, String)>>, table: &str, key: &st
     t.get(table)?.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
 }
 
-/// The clock-control mode and how it is known, from the recorded command line.
-fn clock_control(cmdline: Option<&str>) -> Clocks {
-    let Some(cmd) = cmdline else {
-        return Clocks::unknown("no session page: the profiler command line was not exported");
-    };
+/// `--clock-control` on a command line, if given.
+fn cmdline_mode(cmd: &str) -> Option<String> {
     let mut words = cmd.split_whitespace();
     let mut mode = None;
     while let Some(w) = words.next() {
@@ -140,15 +143,33 @@ fn clock_control(cmdline: Option<&str>) -> Clocks {
             mode = words.next().map(str::to_string);
         }
     }
-    match mode.as_deref() {
-        Some("base") => Clocks { control: ClockControl::Base, basis: "--clock-control base on the recorded command line".into(), sm_mhz: None },
-        Some("none") => Clocks { control: ClockControl::Uncontrolled, basis: "--clock-control none on the recorded command line".into(), sm_mhz: None },
-        Some(other) => Clocks { control: ClockControl::Unknown, basis: format!("--clock-control {other}: not a mode Custos knows"), sm_mhz: None },
-        None => Clocks {
-            control: ClockControl::Base,
-            basis: "--clock-control not on the recorded command line: ncu's documented default, base".into(),
-            sm_mhz: None,
-        },
+    mode
+}
+
+fn mode_clocks(mode: &str, basis: String) -> Clocks {
+    let control = match mode {
+        "base" => ClockControl::Base,
+        "none" => ClockControl::Uncontrolled,
+        other => return Clocks { control: ClockControl::Unknown, basis: format!("--clock-control {other}: not a mode Custos knows"), sm_mhz: None },
+    };
+    Clocks { control, basis, sm_mhz: None }
+}
+
+/// The clock-control mode and how it is known: the mode the capture script
+/// passed (its sidecar), else the recorded command line's, else ncu's default.
+/// When the sidecar and the command line disagree, the mode is unknown.
+fn clock_control(cmdline: Option<&str>, passed: Option<&str>) -> Clocks {
+    let recorded = cmdline.and_then(cmdline_mode);
+    match (passed, recorded.as_deref(), cmdline) {
+        (Some(p), Some(r), _) if p != r => Clocks::unknown(&format!(
+            "the capture sidecar says --clock-control {p}, the recorded command line says {r}"
+        )),
+        (Some(p), _, _) => mode_clocks(p, format!("--clock-control {p}, passed explicitly (capture sidecar)")),
+        (None, Some(r), _) => mode_clocks(r, format!("--clock-control {r} on the recorded command line")),
+        (None, None, Some(_)) => {
+            mode_clocks("base", "--clock-control not on the recorded command line: ncu's documented default, base".into())
+        }
+        (None, None, None) => Clocks::unknown("no session page: the profiler command line was not exported"),
     }
 }
 
@@ -164,7 +185,9 @@ pub fn ingest(csv: &NcuCsv) -> Result<Capture> {
     let mut prov = Provenance::new(Source::Ncu, "ncu", version, &csv.report);
     prov.synthetic = csv.synthetic;
     prov.captured_at = get(&session, "Session Info", "Created").map(str::to_string);
-    prov.clocks = clock_control(get(&session, "Launch Settings", "Profiler Command Line"));
+    let side = csv.sidecar.clone().unwrap_or_default();
+    prov.clocks = clock_control(get(&session, "Launch Settings", "Profiler Command Line"), side.clock_control.as_deref());
+    prov.build = side.build();
     let run_id = format!("ncu:{}", csv.report.trim_end_matches(".ncu-rep"));
     if !session.is_empty() {
         let attr = |k: &str| get(&session, "Device Attributes", k);
@@ -179,13 +202,19 @@ pub fn ingest(csv: &NcuCsv) -> Result<Capture> {
             sm_count: Value::from_option(attr("multiprocessor_count").and_then(number).map(|n| n as i64)),
             provenance: prov.clone(),
         });
-        for (k, label) in [("CUDA Version", "CUDA"), ("Display Driver Version", "driver")] {
-            if let Some(v) = get(&session, "Session Info", k) {
-                c.notes.push(format!("{label} {v}"));
-            }
-        }
     }
-    c.runs.push(Run { id: run_id.clone(), kind: "ncu-session".into(), device: c.devices.first().map(|d| d.id.clone()), provenance: prov.clone() });
+    // The report's own record first (session page), else the sidecar's.
+    let recorded = |k: &str, fallback: Value<String>| match get(&session, "Session Info", k) {
+        Some(v) => Value::Present(v.to_string()),
+        None => fallback,
+    };
+    c.runs.push(Run {
+        driver: recorded("Display Driver Version", side.driver()),
+        cuda_driver: recorded("CUDA Version", side.cuda_driver()),
+        cuda_toolkit: side.cuda_toolkit(),
+        commands: side.commands.clone(),
+        ..Run::new(&run_id, "ncu-session", c.devices.first().map(|d| d.id.clone()), prov.clone())
+    });
 
     // details: one row per (launch, section, metric) or (launch, section, rule).
     let mut rd = reader(&csv.details);
@@ -355,5 +384,6 @@ pub fn export(ncu: &Path, report: &Path) -> Result<NcuCsv> {
         raw: Some(page("raw")?),
         session: Some(page("session")?),
         synthetic: false,
+        sidecar: None,
     })
 }

@@ -7,6 +7,7 @@ use custos_model::contract::violations;
 use custos_model::model::Value;
 use custos_model::ncu::{self, Ncu, NcuCsv};
 use custos_model::provenance::{ClockControl, Source};
+use custos_model::sidecar::Sidecar;
 
 fn fixture() -> NcuCsv {
     NcuCsv::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ncu"), "decode-synthetic").unwrap()
@@ -73,6 +74,41 @@ fn clock_control_comes_from_the_command_line_or_is_unknown() {
     let p = &c.runs[0].provenance;
     assert_eq!(p.clocks.control, ClockControl::Unknown);
     assert!(p.tool.version.known().is_none() && c.devices.is_empty());
+}
+
+/// The capture script's sidecar: the clock control it passed, checked against
+/// the command line; the build; the driver and CUDA (the report's own record first).
+#[test]
+fn the_capture_sidecar_names_clock_control_build_and_software() {
+    let mut f = fixture();
+    let sha = "0123456789abcdef0123456789abcdef01234567";
+    f.sidecar = Some(Sidecar {
+        tool: Some("ncu".into()),
+        build_sha: Some(sha.into()),
+        build_dirty: Some(false),
+        driver_version: Some("000.00 (synthetic)".into()),
+        cuda_toolkit_version: Some("0.0 (synthetic)".into()),
+        clock_control: Some("base".into()),
+        commands: vec![vec!["ncu".into(), "--clock-control".into(), "base".into()]],
+        synthetic: true,
+        ..Default::default()
+    });
+    let c = ncu::ingest(&f).unwrap();
+    let r = &c.runs[0];
+    assert_eq!(r.provenance.clocks.control, ClockControl::Base);
+    assert_eq!(r.provenance.clocks.basis, "--clock-control base, passed explicitly (capture sidecar)");
+    assert_eq!(r.provenance.build.as_ref().and_then(|b| b.sha.as_deref()), Some(sha));
+    // The session page records driver and CUDA itself; the toolkit only the sidecar does.
+    assert_eq!((&r.driver, &r.cuda_driver), (&Value::Present("580.142".into()), &Value::Present("13.0".into())));
+    assert_eq!(r.cuda_toolkit, Value::Present("0.0 (synthetic)".into()));
+    assert_eq!(r.commands[0], ["ncu", "--clock-control", "base"]);
+
+    // Passed one mode, recorded another: unknown, saying both.
+    let s = f.session.clone().unwrap();
+    f.session = Some(s.replace("ncu --set full", "ncu --clock-control none --set full"));
+    let p = ncu::ingest(&f).unwrap().runs[0].provenance.clone();
+    assert_eq!(p.clocks.control, ClockControl::Unknown);
+    assert!(p.clocks.basis.contains("sidecar says --clock-control base") && p.clocks.basis.contains("says none"), "{}", p.clocks.basis);
 }
 
 /// An auto-scaled raw export: byte fields are "not available", never rounded into bytes.

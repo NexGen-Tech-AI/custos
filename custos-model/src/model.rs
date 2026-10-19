@@ -58,7 +58,22 @@ pub struct Run {
     /// "ncu-session" | "nsys-capture" | "telemetry" ...; "not readable" when unknown.
     pub kind: String,
     pub device: Option<String>,
+    /// The software a capture ran on: the NVIDIA driver, the CUDA version the
+    /// driver supports, the CUDA toolkit.
+    pub driver: Value<String>,
+    pub cuda_driver: Value<String>,
+    pub cuda_toolkit: Value<String>,
+    /// The exact command lines that produced it (one argv each), paths scrubbed.
+    pub commands: Vec<Vec<String>>,
     pub provenance: Provenance,
+}
+
+impl Run {
+    /// A run whose software and command lines are not recorded.
+    pub fn new(id: &str, kind: &str, device: Option<String>, provenance: Provenance) -> Run {
+        let nr = || Value::NotAvailable("not recorded".into());
+        Run { id: id.into(), kind: kind.into(), device, driver: nr(), cuda_driver: nr(), cuda_toolkit: nr(), commands: Vec::new(), provenance }
+    }
 }
 
 /// A kernel: one compiled function (and, for AEGIS, its impl and config).

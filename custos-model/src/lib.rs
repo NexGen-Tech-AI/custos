@@ -11,6 +11,7 @@ pub mod model;
 pub mod ncu;
 pub mod nsys;
 pub mod provenance;
+pub mod sidecar;
 
 pub use model::Capture;
 pub use provenance::Provenance;

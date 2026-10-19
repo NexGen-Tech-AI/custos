@@ -39,6 +39,12 @@ fn normalizes_the_capture_with_provenance() {
     assert_eq!(p.origin, "decode-synthetic.sqlite (export schema 3.20.3)");
     assert_eq!(p.clocks.control, ClockControl::Unknown);
     assert_eq!(p.build, None);
+    // The sidecar's software and command lines land on the run.
+    let r = &c.runs[0];
+    assert_eq!((&r.driver, &r.cuda_toolkit), (&Value::Present("000.00 (synthetic)".into()), &Value::Present("0.0 (synthetic)".into())));
+    assert!(matches!(&r.cuda_driver, Value::NotAvailable(_)));
+    assert_eq!(r.commands.len(), 2);
+    assert_eq!(&r.commands[0][..2], ["nsys", "profile"]);
 
     assert_eq!(c.kernels.len(), 1);
     let k = &c.kernels[0];

@@ -1,7 +1,16 @@
 {
   "synthetic": true,
+  "tool": "nsys",
   "tool_version": null,
   "build_sha": null,
   "build_dirty": null,
-  "note": "Hand-built in the documented nsys export schema 3.20.3; not a capture. tools/capture_fixtures.sh writes this sidecar for real captures (nsys --version, the profiled build)."
+  "driver_version": "000.00 (synthetic)",
+  "cuda_driver_version": null,
+  "cuda_toolkit_version": "0.0 (synthetic)",
+  "clock_control": null,
+  "commands": [
+    ["nsys", "profile", "--trace=cuda,osrt", "--sample=none", "--cpuctxsw=none", "--force-overwrite=true", "-o", "<out>/nsys/decode-synthetic", "<core>/build/bench_gemm", "--impl", "aegis_matmul", "--m", "1", "--n", "896", "--k", "896"],
+    ["nsys", "export", "--type", "sqlite", "--force-overwrite", "true", "--output", "<out>/nsys/decode-synthetic.sqlite", "<out>/nsys/decode-synthetic.nsys-rep"]
+  ],
+  "note": "Hand-built in the documented nsys export schema 3.20.3; not a capture. tools/capture_fixtures.sh writes this sidecar for real captures (tool, driver and CUDA versions, the profiled build, the exact command lines)."
 }
