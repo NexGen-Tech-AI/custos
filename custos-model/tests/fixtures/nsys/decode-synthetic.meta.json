@@ -1,0 +1,7 @@
+{
+  "synthetic": true,
+  "tool_version": null,
+  "build_sha": null,
+  "build_dirty": null,
+  "note": "Hand-built in the documented nsys export schema 3.20.3; not a capture. tools/capture_fixtures.sh writes this sidecar for real captures (nsys --version, the profiled build)."
+}
