@@ -35,7 +35,7 @@ Landed on `custos`:
   commits to aegis-core (requests go in `docs/core-requests.md`); aegis-perf
   is a git dependency pinned to a full rev; a pin bump is its own commit.
 - **custos-perf crate**: Custos's read-only perf-DB layer over `aegis-perf`,
-  tested on fixture snapshots (`~/custos-fixtures`), never live Core data.
+  tested on fixture snapshots (a fixtures directory outside the repo), never live Core data.
 - **Perf commands and views**: read-only Tauri commands; Device and Roofline
   views, tested on real command output.
 - **compare()**: a median shift over 3% is "unconfirmed" unless a paired

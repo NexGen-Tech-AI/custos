@@ -41,7 +41,7 @@
     ],
     "working_sets": ">= 32 MiB"
   },
-  "generated_by": "aegis-perf emit-arch on spark-5822, 2026-10-15 00:54 UTC",
+  "generated_by": "aegis-perf emit-arch on gb10-0, 2026-10-15 00:54 UTC",
   "l2_bytes": 25165824,
   "l2_latency": {
     "clock_spread_pct": 0.0,

@@ -1,5 +1,5 @@
 {
-  "device_id": "spark-5822",
+  "device_id": "gb10-0",
   "gpu_name": "NVIDIA GB10",
   "sm_arch": 121,
   "sm_count": 48,

@@ -3,7 +3,7 @@ CUSTOS - CYBERSECURITY APPLICATION CODEBASE ANALYSIS
 VERY THOROUGH ANALYSIS COMPLETE
 ================================================================================
 
-ANALYSIS LOCATION: /home/riffe007/Documents/projects/system-detection/
+ANALYSIS LOCATION: the repo root
 
 KEY DOCUMENTS GENERATED:
 - CODEBASE_ANALYSIS.md (977 lines) - COMPREHENSIVE FULL ANALYSIS
@@ -399,7 +399,7 @@ are partially stubbed but not critical for core functionality.
 
 RECOMMENDATION: PRODUCTION-READY with planned enhancements for advanced features.
 
-Full detailed analysis: /home/riffe007/Documents/projects/system-detection/CODEBASE_ANALYSIS.md
+Full detailed analysis: the repo root (CODEBASE_ANALYSIS.md)
 
 ================================================================================
 END OF SUMMARY

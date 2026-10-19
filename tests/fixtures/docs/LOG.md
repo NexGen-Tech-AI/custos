@@ -5,7 +5,7 @@ device (CLAUDE.md rule 1); run ids are given so rows can be found.
 
 ## 2026-10-13 — DGX Spark (GB10, sm_121) bring-up through language footprint
 
-Device: `spark-5822`, NVIDIA GB10 (sm_121, 48 SMs), driver 580.142, CUDA 13.0.88,
+Device: `gb10-0`, NVIDIA GB10 (sm_121, 48 SMs), driver 580.142, CUDA 13.0.88,
 CMake 3.28.3, Rust 1.91. Measured D2D bandwidth 214.7 GB/s (manifest; 79% of
 the 273 GB/s nominal). Measured SM clock under load 2553 MHz.
 
@@ -1132,7 +1132,7 @@ and `mma_pipe_256x128x32_4x2_s4` (98,304 B). Config JSON now carries
 
 `e799a4f` (Phase A 5) had committed `build-dev/` (415 files, ~184 MB of build
 output); `c5b8f7d` untracked it. Backup first: `git clone --mirror --no-local`
-to `~/backups/aegis-core-2026-10-14.git` (52.6 MiB pack, fsck clean). Then
+to `<home>/backups/aegis-core-2026-10-14.git` (52.6 MiB pack, fsck clean). Then
 `git filter-repo --invert-paths --path build-dev/ --refs e799a4f^..main`
 (v2.47.0) and a force-push (lease on `6dacc55`). The partial range is
 deliberate: a whole-history run also strips the SSH commit signatures and so
@@ -1226,7 +1226,7 @@ guard then. paired-ab now has one and stores every result in the perf DB
 (max 6%, GPU in P0) with Xorg, gnome-shell and Firefox on the GPU and the
 remote-desktop daemon up.
 
-Builds, in the worktree `~/Documents/projects/aegis-phaseBa-rerun` (detached
+Builds, in the worktree `<core>-phaseBa-rerun` (detached
 at b0bedd5, the Phase A kernel code the original A/B used):
 - A, `bin-A/bench_gemm`: unmodified. Its `mma_pipe_128x256x32_2x4_s3`
   instruction stream is identical to the saved Phase A binary
@@ -1237,7 +1237,7 @@ at b0bedd5, the Phase A kernel code the original A/B used):
 
 Command (from the Core repo root, idle GPU, remote desktop off):
 
-    W=~/Documents/projects/aegis-phaseBa-rerun
+    W=<core>-phaseBa-rerun
     rust/target/release/aegis-perf paired-ab --a $W/bin-A/bench_gemm --b $W/build/bench_gemm \
       --impl mma_pipe_128x256x32_2x4_s3 --shape 4096 4096 4096 --pairs 30 --reps 10 \
       --sha-a b0bedd58fbf9 --sha-b b0bedd58fbf9-dirty
@@ -1362,7 +1362,7 @@ installed with `tools/nightly.sh --install`). Steps:
    winners header plus cublas and cublaslt_best, with `--no-winners`, ingested.
 4. `aegis-perf regress` compares each shape's % of cublaslt_best with the
    newest earlier clean measurement; a relative drop over 3% is flagged.
-5. Back up the DB to `~/backups/aegis_perf-<date>.db`, keeping the 14 newest.
+5. Back up the DB to `<home>/backups/aegis_perf-<date>.db`, keeping the 14 newest.
 6. Write one summary line.
 
 The nightly job never touches the winners table, the winners headers or the
@@ -1387,7 +1387,7 @@ aegis-nightly.service`):** the guard read 0.9%.
   that as "sweep skipped: GPU busy" instead of FAIL. `aegis-perf regress` was
   checked on existing tune runs instead (`41cc8ffb03fd`: 14/14 shapes, min
   71.0%; it flags 1x896x4864 77.8 -> 74.9% against an older tune run).
-- The backup and the summary line work: `~/backups/aegis_perf-2026-10-14.db`,
+- The backup and the summary line work: `<home>/backups/aegis_perf-2026-10-14.db`,
   integrity ok.
 
 ## 2026-10-15 — Fuzz case 24632: a cuBLASLt reference error, not ours

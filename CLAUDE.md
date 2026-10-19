@@ -1,9 +1,9 @@
-| `custos-model/` | crate `custos-model`: the internal model (entities with provenance, the data contract) and the NVIDIA-tool adapters (nsys, ncu, NVML, SASS) | own `[workspace]`; needs no AEGIS and no NVIDIA tool; custos-perf is its AEGIS adapter (`aegis_adapter.rs`) |
 # AEGIS Custos — project instructions
 
 This app (formerly the System Detection / Custos security monitor) is becoming
 **AEGIS Custos**: a GPU performance-engineering workstation over the AEGIS Core
-perf DB. Core lives at `~/Documents/projects/aegis` (read its project instructions);
+perf DB. Core is its own checkout (`AEGIS_CORE`; on the dev machine, the sibling
+directory `../aegis`; read its project instructions);
 Custos reads Core's data and never writes it.
 
 **Scope (2026-10-18, branch `custos-nvtools`).** Custos builds on NVIDIA's tools
@@ -21,6 +21,7 @@ DCGM.
 |---|---|---|
 | `src-tauri/` | crate `custos`: the Tauri 2 app (bin + `lib.rs`) | standalone, own `Cargo.lock`; excluded from the root workspace |
 | `custos-perf/` | crate `custos-perf`: Custos's perf-DB layer over `aegis-perf` | own `[workspace]`; all Custos data logic and its tests |
+| `custos-model/` | crate `custos-model`: the internal model (entities with provenance, the data contract) and the NVIDIA-tool adapters (nsys, ncu, NVML, SASS) | own `[workspace]`; needs no AEGIS and no NVIDIA tool; custos-perf is its AEGIS adapter (`aegis_adapter.rs`) |
 | `Cargo.toml` (root) | workspace (`custos-ebpf`, `custos-ebpf-common`) **and** package `system-monitor` (`src/lib.rs`, `src/backend/*`) | `system-monitor` is not linked into the Tauri binary |
 | `custos-ebpf/`, `custos-ebpf-common/` | aya eBPF program + shared types | `src-tauri` feature `ebpf` |
 | `src/` (TS) | React 18 + Vite 5 + TypeScript + Tailwind 3 frontend | `src/main.tsx` → `App.tsx` → `AppWrapper.tsx` |

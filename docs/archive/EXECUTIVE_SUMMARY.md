@@ -448,7 +448,7 @@ This assessment includes:
    - Key recommendations
    - Go-to-market strategy
 
-**All documents saved to:** `/home/riffe007/Documents/projects/system-detection/`
+**All documents saved to:** the repo root
 
 ---
 

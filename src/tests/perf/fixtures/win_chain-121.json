@@ -3181,7 +3181,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {
@@ -3221,7 +3221,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {
@@ -3261,7 +3261,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {
@@ -3301,7 +3301,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {
@@ -3341,7 +3341,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {
@@ -3381,7 +3381,7 @@
         "idle_util_pct": 0.0,
         "power_w": null,
         "sm_arch": 121,
-        "device_id": "spark-5822",
+        "device_id": "gb10-0",
         "git_sha": "1084490",
         "started_at": "2026-10-18T04:02:11.171358+00:00",
         "roof": {

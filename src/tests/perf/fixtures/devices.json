@@ -1,6 +1,6 @@
 [
   {
-    "device_id": "spark-5822",
+    "device_id": "gb10-0",
     "sm_arch": 121,
     "gpu_name": "NVIDIA GB10",
     "cuda_ver": 13000,
@@ -9,7 +9,7 @@
     "first_run": "2026-10-14T04:59:22.683781+00:00",
     "last_run": "2026-10-18T04:02:11.171358+00:00",
     "manifest": {
-      "path": "tests/fixtures/manifest-spark-5822.json",
+      "path": "tests/fixtures/manifest-gb10-0.json",
       "gpu_name": "NVIDIA GB10",
       "sm_arch": 121,
       "sm_count": 48,

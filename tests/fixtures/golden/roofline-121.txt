@@ -1,4 +1,4 @@
-wrote /home/riffe007/Documents/projects/system-detection/tests/fixtures/golden/roofline-sm121.svg (28 points, ridge 487 (read) / 531 (copy) FLOP/B; roofs from include/aegis/arch/sm_121.json)
+wrote tests/fixtures/golden/roofline-sm121.svg (28 points, ridge 487 (read) / 531 (copy) FLOP/B; roofs from include/aegis/arch/sm_121.json)
   1024x1024x1024 mma_pipe_128x64x32_2x2_s2     AI   341.3    56.98 TFLOPS   70.5% of roof (copy bw)
   1024x1024x1024 cublaslt_best                 AI   341.3    58.04 TFLOPS   71.8% of roof (copy bw)
   16x4864x896 gemv_tc_16x64x64_1x4_s4_k1       AI    15.7     3.69 TFLOPS   91.4% of roof (read bw)

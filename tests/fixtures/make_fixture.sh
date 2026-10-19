@@ -35,4 +35,5 @@ sqlite3 -readonly "$out" "SELECT 'schema v' || version FROM schema_version;
   SELECT 'measurements', count(*) FROM measurements; SELECT 'kernels', count(*) FROM kernels;
   SELECT 'winners', count(*) FROM winners; SELECT 'microbench', count(*) FROM microbench;
   SELECT 'paired_results', count(*) FROM paired_results;"
+"$here/scrub.sh" "$here"
 ls -l "$out"

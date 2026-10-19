@@ -78,10 +78,10 @@ fn devices_lists_the_spark_with_manifest() {
     let d = custos_perf::devices(&s, &con).unwrap();
     assert_eq!(d.len(), 1);
     let spark = &d[0];
-    assert_eq!((spark.device_id.as_str(), spark.sm_arch), ("spark-5822", 121));
+    assert_eq!((spark.device_id.as_str(), spark.sm_arch), ("gb10-0", 121));
     assert_eq!(spark.gpu_name.as_deref(), Some("NVIDIA GB10"));
     assert_eq!(spark.runs, 40);
-    let m = spark.manifest.as_ref().expect("manifest-spark-5822.json");
+    let m = spark.manifest.as_ref().expect("manifest-gb10-0.json");
     assert_eq!((m.sm_count, m.l2_bytes, m.integrated), (Some(48), Some(25165824), Some(true)));
     assert_eq!(m.global_mem_bytes, Some(130663591936));
     assert!(spark.arch_file.is_some());

@@ -281,7 +281,7 @@ import { ActionResult } from '@/types';
 const result = await invoke<ActionResult>('execute_isolation_action', {
   action: {
     BlockDestination: {
-      ip: '1.2.3.4',
+      ip: '192.0.2.4',
       duration_minutes: 60
     }
   },
@@ -299,7 +299,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { NetworkSegment } from '@/types';
 
 const segment = await invoke<NetworkSegment>('classify_ip', {
-  ip: '192.168.1.100'
+  ip: '192.0.2.100'
 });
 
 console.log('IP is in segment:', segment); // "LAN"

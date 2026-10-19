@@ -113,9 +113,9 @@ fn memory_toolchain_and_history() {
     let s = Sources::repo_fixtures();
     let con = s.open().unwrap();
     let a = custos_perf::arch_model(&s, &con, 121).unwrap().unwrap();
-    let manifest: Value = serde_json::from_str(include_str!("../../tests/fixtures/manifest-spark-5822.json")).unwrap();
+    let manifest: Value = serde_json::from_str(include_str!("../../tests/fixtures/manifest-gb10-0.json")).unwrap();
     assert_eq!(a.global_mem_bytes, manifest["global_mem_bytes"].as_i64());
-    assert!(a.manifest.as_deref().unwrap().ends_with("tests/fixtures/manifest-spark-5822.json"));
+    assert!(a.manifest.as_deref().unwrap().ends_with("tests/fixtures/manifest-gb10-0.json"));
 
     // Toolchain of the source run (runs table).
     let src = &a.copy_bw.as_ref().unwrap().source;

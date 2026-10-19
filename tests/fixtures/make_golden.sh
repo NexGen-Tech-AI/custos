@@ -23,4 +23,5 @@ cd "$work"
 for run in d1504a45376d b34425e97d6d eb5bcee294d4; do
   "$cli" --db db.db regress --run "$run" --header "$here/winners/9157a34/sm_121.h" > "$here/golden/regress-$run.txt"
 done
+"$here/scrub.sh" "$here" > /dev/null
 echo "golden outputs regenerated with $("$cli" --version) at $(git -C "$core" rev-parse HEAD)"

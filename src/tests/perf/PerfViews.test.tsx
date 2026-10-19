@@ -47,7 +47,7 @@ describe('DeviceSection', () => {
     expect(within(row('SMs')).getByText('48')).toBeInTheDocument();
     expect(within(row('SMs')).getByText('arch file')).toBeInTheDocument();
     expect(within(row('Memory')).getByText('121.7 GiB')).toBeInTheDocument();
-    expect(within(row('Memory')).getByText(/manifest tests\/fixtures\/manifest-spark-5822\.json/)).toBeInTheDocument();
+    expect(within(row('Memory')).getByText(/manifest tests\/fixtures\/manifest-gb10-0\.json/)).toBeInTheDocument();
     expect(within(row('L2')).getByText('24 MiB')).toBeInTheDocument();
     expect(within(row('Copy bandwidth (roof, M > 16)')).getByText('236.7 GB/s')).toBeInTheDocument();
     expect(within(row('Copy bandwidth (roof, M > 16)')).getByText('run 941ff9215564')).toBeInTheDocument();

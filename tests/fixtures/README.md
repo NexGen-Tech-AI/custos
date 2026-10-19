@@ -21,7 +21,7 @@ aegis-perf library is unchanged from v0.4.0).
 | `sass/sm_121/ORIGIN` | where those listings come from | written with them (below) |
 | `docs/LOG.md`, `docs/analysis/gemm-large.md` | Core's run log and analysis, which Custos cites (stated diagnoses, the win chain's sources) | the tag: `docs/` (`git show aegis-perf-v0.5.0:docs/...`) |
 | `nightly/fuzz-<stamp>.txt` | the nightly fuzz output, 2026-10-14 to 10-17 (case 24632 failed on 10-14) | Core `results/nightly/` (not in git), copied as is |
-| `manifest-spark-5822.json` | `aegis_manifest` output (SM count, memory, toolchain) | Core `results/` (not in git); byte-identical to the 2026-10-14 copy |
+| `manifest-gb10-0.json` | `aegis_manifest` output (SM count, memory, toolchain) | Core `results/` (not in git); byte-identical to the 2026-10-14 copy |
 | `aegis_perf_full.db` | full snapshot (gitignored) | `sqlite3 .backup` |
 
 ## The perf DB
@@ -32,7 +32,7 @@ while Core writes).
 ```sh
 # Last refreshed 2026-10-18 14:59 local: the live DB, schema v4, 40 runs
 # (newest c2b937d8adca, 2026-10-18 04:02 UTC), 44 paired results.
-sqlite3 ~/Documents/projects/aegis/results/aegis_perf.db ".backup tests/fixtures/aegis_perf_full.db"
+sqlite3 <core>/results/aegis_perf.db ".backup tests/fixtures/aegis_perf_full.db"
 tests/fixtures/make_fixture.sh            # -> tests/fixtures/aegis_perf.db
 ```
 
