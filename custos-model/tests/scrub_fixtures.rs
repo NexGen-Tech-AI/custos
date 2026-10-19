@@ -80,7 +80,13 @@ fn text_of(p: &Path) -> String {
     }
 }
 
+/// The machine running the test: the developer's, whose details are what could
+/// leak. On CI (CI / GITHUB_ACTIONS set) the runner's identity cannot be in the
+/// repo, and its user name ("runner") is an ordinary word ("runner-up").
 fn this_machine() -> Vec<String> {
+    if std::env::var_os("CI").is_some() || std::env::var_os("GITHUB_ACTIONS").is_some() {
+        return Vec::new();
+    }
     let host = std::fs::read_to_string("/etc/hostname").unwrap_or_default().trim().to_string();
     let user = std::env::var("USER").or_else(|_| std::env::var("LOGNAME")).unwrap_or_default();
     let home = std::env::var("HOME").unwrap_or_default();
