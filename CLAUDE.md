@@ -30,7 +30,8 @@ DCGM.
 Commands (pnpm is the package manager; there is no package-lock.json):
 `pnpm install --frozen-lockfile`, `pnpm tauri:dev` (app), `pnpm typecheck`,
 `pnpm vitest run`, `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
-layer), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
+layer), `cargo test --manifest-path custos-model/Cargo.toml` (the internal
+model and the nsys / ncu adapters; no AEGIS, no NVIDIA tool), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
 
 Perf views: `src/components/sections/perf/` (Device, Roofline, Winners with the decode
 spotlight and the win chain, Kernel, Regressions), API and types in

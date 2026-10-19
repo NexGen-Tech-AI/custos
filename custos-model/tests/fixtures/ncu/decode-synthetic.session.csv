@@ -1,0 +1,29 @@
+Launch Settings
+"Launch Attribute","Value"
+"Profiler Command Line","ncu --set full -k regex:(gemm_.*_kernel|gemv_.*kernel) --launch-count 2 -o decode-synthetic ./bench_gemm --impl gemv_tc_16x64x64_1x4_s6_ksm --m 1 --n 896 --k 896"
+
+Session Info
+"Session Attribute","Value"
+"Created","2026-Oct-18 00:00:00"
+"Host Name","synthetic-host"
+"Host OS","Linux"
+"Host Architecture","aarch64"
+"Target Name","synthetic-host"
+"Target IP Addresses","192.0.2.10"
+"Target OS","Linux"
+"Target Architecture","aarch64"
+"CUDA Version","13.0"
+"Display Driver Version","580.142"
+"PerfWorks","0.1.0"
+"Nsight Compute Target","2025.3.1.0 (build 36398880) (public-release)"
+
+Processes
+"Process Id","Process Name"
+"4096","./bench_gemm"
+
+Device Attributes
+"Device Attribute","Device 0"
+"multiprocessor_count","48"
+"display_name","Synthetic GPU"
+"compute_capability_major","12"
+"compute_capability_minor","1"

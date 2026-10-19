@@ -1,0 +1,7 @@
+SYNTHETIC Nsight Compute CSV pages (hand-built, not a capture): decode-synthetic.{details,raw,session}.csv.
+Format: exactly what `ncu --import <report> --csv --print-units base --page details|raw|session` prints
+with Nsight Compute 2025.3.1 (column names, order, units row, session section layout, thousands
+separators). Values are invented: launch 0 is a decode-like gemv_tc kernel (14 blocks of 128 threads on
+48 SMs), launch 1 a tiled mma_pipe kernel. Host name, target IP and process fields are deliberately
+present (a fake host, an RFC 5737 address) to test that the adapter drops them. Replace with a real
+capture (tools/capture_fixtures.sh) when one exists.
