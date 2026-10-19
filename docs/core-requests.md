@@ -568,3 +568,32 @@ Contract rules 9 and 18: no value without a source, every view per arch
 - `src/components/sections/perf/HwDiscoverySlot.tsx` (the slot and the
   planned per-row state `HwRowState`; TODO there).
 - Then: a custos-perf reader, a perf command, and the types from the schema.
+
+---
+
+## 13. A profiles table: Nsight reports linked to the run they explain
+
+**Status:** open, 2026-10-18. No fallback: Custos shows Nsight reports unlinked
+(`custos-perf/src/aegis_adapter.rs::profiles_note`).
+
+### What Custos needs
+
+Custos now reads Nsight Compute and Nsight Systems reports itself
+(custos-model) and correlates them with AEGIS measurements. Core writes its
+ncu reports to `artifacts/ncu/<impl>_<MxNxK>.ncu-rep`, and nothing in the perf
+DB records them: not which run or build a report profiled, nor the ncu version
+or clock-control mode. Matching by file name would be a guess (rule 9).
+Requested: a `profiles` table (report path relative to the repo, tool and
+version, clock control, run_id or build SHA, impl, shape, captured_at) written
+when Core profiles, with `view::profiles(con, filter)`. Custos's AEGIS adapter
+reads it when the DB has it.
+
+### Why
+
+Contract rules 9 and 17, and rule 25 (a profile explains a measurement; it is
+never one): the link has to be stored, not inferred.
+
+### Custos code waiting on it
+
+- `custos-perf/src/aegis_adapter.rs` (`profiles_note`; link `Launch` /
+  `Counter` provenance to `Measurement` by run and build).

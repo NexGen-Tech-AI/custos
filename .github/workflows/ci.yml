@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [custos]
+    branches: [main, custos, custos-nvtools]
   pull_request:
-    branches: [custos]
+    branches: [main, custos, custos-nvtools]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -36,6 +36,7 @@ jobs:
         with:
           key: default
           workspaces: |
+            custos-model -> target
             custos-perf -> target
             src-tauri -> target
             . -> target
@@ -54,6 +55,13 @@ jobs:
       - name: vite build
         run: pnpm exec vite build
 
+      # The internal model and the NVIDIA-tool adapters: no AEGIS, no NVIDIA tool,
+      # recorded fixtures only (custos-model/tests/fixtures).
+      - name: custos-model build, tests, clippy
+        run: |
+          cargo build --locked --manifest-path custos-model/Cargo.toml --all-targets
+          cargo test --locked --manifest-path custos-model/Cargo.toml
+          cargo clippy --locked --manifest-path custos-model/Cargo.toml --all-targets -- -D warnings
       - name: custos-perf build, tests, clippy
         run: |
           cargo build --locked --manifest-path custos-perf/Cargo.toml --all-targets
@@ -88,7 +96,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: no-default
-          workspaces: src-tauri -> target
+          workspaces: |
+            custos-model -> target
+            src-tauri -> target
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -99,6 +109,10 @@ jobs:
       - name: vite build (VITE_AEGIS=0)
         run: VITE_AEGIS=0 pnpm exec vite build
 
+      - name: custos-model build, tests (standalone: no AEGIS)
+        run: |
+          cargo build --locked --manifest-path custos-model/Cargo.toml --all-targets
+          cargo test --locked --manifest-path custos-model/Cargo.toml
       - name: src-tauri build, tests, clippy (--no-default-features)
         run: |
           cargo build --locked --manifest-path src-tauri/Cargo.toml --all-targets --no-default-features

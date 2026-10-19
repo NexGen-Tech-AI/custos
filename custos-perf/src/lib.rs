@@ -107,6 +107,7 @@ impl Sources {
     }
 }
 
+pub mod aegis_adapter;
 pub mod core_fallbacks;
 pub mod device;
 pub mod docs;

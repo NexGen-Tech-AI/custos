@@ -1,9 +1,17 @@
+| `custos-model/` | crate `custos-model`: the internal model (entities with provenance, the data contract) and the NVIDIA-tool adapters (nsys, ncu, NVML, SASS) | own `[workspace]`; needs no AEGIS and no NVIDIA tool; custos-perf is its AEGIS adapter (`aegis_adapter.rs`) |
 # AEGIS Custos — project instructions
 
 This app (formerly the System Detection / Custos security monitor) is becoming
 **AEGIS Custos**: a GPU performance-engineering workstation over the AEGIS Core
 perf DB. Core lives at `~/Documents/projects/aegis` (read its project instructions);
 Custos reads Core's data and never writes it.
+
+**Scope (2026-10-18, branch `custos-nvtools`).** Custos builds on NVIDIA's tools
+instead of collecting data itself: Nsight Systems timelines, Nsight Compute
+metrics, NVML telemetry, SASS listings and the AEGIS perf DB become one
+internal model (`custos-model`), every value with its provenance. Its value is
+correlating and explaining that data, not gathering it. No CUPTI injection, no
+DCGM.
 
 ## Inventory (2026-10-14)
 
@@ -187,3 +195,40 @@ Custos shows numbers Core has disowned.
 23. **A pin bump is its own commit.** It changes only the pin (plus what the
     bump forces in Custos) and its message records the new Core rev, the
     previous one, and the reason for the bump.
+
+### NVIDIA tools and the internal model (2026-10-18)
+
+24. **Every value carries a Provenance** (`custos-model/src/provenance.rs`):
+    source (aegis | ncu | nsys | nvml | sysfs | sass), the tool and its version,
+    capture time, build (a 40-hex-digit SHA and dirty flag only when the source
+    records them; a shorter label is kept as a label, never padded), clock
+    control and lock state (with how it is known), AEGIS row state (status,
+    disturbed, allow_busy, protocol, cache mode), CI and pairing, the roof of a
+    derived value, and whether the record is synthetic. Rules 2-11 are checked
+    on the model (`custos_model::contract::violations`); a view shows nothing
+    that fails them.
+25. **Profiler timings are never performance results.** Nsight explains why;
+    timing claims come from the source's own protocol (AEGIS: protocol v2,
+    cold, paired-ab or the paired tie test). In the model, profiler time is a
+    `ProfilerTiming` on a launch or timeline event, never a `Measurement`
+    (contract rule "P").
+26. **Adapters read recorded outputs** (an nsys SQLite export, ncu CSV pages, a
+    perf DB, SASS listings) and need no tool to do so. Producing them needs the
+    tool; a missing tool is reported "unavailable" with the reason, never an
+    error. An unknown nsys export schema version fails with a clear message,
+    never a misparse. Device fields the source does not report show "not
+    available on this device".
+27. **Tests use recorded fixtures only** (ncu CSV, nsys SQLite as an SQL dump,
+    NVML mock), never a live tool and never a profile. Hand-built fixtures are
+    labelled synthetic (in the file and in its provenance) until
+    `tools/capture_fixtures.sh` (written, run only by the user in a GPU window,
+    under the GPU lock) replaces them with real captures.
+28. **Fixtures and docs are scrubbed** of machine and personal details:
+    hostnames, user names, home paths, IP addresses, environment variables, and
+    command lines with paths or tokens. Adapters drop those fields on ingest; a
+    test scans every fixture (CI).
+29. **GPU lock for profiling:** an flock at a configurable path; default AEGIS's
+    `results/gpu.lock` when it exists (its path is only read; Custos never
+    creates files in aegis-core), else Custos's own. Wait up to a configurable
+    timeout, then report "GPU busy: <holder if known>". Nothing in the tests
+    profiles.
