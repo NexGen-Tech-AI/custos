@@ -1,8 +1,8 @@
 //! CLAUDE.md rule 28: fixtures and docs carry no machine or personal details.
 //! Scans every fixture directory and every doc of the repo (text files as
 //! text; SQLite files by their strings; PNG files by their text chunks, since
-//! pixels cannot be read here) for: this machine's host name, user name and
-//! home directory (read at test time, never stored); home-directory paths;
+//! pixels cannot be read here) for: the development machines' host and user
+//! names (whole tokens, against a fixed list of digests); home-directory paths;
 //! IPv4 addresses other than loopback; IPv6 link-local addresses; e-mail
 //! addresses; access tokens; environment variables set to absolute paths.
 use std::path::{Path, PathBuf};
@@ -80,17 +80,67 @@ fn text_of(p: &Path) -> String {
     }
 }
 
-/// The machine running the test: the developer's, whose details are what could
-/// leak. On CI (CI / GITHUB_ACTIONS set) the runner's identity cannot be in the
-/// repo, and its user name ("runner") is an ordinary word ("runner-up").
-fn this_machine() -> Vec<String> {
-    if std::env::var_os("CI").is_some() || std::env::var_os("GITHUB_ACTIONS").is_some() {
-        return Vec::new();
+/// Host and user names of the development machines, as SHA-256 digests of the
+/// lower-cased name (so the repo never spells them out). Fixed, so the check is
+/// the same on every machine and on CI. Add a machine with
+/// `printf %s "$(hostname)" | tr A-Z a-z | sha256sum` (and the same for `id -un`).
+const MACHINE_TOKENS: &[(&str, &str)] = &[
+    ("host name", "9e75ed1094b459c44f5543d656f4770f022ec1d58860e90b799eba331fdb97e6"),
+    ("user name", "978c3225f01d987a5a3e6d68f84bc2c3b0d0cb7510d23ab2affcabf6ba0e4de5"),
+];
+/// The repository owner's account, published in the repo's own URLs.
+const PUBLISHED_PREFIXES: &[&str] = &["github.com/"];
+
+fn sha256_hex(s: &str) -> String {
+    use sha2::Digest;
+    sha2::Sha256::digest(s.as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Whole tokens of a line: maximal runs of host / user-name characters
+/// ([A-Za-z0-9._-]), with their byte offsets. "runner-up" is one token, never
+/// "runner".
+fn tokens(line: &str) -> impl Iterator<Item = (usize, &str)> {
+    let is_tok = |c: char| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-');
+    let mut out = Vec::new();
+    let mut start = None;
+    for (i, c) in line.char_indices().chain(std::iter::once((line.len(), ' '))) {
+        match (is_tok(c), start) {
+            (true, None) => start = Some(i),
+            (false, Some(s)) => {
+                out.push((s, &line[s..i]));
+                start = None;
+            }
+            _ => {}
+        }
     }
-    let host = std::fs::read_to_string("/etc/hostname").unwrap_or_default().trim().to_string();
-    let user = std::env::var("USER").or_else(|_| std::env::var("LOGNAME")).unwrap_or_default();
-    let home = std::env::var("HOME").unwrap_or_default();
-    [host, user, home].into_iter().filter(|s| s.len() >= 4 && s != "/root").collect()
+    out.into_iter()
+}
+
+/// Hits of a digest list in one line: (which, token).
+fn machine_tokens(list: &[(&'static str, &str)], line: &str) -> Vec<(&'static str, String)> {
+    let mut hits = Vec::new();
+    for (at, tok) in tokens(line) {
+        let digest = sha256_hex(&tok.to_ascii_lowercase());
+        if let Some((name, _)) = list.iter().find(|(_, d)| *d == digest) {
+            if !PUBLISHED_PREFIXES.iter().any(|p| line[..at].to_ascii_lowercase().ends_with(p)) {
+                hits.push((*name, tok.to_string()));
+            }
+        }
+    }
+    hits
+}
+
+#[test]
+fn machine_tokens_match_whole_tokens_only() {
+    // A made-up host, "example-host-7", and the real list's digests.
+    let list = &[("host name", "709705b52366d63b21bbc0ee46970829f19ebca8a5864c8a87c126b561b90b22")];
+    let f = |l: &str| machine_tokens(list, l).len();
+    assert_eq!(f("device example-host-7 ok"), 1);
+    assert_eq!(f("device EXAMPLE-HOST-7, ok"), 1, "case-insensitive");
+    assert_eq!(f("device example-host-7-b ok"), 0, "part of a longer token");
+    assert_eq!(f("xexample-host-7"), 0);
+    assert_eq!(f("https://github.com/example-host-7/repo"), 0, "a published repo URL");
+    assert!(machine_tokens(MACHINE_TOKENS, "runner-up and test runner").is_empty());
 }
 
 #[test]
@@ -126,7 +176,6 @@ fn fixtures_and_docs_are_scrubbed() {
         ("docs/archive/BUILD_STATUS.md", "security@custos.ai"),
         ("docs/archive/PROGRESS_SUMMARY.md", "security@custos.ai"),
     ];
-    let mine = this_machine();
     let mut found = Vec::new();
     for p in &all {
         let rel = p.strip_prefix(&root).unwrap().to_string_lossy().into_owned();
@@ -146,10 +195,8 @@ fn fixtures_and_docs_are_scrubbed() {
                     found.push(format!("{rel}:{}: {name}: {}", line_no + 1, m.as_str().trim()));
                 }
             }
-            for s in &mine {
-                if line.contains(s.as_str()) {
-                    found.push(format!("{rel}:{}: this machine's host / user / home", line_no + 1));
-                }
+            for (name, _) in machine_tokens(MACHINE_TOKENS, line) {
+                found.push(format!("{rel}:{}: a development machine's {name}", line_no + 1));
             }
         }
     }
