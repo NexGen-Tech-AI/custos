@@ -62,6 +62,12 @@ jobs:
           cargo build --locked --manifest-path custos-model/Cargo.toml --all-targets
           cargo test --locked --manifest-path custos-model/Cargo.toml
           cargo clippy --locked --manifest-path custos-model/Cargo.toml --all-targets -- -D warnings
+      # The NVML library backend: built and tested with no NVML installed (the
+      # library loads at run time; the tests use the NVML mock).
+      - name: custos-model with the nvml feature
+        run: |
+          cargo test --locked --manifest-path custos-model/Cargo.toml --features nvml
+          cargo clippy --locked --manifest-path custos-model/Cargo.toml --all-targets --features nvml -- -D warnings
       - name: custos-perf build, tests, clippy
         run: |
           cargo build --locked --manifest-path custos-perf/Cargo.toml --all-targets

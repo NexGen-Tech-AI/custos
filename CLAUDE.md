@@ -31,7 +31,11 @@ Commands (pnpm is the package manager; there is no package-lock.json):
 `pnpm install --frozen-lockfile`, `pnpm tauri:dev` (app), `pnpm typecheck`,
 `pnpm vitest run`, `cargo test --manifest-path custos-perf/Cargo.toml` (Custos data
 layer), `cargo test --manifest-path custos-model/Cargo.toml` (the internal
-model and the nsys / ncu adapters; no AEGIS, no NVIDIA tool), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
+model and the nsys / ncu / NVML / Jetson adapters; no AEGIS, no NVIDIA tool;
+add `--features nvml` for the NVML library backend), `cargo check --manifest-path src-tauri/Cargo.toml` (app).
+Telemetry capability probe of this machine (read-only: no load, no GPU lock):
+`cargo run --release --manifest-path custos-model/Cargo.toml --features nvml --example nvml_probe`
+(`-- --record FILE` saves it as a recorded probe; `-- --sysfs /` on a Jetson).
 
 Perf views: `src/components/sections/perf/` (Device, Roofline, Winners with the decode
 spotlight and the win chain, Kernel, Regressions), API and types in
