@@ -20,3 +20,14 @@ every other fixture and doc. The synthetic files contain a fake host name and an
 RFC 5737 address on purpose, to test that the adapters drop them.
 The same scan (`tests/scrub/mod.rs`) runs on a capture's output before it can be
 committed: `cargo run --example scrub_scan -- --this-machine DIR`.
+
+## Telemetry (NVML mock, Jetson)
+
+| File | Format | Status |
+|---|---|---|
+| `nvml/full-synthetic.json` | a recorded probe (`custos_model::nvml::Recorded`, what `examples/nvml_probe --record` writes): one read of every field, repeated power / energy reads | synthetic (`"synthetic": true`): a discrete GPU that reports every field |
+| `nvml/gb10-like-synthetic.json` | the same | synthetic: a GB10-like device with gaps. Which fields are missing is **assumed** (to exercise "not available on this device"); the real GB10 answer comes from the probe on the device |
+| `jetson/sysfs-orin-synthetic/`, `jetson/tegrastats-synthetic.txt` | an Orin-layout sysfs tree; tegrastats lines | synthetic (`jetson/README.md`) |
+
+A recorded probe holds no UUID, serial number, PCI bus id or host name; devices
+are by index.

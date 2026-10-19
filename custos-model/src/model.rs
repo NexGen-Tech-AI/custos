@@ -48,7 +48,58 @@ pub struct Device {
     pub name: Value<String>,
     pub sm_arch: Value<i64>,
     pub sm_count: Value<i64>,
+    /// What the device's telemetry source reports, field by field (the NVML /
+    /// sysfs capability probe); empty when no probe ran. A field marked
+    /// unsupported shows "not available on this device".
+    #[serde(default)]
+    pub capabilities: Vec<Capability>,
     pub provenance: Provenance,
+}
+
+impl Device {
+    pub fn new(id: &str, name: Value<String>, sm_arch: Value<i64>, sm_count: Value<i64>, provenance: Provenance) -> Device {
+        Device { id: id.into(), name, sm_arch, sm_count, capabilities: Vec::new(), provenance }
+    }
+    pub fn capability(&self, field: &str) -> Option<&Capability> {
+        self.capabilities.iter().find(|c| c.field == field)
+    }
+    /// A telemetry field's value as a view shows it: "not available on this
+    /// device" when the probe found it unsupported, "not measured" when it is
+    /// supported but no sample is at hand.
+    pub fn telemetry<T: Clone>(&self, field: &str, sample: Option<&T>) -> Value<T> {
+        match (sample, self.capability(field).map(|c| &c.support)) {
+            (_, Some(Support::NotSupported)) => Value::NotAvailable(NOT_ON_DEVICE.into()),
+            (Some(v), _) => Value::Present(v.clone()),
+            (None, Some(Support::NotRead(why))) => Value::NotAvailable(why.clone()),
+            (None, Some(Support::Error(e))) => Value::NotAvailable(format!("read failed: {e}")),
+            (None, _) => Value::NotMeasured,
+        }
+    }
+}
+
+/// What a view shows for a field the device does not report.
+pub const NOT_ON_DEVICE: &str = "not available on this device";
+
+/// Whether a device reports one telemetry field.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Support {
+    Supported,
+    /// The source says so (NVML_ERROR_NOT_SUPPORTED; a sysfs node that does not exist).
+    NotSupported,
+    /// The telemetry source does not read this field (says nothing about the device).
+    NotRead(String),
+    /// Another failure (no permission, GPU lost ...): not known either way.
+    Error(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Capability {
+    /// The field ("power.usage", "energy.total", "clocks.sm" ...; see `nvml::FIELDS`).
+    pub field: String,
+    pub support: Support,
+    /// What was observed while probing, e.g. an update interval or a value step.
+    pub detail: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

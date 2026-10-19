@@ -7,11 +7,14 @@
 //! checked against the data contract ([`contract`]).
 pub mod adapter;
 pub mod contract;
+pub mod jetson;
 pub mod model;
 pub mod ncu;
 pub mod nsys;
+pub mod nvml;
 pub mod provenance;
 pub mod sidecar;
+pub mod telemetry;
 
 pub use model::Capture;
 pub use provenance::Provenance;

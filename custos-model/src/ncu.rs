@@ -200,6 +200,7 @@ pub fn ingest(csv: &NcuCsv) -> Result<Capture> {
             name: Value::from_option(attr("display_name").map(str::to_string)),
             sm_arch: cc,
             sm_count: Value::from_option(attr("multiprocessor_count").and_then(number).map(|n| n as i64)),
+            capabilities: Vec::new(),
             provenance: prov.clone(),
         });
     }

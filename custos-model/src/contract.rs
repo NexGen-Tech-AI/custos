@@ -141,6 +141,13 @@ pub fn violations(c: &Capture) -> Vec<Violation> {
         if s == Source::Ncu && k.launch.is_none() {
             out.push(v("8", format!("counter {}: a profiled metric without its launch", k.metric)));
         }
+        // 9: a value for a field the device does not report can only be made up.
+        if s.is_telemetry() && k.quantity.value.present().is_some() {
+            let dev = k.device.as_deref().and_then(|d| c.devices.iter().find(|x| x.id == d));
+            if dev.and_then(|d| d.capability(&k.metric)).is_some_and(|cap| cap.support == crate::model::Support::NotSupported) {
+                out.push(v("9", format!("counter {}: a value for a field device {} does not report", k.metric, k.device.as_deref().unwrap_or("?"))));
+            }
+        }
     }
     out
 }

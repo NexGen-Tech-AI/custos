@@ -182,6 +182,7 @@ pub fn ingest(export: &Path) -> Result<Capture> {
                     _ => Value::NotMeasured,
                 },
                 sm_count: Value::from_option(sms),
+                capabilities: Vec::new(),
                 provenance: prov.clone(),
             });
         }

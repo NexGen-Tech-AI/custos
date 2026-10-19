@@ -1,0 +1,254 @@
+{
+  "synthetic": true,
+  "note": "Hand-built NVML mock (CLAUDE.md rule 27), not a recording: a GB10-like device (sm_121, unified memory) with gaps. Which fields are missing is ASSUMED to exercise not-available-on-this-device; the real answer for GB10 comes from `examples/nvml_probe --record` on the device.",
+  "nvml_version": "0.0.0 (synthetic)",
+  "driver_version": "000.00 (synthetic)",
+  "cuda_driver_version": "0.0 (synthetic)",
+  "devices": [
+    {
+      "name": "Synthetic GB10-like GPU (gaps)",
+      "compute_capability": [
+        12,
+        1
+      ],
+      "fields": {
+        "clocks.graphics": {
+          "value": 2405
+        },
+        "clocks.sm": {
+          "value": 2405
+        },
+        "clocks.memory": "not_supported",
+        "temperature.gpu": {
+          "value": 38
+        },
+        "power.usage": {
+          "value": 4120
+        },
+        "power.instant": "not_supported",
+        "power.average": {
+          "value": 4120
+        },
+        "power.limit": "not_supported",
+        "energy.total": "not_supported",
+        "utilization.gpu": {
+          "value": 0
+        },
+        "utilization.memory": "not_supported",
+        "clocks_event_reasons": {
+          "value": 1
+        },
+        "memory.used": "not_supported",
+        "memory.total": "not_supported"
+      },
+      "series": {
+        "power.usage": [
+          [
+            0,
+            4120
+          ],
+          [
+            20,
+            4120
+          ],
+          [
+            40,
+            4120
+          ],
+          [
+            60,
+            4120
+          ],
+          [
+            80,
+            4120
+          ],
+          [
+            100,
+            4120
+          ],
+          [
+            120,
+            4120
+          ],
+          [
+            140,
+            4120
+          ],
+          [
+            160,
+            4120
+          ],
+          [
+            180,
+            4120
+          ],
+          [
+            200,
+            4125
+          ],
+          [
+            220,
+            4125
+          ],
+          [
+            240,
+            4125
+          ],
+          [
+            260,
+            4125
+          ],
+          [
+            280,
+            4125
+          ],
+          [
+            300,
+            4125
+          ],
+          [
+            320,
+            4125
+          ],
+          [
+            340,
+            4125
+          ],
+          [
+            360,
+            4125
+          ],
+          [
+            380,
+            4125
+          ],
+          [
+            400,
+            4130
+          ],
+          [
+            420,
+            4130
+          ],
+          [
+            440,
+            4130
+          ],
+          [
+            460,
+            4130
+          ],
+          [
+            480,
+            4130
+          ],
+          [
+            500,
+            4130
+          ],
+          [
+            520,
+            4130
+          ],
+          [
+            540,
+            4130
+          ],
+          [
+            560,
+            4130
+          ],
+          [
+            580,
+            4130
+          ],
+          [
+            600,
+            4135
+          ],
+          [
+            620,
+            4135
+          ],
+          [
+            640,
+            4135
+          ],
+          [
+            660,
+            4135
+          ],
+          [
+            680,
+            4135
+          ],
+          [
+            700,
+            4135
+          ],
+          [
+            720,
+            4135
+          ],
+          [
+            740,
+            4135
+          ],
+          [
+            760,
+            4135
+          ],
+          [
+            780,
+            4135
+          ],
+          [
+            800,
+            4140
+          ],
+          [
+            820,
+            4140
+          ],
+          [
+            840,
+            4140
+          ],
+          [
+            860,
+            4140
+          ],
+          [
+            880,
+            4140
+          ],
+          [
+            900,
+            4140
+          ],
+          [
+            920,
+            4140
+          ],
+          [
+            940,
+            4140
+          ],
+          [
+            960,
+            4140
+          ],
+          [
+            980,
+            4140
+          ],
+          [
+            1000,
+            4145
+          ]
+        ]
+      }
+    }
+  ]
+}

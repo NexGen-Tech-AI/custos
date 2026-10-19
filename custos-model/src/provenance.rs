@@ -31,6 +31,16 @@ impl Source {
     pub fn is_profiler(self) -> bool {
         matches!(self, Source::Ncu | Source::Nsys)
     }
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Source::Aegis => "aegis",
+            Source::Ncu => "ncu",
+            Source::Nsys => "nsys",
+            Source::Nvml => "nvml",
+            Source::Sysfs => "sysfs",
+            Source::Sass => "sass",
+        }
+    }
 }
 
 /// A fact that may be missing from the source; why it is missing is kept.
